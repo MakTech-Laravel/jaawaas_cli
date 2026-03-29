@@ -8,6 +8,11 @@ export const apiClient = axios.create({
   baseURL: API_URL,
 });
 
+/** No Authorization header — use for public flows (e.g. restore scheduled deletion). */
+export const publicApiClient = axios.create({
+  baseURL: API_URL,
+});
+
 apiClient.interceptors.request.use((config) => {
   if (typeof window === "undefined") {
     return config;

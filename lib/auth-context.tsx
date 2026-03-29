@@ -3,7 +3,19 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import type { LoginInput, User as ApiUser } from "@/lib/types"
 import { login as loginRequest, register as registerRequest } from "@/lib/api/auth"
-import { getDashboardPathByRole, normalizeUserRole, type UserRole } from "@/lib/roles/dashboard-route"
+import { getApiErrorMessage } from "@/lib/api/errors"
+import {
+  getDashboardPathByRole,
+  normalizeUserRole,
+  type UserRole,
+} from "@/lib/roles/dashboard-route"
+
+export type { UserRole }
+
+export type SignupResult =
+  | { success: true; pendingReview: true; message: string; manufactureStatus?: string | null }
+  | { success: true; pendingReview: false; redirectTo: string }
+  | { success: false; message?: string }
 
 export type ManufacturerStatus =
   | "draft"
@@ -32,7 +44,7 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   login: (email: string, password: string, role?: UserRole) => Promise<{ success: boolean; redirectTo: string }>
-  signup: (data: SignupData) => Promise<{ success: boolean; redirectTo: string }>
+  signup: (data: SignupData) => Promise<SignupResult>
   logout: () => void
   setToken: (token: string | null) => void
   setUser: (user: User | ApiUser | null) => void
@@ -135,10 +147,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
 
     try {
-      const payload: LoginInput = { email, password, role }
-      const response = await loginRequest(payload)
+      const loginPayload: LoginInput = { email, password, role }
+      const response = await loginRequest(loginPayload)
 
-      if (!response.success) {
+      if (!response.success || !response.data?.access_token || !response.data?.user) {
         return { success: false, redirectTo: "" }
       }
 
@@ -156,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const signup = async (data: SignupData): Promise<{ success: boolean; redirectTo: string }> => {
+  const signup = async (data: SignupData): Promise<SignupResult> => {
     setIsLoading(true)
 
     try {
@@ -190,20 +202,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await registerRequest(form)
 
       if (!response.success) {
-        return { success: false, redirectTo: "" }
+        return { success: false, message: response.message || undefined }
       }
 
-      setToken(response.data.access_token)
-      setUser(response.data.user)
+      const session = response.data
+      if (session?.access_token && session.user) {
+        setToken(session.access_token)
+        setUser(session.user)
+        return {
+          success: true,
+          pendingReview: false,
+          redirectTo: getDashboardPathByRole(session.user.role),
+        }
+      }
 
       return {
         success: true,
-        redirectTo: getDashboardPathByRole(response.data.user.role),
+        pendingReview: true,
+        message:
+          response.message ||
+          "Thank you for registering. We will notify you when your account is ready.",
+        manufactureStatus: response.manufacture_status ?? null,
       }
-    } catch (err: any) {
-      // Log exactly what the backend rejected so we don't have to guess
-      console.error("Registration Failed! Backend Response:", err.response?.data || err.message)
-      return { success: false, redirectTo: "" }
+    } catch (err: unknown) {
+      console.error("Registration Failed! Backend Response:", err)
+      return { success: false, message: getApiErrorMessage(err) }
     } finally {
       setIsLoading(false)
     }

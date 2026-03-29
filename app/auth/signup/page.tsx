@@ -15,7 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useAuth, UserRole } from "@/lib/auth-context"
+import { useAuth, type UserRole } from "@/lib/auth-context"
+import { REGISTER_SUCCESS_STORAGE_KEY } from "@/lib/register-success-storage"
 import { countries } from "@/lib/data/countries"
 import { cn } from "@/lib/utils"
 import { Eye, EyeOff, Loader2, Users, Factory, Check, AlertCircle, Upload, FileText, X, Camera, Globe, Building2, Info } from "lucide-react"
@@ -103,9 +104,20 @@ export default function SignUpPage() {
       })
       
       if (result.success) {
-        router.push(result.redirectTo)
+        if (result.pendingReview) {
+          sessionStorage.setItem(
+            REGISTER_SUCCESS_STORAGE_KEY,
+            JSON.stringify({
+              message: result.message,
+              manufactureStatus: result.manufactureStatus,
+            })
+          )
+          router.push("/auth/register-success")
+        } else {
+          router.push(result.redirectTo)
+        }
       } else {
-        setError("Registration failed. Please try again.")
+        setError(result.message || "Registration failed. Please try again.")
       }
     } catch {
       setError("An error occurred. Please try again.")
@@ -424,7 +436,7 @@ export default function SignUpPage() {
               <div className="space-y-2">
                 <Label htmlFor="website" className="flex items-center gap-1">
                   <Globe className="h-4 w-4 text-secondary" />
-                  Company Website <span className="text-muted-foreground text-xs">(optional)</span>
+                  Company Website <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="website"

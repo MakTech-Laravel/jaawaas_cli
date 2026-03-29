@@ -23,12 +23,20 @@ export interface User {
   updated_at: string | null;
 }
 
+/** Present on successful login and immediate post-register (e.g. buyer). */
+export interface AuthTokenPayload {
+  token_type: string;
+  access_token: string;
+  user: User;
+}
+
+/**
+ * Login and register share this envelope. Register may return `data: null` and
+ * `manufacture_status` when the manufacturer account is pending review.
+ */
 export interface LoginResponse {
   success: boolean;
   message: string;
-  data: {
-    token_type: string;
-    access_token: string;
-    user: User;
-  };
+  data: AuthTokenPayload | null;
+  manufacture_status?: string | null;
 }

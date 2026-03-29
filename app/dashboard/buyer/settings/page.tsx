@@ -19,6 +19,7 @@ import {
   User,
   Save
 } from "lucide-react"
+import { AccountDangerZone } from "@/components/settings/account-danger-zone"
 
 export default function BuyerSettingsPage() {
   const [notifications, setNotifications] = useState({
@@ -233,28 +234,7 @@ export default function BuyerSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Danger Zone */}
-          <Card className="border-destructive/50">
-            <CardHeader>
-              <CardTitle className="text-destructive">Danger Zone</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">Deactivate Account</p>
-                <p className="text-sm text-muted-foreground">Temporarily disable your account</p>
-                <Button variant="outline" size="sm" className="mt-2">
-                  Deactivate
-                </Button>
-              </div>
-              <div className="border-t border-border pt-4">
-                <p className="text-sm font-medium text-foreground">Delete Account</p>
-                <p className="text-sm text-muted-foreground">Permanently delete your account</p>
-                <Button variant="destructive" size="sm" className="mt-2">
-                  Delete Account
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <AccountDangerZone />
         </div>
       </div>
     </div>

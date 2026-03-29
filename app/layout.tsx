@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { DM_Sans, DM_Serif_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/lib/auth-context'
+import { Toaster } from '@/components/ui/toaster'
 import { FavoritesProvider } from '@/lib/favorites-context'
 import { SubscriptionProvider } from '@/lib/subscription-context'
 import './globals.css'
@@ -55,6 +56,7 @@ export default function RootLayout({
             </FavoritesProvider>
           </SubscriptionProvider>
         </AuthProvider>
+        <Toaster />
         <Analytics />
       </body>
     </html>

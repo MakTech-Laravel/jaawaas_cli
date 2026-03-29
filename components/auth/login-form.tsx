@@ -43,7 +43,7 @@ export function LoginForm() {
   async function onSubmit(data: LoginInput) {
     try {
       const response = await login(data);
-      if (response.success) {
+      if (response.success && response.data?.access_token && response.data.user) {
         toast({
           title: "Login Successful",
           description: "Welcome back!",

@@ -173,7 +173,7 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
@@ -196,11 +196,11 @@ export function Header() {
                       <NavigationMenuLink asChild>
                         <Link
                           href={item.href}
-                          className="flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-muted"
+                          className="flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-muted text-foreground"
                         >
                           <item.icon className="mt-0.5 h-5 w-5 text-secondary" />
                           <div>
-                            <div className="text-sm font-medium">{item.title}</div>
+                            <div className="text-sm font-medium text-foreground">{item.title}</div>
                             <p className="text-xs text-muted-foreground">{item.description}</p>
                           </div>
                         </Link>
@@ -215,17 +215,17 @@ export function Header() {
             <NavigationMenuItem>
               <NavigationMenuTrigger className="bg-transparent">Platform</NavigationMenuTrigger>
               <NavigationMenuContent>
-                <ul className="grid w-[400px] gap-3 p-4">
+                <ul className="grid w-100 gap-3 p-4">
                   {platformItems.map((item) => (
                     <li key={item.title}>
                       <NavigationMenuLink asChild>
                         <Link
                           href={item.href}
-                          className="flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-muted"
+                          className="flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-muted text-foreground"
                         >
                           <item.icon className="mt-0.5 h-5 w-5 text-secondary" />
                           <div>
-                            <div className="text-sm font-medium">{item.title}</div>
+                            <div className="text-sm font-medium text-foreground">{item.title}</div>
                             <p className="text-sm text-muted-foreground">{item.description}</p>
                           </div>
                         </Link>
@@ -246,11 +246,11 @@ export function Header() {
                       <NavigationMenuLink asChild>
                         <Link
                           href={item.href}
-                          className="flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-muted"
+                          className="flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-muted text-foreground"
                         >
                           <item.icon className="mt-0.5 h-5 w-5 text-secondary" />
                           <div>
-                            <div className="text-sm font-medium">{item.title}</div>
+                            <div className="text-sm font-medium text-foreground">{item.title}</div>
                             <p className="text-sm text-muted-foreground">{item.description}</p>
                           </div>
                         </Link>

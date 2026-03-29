@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,6 +11,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/lib/auth-context"
 import type { UserRole } from "@/lib/roles/dashboard-route"
 import { Eye, EyeOff, Loader2, Users, Factory, Shield, AlertCircle } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+
+function RestoredAccountNotifier() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { toast } = useToast()
+  const notified = useRef(false)
+
+  useEffect(() => {
+    if (notified.current) return
+    if (searchParams.get("restored") !== "1") return
+    notified.current = true
+    toast({
+      title: "Account restored",
+      description: "You can sign in with your usual credentials.",
+    })
+    router.replace("/auth/signin", { scroll: false })
+  }, [searchParams, toast, router])
+
+  return null
+}
 
 export default function SignInPage() {
   const router = useRouter()
@@ -24,6 +45,7 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [activeTab, setActiveTab] = useState<UserRole>(defaultTab)
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -69,6 +91,10 @@ export default function SignInPage() {
   }
 
   return (
+    <>
+      <Suspense fallback={null}>
+        <RestoredAccountNotifier />
+      </Suspense>
     <div>
       <div className="text-center lg:text-left">
         <h1 className="font-serif text-3xl font-medium text-foreground">
@@ -253,6 +279,12 @@ export default function SignInPage() {
           Create account
         </Link>
       </p>
+      <p className="mt-3 text-center text-sm text-muted-foreground">
+        Canceled a deletion request?{" "}
+        <Link href="/auth/restore-account" className="font-medium text-secondary hover:underline">
+          Restore account
+        </Link>
+      </p>
 
       {/* Demo Credentials Info */}
       <div className="mt-6 rounded-lg border border-border bg-muted/30 p-4">
@@ -264,5 +296,6 @@ export default function SignInPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }

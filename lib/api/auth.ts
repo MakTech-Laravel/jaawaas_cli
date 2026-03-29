@@ -6,6 +6,7 @@ export async function login(data: LoginInput): Promise<LoginResponse> {
   return response.data;
 }
 
+/** Same envelope as login; `data` may be null when manufacturer registration is pending review. */
 export async function register(formData: FormData): Promise<LoginResponse> {
   // Override the global JSON Content-Type so Axios handles the multipart boundary correctly
   const response = await apiClient.post<LoginResponse>("/register", formData, {
