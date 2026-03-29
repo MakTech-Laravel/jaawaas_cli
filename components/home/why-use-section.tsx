@@ -68,7 +68,7 @@ export function WhyUseSection() {
         {/* Why Buyers Use SourceNest */}
         <div>
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
+            <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
               Why Buyers Choose SourceNest
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
@@ -97,7 +97,7 @@ export function WhyUseSection() {
         {/* Why Manufacturers Join */}
         <div>
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
+            <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
               Why Manufacturers Join
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">

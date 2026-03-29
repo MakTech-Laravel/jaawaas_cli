@@ -74,7 +74,7 @@ export function IndustriesSection() {
             <Package className="h-4 w-4" />
             Popular Industries
           </span>
-          <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+          <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl lg:text-5xl">
             Find Suppliers by Industry
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
@@ -83,7 +83,7 @@ export function IndustriesSection() {
         </div>
 
         {/* Industry Cards Grid - Larger cards in 2 rows */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {featuredIndustries.map((industry) => (
             <Link
               key={industry.slug}
@@ -91,7 +91,7 @@ export function IndustriesSection() {
               className="group relative overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:border-secondary/50 hover:shadow-2xl hover:-translate-y-2"
             >
               {/* Background Gradient */}
-              <div className={`absolute inset-0 bg-gradient-to-br transition-all duration-300 ${industryColors[industry.slug] || "from-secondary/10 to-secondary/5 group-hover:from-secondary/20 group-hover:to-secondary/10"}`} />
+              <div className={`absolute inset-0 bg-linear-to-br transition-all duration-300 ${industryColors[industry.slug] || "from-secondary/10 to-secondary/5 group-hover:from-secondary/20 group-hover:to-secondary/10"}`} />
               
               {/* Content */}
               <div className="relative p-6 lg:p-8">

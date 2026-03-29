@@ -6,7 +6,7 @@ export function WhatIsSection() {
     <section className="py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
+          <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
             What is SourceNest?
           </h2>
           <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
@@ -14,7 +14,7 @@ export function WhatIsSection() {
           </p>
         </div>
 
-        <div className="mt-16 grid gap-8 md:grid-cols-2">
+        <div className="mt-16 grid gap-8 sm:grid-cols-2">
           {/* For Buyers */}
           <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 transition-shadow hover:shadow-lg">
             <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-secondary/10">

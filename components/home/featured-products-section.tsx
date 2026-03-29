@@ -17,7 +17,7 @@ export function FeaturedProductsSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
+            <h2 className="font-serif text-xl font-medium tracking-tight text-foreground sm:text-2xl lg:text-4xl">
               Featured Products
             </h2>
             <p className="mt-2 text-lg text-muted-foreground">
@@ -32,7 +32,7 @@ export function FeaturedProductsSection() {
           </Button>
         </div>
 
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
           {featuredProducts.map((product) => (
             <div
               key={product.id}
@@ -40,7 +40,7 @@ export function FeaturedProductsSection() {
               className="group cursor-pointer overflow-hidden rounded-2xl border border-border bg-card transition-all hover:shadow-lg"
             >
               {/* Product Image Placeholder */}
-              <div className="relative aspect-[4/3] bg-muted">
+              <div className="relative aspect-4/3 bg-muted">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Package className="h-16 w-16 text-muted-foreground/30" />
                 </div>
@@ -58,14 +58,14 @@ export function FeaturedProductsSection() {
                 >
                   by {product.supplierName}
                 </Link>
-                <div className="mt-4 flex items-center justify-between text-sm">
-                  <div>
+                <div className="mt-4 flex flex-col min-[350px]:flex-row min-[350px]:items-center justify-between gap-2 text-sm">
+                  <div className="flex items-center gap-1">
                     <span className="text-muted-foreground">MOQ:</span>
-                    <span className="ml-1 font-medium text-foreground">{product.moq.toLocaleString()} {product.moqUnit}</span>
+                    <span className="font-medium text-foreground">{product.moq.toLocaleString()} {product.moqUnit}</span>
                   </div>
-                  <div>
+                  <div className="flex items-center gap-1">
                     <span className="text-muted-foreground">Lead:</span>
-                    <span className="ml-1 font-medium text-foreground">{product.leadTime}</span>
+                    <span className="font-medium text-foreground">{product.leadTime}</span>
                   </div>
                 </div>
               </div>

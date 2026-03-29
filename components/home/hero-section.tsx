@@ -34,7 +34,7 @@ export function HeroSection() {
           </div>
 
           {/* Headline */}
-          <h1 className="font-serif text-4xl font-medium tracking-tight text-primary-foreground sm:text-5xl lg:text-6xl">
+          <h1 className="font-serif text-3xl font-medium tracking-tight text-primary-foreground min-[400px]:text-4xl sm:text-5xl lg:text-6xl">
             <span className="block text-balance">Discover Reviewed</span>
             <span className="block text-balance">Manufacturers Worldwide</span>
           </h1>

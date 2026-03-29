@@ -31,7 +31,7 @@ export function TrustSection() {
               <Shield className="h-4 w-4" />
               <span>Trust & Review</span>
             </div>
-            <h2 className="mt-6 font-serif text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
+            <h2 className="mt-6 font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl lg:text-4xl">
               Every Supplier is Reviewed Before You See Them
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
