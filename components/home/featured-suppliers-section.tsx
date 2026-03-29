@@ -8,7 +8,7 @@ const featuredSuppliers = getFeaturedSuppliers().slice(0, 4)
 
 export function FeaturedSuppliersSection() {
   return (
-    <section className="bg-muted/50 py-16 lg:py-24">
+    <section className="bg-muted/50 py-8 sm:py-12 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
           <div className="space-y-1">

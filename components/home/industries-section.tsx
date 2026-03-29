@@ -66,7 +66,7 @@ const iconColors: Record<string, string> = {
 
 export function IndustriesSection() {
   return (
-    <section className="py-16 lg:py-24 bg-muted/50">
+    <section className="py-8 sm:py-12 lg:py-24 bg-muted/50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="flex flex-col items-center text-center mb-12 lg:mb-16">

@@ -3,7 +3,7 @@ import Link from "next/link"
 
 export function WhatIsSection() {
   return (
-    <section className="py-20 lg:py-28">
+    <section className="py-8 sm:py-12 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
