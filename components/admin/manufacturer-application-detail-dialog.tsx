@@ -39,7 +39,7 @@ function Field({
   return (
     <div className={cn("min-w-0 space-y-1", className)}>
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="break-words text-sm text-foreground">{children}</div>
+      <div className="wrap-break-word text-sm text-foreground">{children}</div>
     </div>
   )
 }
@@ -71,7 +71,7 @@ export function ManufacturerApplicationDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton
-        className="flex max-h-[min(92vh,56rem)] w-[calc(100%-1.5rem)] max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+        className="flex max-h-[min(92dvh,56rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
       >
         <DialogHeader className="shrink-0 space-y-3 border-b border-border px-4 pb-4 pt-6 text-left sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -216,7 +216,7 @@ export function ManufacturerApplicationDetailDialog({
                         href={src}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-muted"
+                        className="group relative aspect-4/3 overflow-hidden rounded-lg border border-border bg-muted"
                       >
                         <img
                           src={src}

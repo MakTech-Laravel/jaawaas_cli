@@ -122,43 +122,47 @@ export default function ManufacturerRegistrationsPage() {
 
   const ActionButtons = ({ row, layout = "row" }: { row: ManufacturerApplication; layout?: "row" | "stack" }) => {
     const pending = isPending(row)
-    const wrap =
-      layout === "stack"
-        ? "flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap"
-        : "flex flex-wrap items-center justify-end gap-1.5 sm:gap-2"
+    const isStack = layout === "stack"
+    const wrap = isStack
+      ? "flex w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap"
+      : "flex items-center justify-end gap-1.5"
+
+    const btnBaseClass = isStack 
+      ? "h-10 px-4 gap-2.5 min-w-0 flex-1 sm:flex-none sm:min-w-24 text-sm font-medium" 
+      : "h-8 w-8"
 
     return (
       <div className={wrap}>
         <Button
-          size="sm"
+          size={isStack ? "default" : "icon"}
           variant="default"
-          className="gap-1 min-w-0 flex-1 sm:flex-none sm:min-w-[5.5rem]"
+          className={btnBaseClass}
           disabled={!pending}
           title={pending ? "Approve application" : "Only pending applications can be approved"}
           onClick={() => onApprove(row)}
         >
-          <Check className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">Approve</span>
+          <Check className="h-4 w-4 shrink-0" />
+          {isStack && <span className="truncate">Approve</span>}
         </Button>
         <Button
-          size="sm"
+          size={isStack ? "default" : "icon"}
           variant="destructive"
-          className="gap-1 min-w-0 flex-1 sm:flex-none sm:min-w-[5.5rem]"
+          className={btnBaseClass}
           title="Remove from list"
           onClick={() => setDeleteTarget(row)}
         >
-          <Trash2 className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">Delete</span>
+          <Trash2 className="h-4 w-4 shrink-0" />
+          {isStack && <span className="truncate">Delete</span>}
         </Button>
         <Button
-          size="sm"
+          size={isStack ? "default" : "icon"}
           variant="outline"
-          className="gap-1 min-w-0 flex-1 sm:flex-none sm:min-w-[5.5rem]"
+          className={btnBaseClass}
           title="View full application"
           onClick={() => openView(row)}
         >
-          <Eye className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">View</span>
+          <Eye className="h-4 w-4 shrink-0" />
+          {isStack && <span className="truncate">View</span>}
         </Button>
       </div>
     )
@@ -172,8 +176,7 @@ export default function ManufacturerRegistrationsPage() {
             Manufacturer registrations
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground md:text-base">
-            Review full applications, approve, or remove entries. Demo data only—changes stay in this
-            browser session.
+            Review full applications, approve, or remove entries
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -188,10 +191,10 @@ export default function ManufacturerRegistrationsPage() {
               <SelectItem value="all">All</SelectItem>
             </SelectContent>
           </Select>
-          <Button type="button" variant="outline" size="sm" className="gap-2 shrink-0" onClick={resetFromJson}>
+          {/* <Button type="button" variant="outline" size="sm" className="gap-2 shrink-0" onClick={resetFromJson}>
             <RefreshCw className="h-4 w-4" />
             Reload JSON
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -208,7 +211,7 @@ export default function ManufacturerRegistrationsPage() {
       ) : (
         <>
           {/* Desktop / tablet: horizontal scroll table */}
-          <Card className="hidden sm:block">
+          <Card className="hidden sm:block lg:px-6">
             <div className="w-full overflow-x-auto overscroll-x-contain">
               <Table className="min-w-[640px] w-full table-fixed sm:min-w-[720px] lg:min-w-0 lg:table-auto">
                 <TableHeader>
@@ -228,7 +231,7 @@ export default function ManufacturerRegistrationsPage() {
                         <div className="flex items-start gap-2">
                           <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                           <div className="min-w-0">
-                            <p className="font-medium leading-snug break-words">{displayCompany(row)}</p>
+                            <p className="font-medium leading-snug wrap-break-word">{displayCompany(row)}</p>
                             {row.company_website && (
                               <a
                                 href={row.company_website}
@@ -255,7 +258,7 @@ export default function ManufacturerRegistrationsPage() {
                       <TableCell className="align-top">
                         <span className="flex items-start gap-1 text-sm text-muted-foreground">
                           <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                          <span className="break-words">
+                          <span className="wrap-break-word">
                             {[row.city, row.country].filter(Boolean).join(", ") || "—"}
                           </span>
                         </span>
@@ -293,7 +296,7 @@ export default function ManufacturerRegistrationsPage() {
                 <CardContent className="space-y-4 p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold leading-snug text-foreground break-words">
+                      <p className="font-semibold leading-snug text-foreground wrap-break-word">
                         {displayCompany(row)}
                       </p>
                       <p className="mt-1 flex items-start gap-1.5 text-sm text-muted-foreground break-all">
@@ -308,7 +311,7 @@ export default function ManufacturerRegistrationsPage() {
                   </div>
                   <div className="flex items-start gap-1.5 text-sm text-muted-foreground">
                     <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                    <span className="break-words">{[row.city, row.country].filter(Boolean).join(", ") || "—"}</span>
+                    <span className="wrap-break-word">{[row.city, row.country].filter(Boolean).join(", ") || "—"}</span>
                   </div>
                   {row.created_at && (
                     <p className="text-xs text-muted-foreground">
@@ -342,7 +345,7 @@ export default function ManufacturerRegistrationsPage() {
       ) : null}
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
-        <AlertDialogContent className="mx-4 w-[calc(100%-2rem)] max-w-lg">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete application?</AlertDialogTitle>
             <AlertDialogDescription>
