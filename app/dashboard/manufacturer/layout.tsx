@@ -78,7 +78,7 @@ export default function ManufacturerDashboardLayout({
   const showApprovalBanner = user.manufacturerStatus && user.manufacturerStatus !== "approved"
 
   return (
-    <div className="flex min-h-screen min-w-0 bg-background">
+    <div className="flex h-dvh max-h-dvh min-h-0 w-full overflow-hidden bg-background">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
@@ -87,14 +87,14 @@ export default function ManufacturerDashboardLayout({
         />
       )}
 
-      {/* Sidebar */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 transform bg-sidebar transition-transform duration-200 ease-in-out lg:static lg:translate-x-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="flex h-full flex-col">
-          {/* Logo */}
-          <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex h-dvh w-64 shrink-0 flex-col bg-sidebar shadow-lg transition-transform duration-200 ease-in-out lg:z-30 lg:shadow-none",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
+      >
+        <div className="flex h-full min-h-0 flex-col">
+          <div className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
             <Link href="/" className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
                 <span className="text-sm font-bold text-sidebar-primary-foreground">SN</span>
@@ -109,10 +109,9 @@ export default function ManufacturerDashboardLayout({
             </button>
           </div>
 
-          {/* Approval Status Banner */}
           {showApprovalBanner && (
             <div className={cn(
-              "mx-3 mt-3 rounded-lg p-3 text-xs",
+              "mx-3 mt-3 shrink-0 rounded-lg p-3 text-xs",
               user.manufacturerStatus === "pending_approval" && "bg-amber-500/20 text-amber-200",
               user.manufacturerStatus === "rejected" && "bg-red-500/20 text-red-200",
               user.manufacturerStatus === "suspended" && "bg-orange-500/20 text-orange-200",
@@ -136,8 +135,7 @@ export default function ManufacturerDashboardLayout({
             </div>
           )}
 
-          {/* Plan Badge */}
-          <div className="border-b border-sidebar-border px-4 py-3">
+          <div className="shrink-0 border-b border-sidebar-border px-4 py-3">
             <div className="flex items-center justify-between">
               <span className="text-xs text-sidebar-foreground/60">Current Plan</span>
               <Badge className="bg-sidebar-primary text-sidebar-primary-foreground text-xs">
@@ -146,8 +144,7 @@ export default function ManufacturerDashboardLayout({
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+          <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-4">
             {navigation.map((item) => {
               const isActive = pathname === item.href
               const navItem = item as typeof item & { highlight?: boolean }
@@ -183,8 +180,7 @@ export default function ManufacturerDashboardLayout({
             })}
           </nav>
 
-          {/* Company Profile */}
-          <div className="border-t border-sidebar-border p-4">
+          <div className="shrink-0 border-t border-sidebar-border p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sidebar-accent">
                 <Factory className="h-5 w-5 text-sidebar-accent-foreground" />
@@ -212,10 +208,8 @@ export default function ManufacturerDashboardLayout({
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Top Header */}
-        <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:pl-64">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
           <div className="flex items-center gap-4">
             <button 
               className="lg:hidden"
@@ -243,8 +237,7 @@ export default function ManufacturerDashboardLayout({
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-5 lg:p-6">
+        <main className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain p-4 sm:p-5 lg:p-6">
           {children}
         </main>
       </div>

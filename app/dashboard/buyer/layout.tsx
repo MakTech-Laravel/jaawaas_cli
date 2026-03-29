@@ -118,9 +118,8 @@ export default function BuyerDashboardLayout({
   }
 
   const SidebarContent = () => (
-    <div className="flex h-full flex-col">
-      {/* Logo */}
-      <div className="flex h-16 items-center justify-between border-b border-border px-4">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4">
         <Link href="/" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary">
             <span className="text-sm font-bold text-secondary-foreground">SN</span>
@@ -135,8 +134,7 @@ export default function BuyerDashboardLayout({
         </button>
       </div>
 
-      {/* User Info */}
-      <div className="border-b border-border p-4">
+      <div className="shrink-0 border-b border-border p-4">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
             <AvatarImage src={user?.avatar} alt={user?.name} />
@@ -152,8 +150,8 @@ export default function BuyerDashboardLayout({
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-4">
+      {/* Navigation — scrolls inside sidebar if items exceed viewport */}
+      <nav className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain p-4">
         <ul className="space-y-1">
           {sidebarItems.map((item) => (
             <li key={item.href}>
@@ -180,8 +178,7 @@ export default function BuyerDashboardLayout({
         </ul>
       </nav>
 
-      {/* Quick Actions */}
-      <div className="border-t border-border p-4">
+      <div className="shrink-0 border-t border-border p-4">
         <Button className="w-full gap-2" asChild>
           <Link href="/rfq/new">
             <FileText className="h-4 w-4" />
@@ -190,8 +187,7 @@ export default function BuyerDashboardLayout({
         </Button>
       </div>
 
-      {/* Footer Links */}
-      <div className="border-t border-border p-4">
+      <div className="shrink-0 border-t border-border p-4">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <Link href="/help" className="flex items-center gap-1 hover:text-foreground">
             <HelpCircle className="h-3 w-3" />
@@ -207,7 +203,7 @@ export default function BuyerDashboardLayout({
   )
 
   return (
-    <div className="flex min-h-screen min-w-0 bg-muted/30">
+    <div className="flex h-dvh max-h-dvh min-h-0 w-full overflow-hidden bg-muted/30">
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
         <div 
@@ -216,18 +212,19 @@ export default function BuyerDashboardLayout({
         />
       )}
 
-      {/* Desktop Sidebar */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 transform bg-card border-r border-border transition-transform duration-200 ease-in-out lg:static lg:translate-x-0",
-        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      {/* Sidebar: fixed to viewport; main area uses lg:pl-64 so content is not hidden */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex h-dvh w-64 shrink-0 flex-col border-r border-border bg-card shadow-lg transition-transform duration-200 ease-in-out lg:z-30 lg:shadow-none",
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
+      >
         <SidebarContent />
       </aside>
 
-      {/* Main Content */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
-        {/* Top Header */}
-        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
+      {/* Main column: only this region scrolls */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:pl-64">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
           <div className="flex items-center gap-4">
             <button 
               className="lg:hidden"
@@ -300,8 +297,7 @@ export default function BuyerDashboardLayout({
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-5 lg:p-6">
+        <main className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain p-4 sm:p-5 lg:p-6">
           {children}
         </main>
       </div>

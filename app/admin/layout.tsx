@@ -93,7 +93,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex min-h-screen min-w-0 bg-background">
+    <div className="flex h-dvh max-h-dvh min-h-0 w-full overflow-hidden bg-background">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
@@ -102,14 +102,14 @@ export default function AdminLayout({
         />
       )}
 
-      {/* Sidebar */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 transform bg-sidebar transition-transform duration-200 ease-in-out lg:static lg:translate-x-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="flex h-full flex-col">
-          {/* Logo */}
-          <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex h-dvh w-64 shrink-0 flex-col bg-sidebar shadow-lg transition-transform duration-200 ease-in-out lg:z-30 lg:shadow-none",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
+      >
+        <div className="flex h-full min-h-0 flex-col">
+          <div className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
             <Link href="/admin" className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive">
                 <Shield className="h-4 w-4 text-destructive-foreground" />
@@ -124,8 +124,7 @@ export default function AdminLayout({
             </button>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+          <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-4">
             {navigation.map((item) => {
               const isActive = pathname === item.href
               return (
@@ -154,8 +153,7 @@ export default function AdminLayout({
             })}
           </nav>
 
-          {/* Admin User */}
-          <div className="border-t border-sidebar-border p-4">
+          <div className="shrink-0 border-t border-sidebar-border p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/20">
                 <Shield className="h-5 w-5 text-destructive" />
@@ -182,10 +180,8 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Top Header */}
-        <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:pl-64">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
           <div className="flex items-center gap-4">
             <button 
               className="lg:hidden"
@@ -213,8 +209,7 @@ export default function AdminLayout({
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="min-w-0 flex-1 overflow-x-auto overflow-y-auto p-4 lg:p-6">
+        <main className="min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-auto overscroll-y-contain p-4 lg:p-6">
           {children}
         </main>
       </div>
