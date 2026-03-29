@@ -14,7 +14,7 @@ export type { UserRole }
 
 export type SignupResult =
   | { success: true; pendingReview: true; message: string; manufactureStatus?: string | null }
-  | { success: true; pendingReview: false; redirectTo: string }
+  | { success: true; pendingReview: false; redirectTo: string; message?: string }
   | { success: false; message?: string }
 
 export type ManufacturerStatus =
@@ -213,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           success: true,
           pendingReview: false,
           redirectTo: getDashboardPathByRole(session.user.role),
+          message: response.message || undefined,
         }
       }
 

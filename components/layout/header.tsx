@@ -14,15 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu"
-import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -47,14 +38,14 @@ import {
   LayoutDashboard,
   Settings,
   LogOut,
-  User,
   Scale,
   Globe,
   Heart,
   MapPin,
   Star,
   ExternalLink,
-  X
+  X,
+  type LucideIcon,
 } from "lucide-react"
 import { useFavorites } from "@/lib/favorites-context"
 import { cn } from "@/lib/utils"
@@ -104,7 +95,7 @@ const discoverItems = [
   },
 ]
 
-const platformItems = [
+const platformItems: HeaderNavItemDef[] = [
   {
     title: "For Buyers",
     href: "/for-buyers",
@@ -125,7 +116,7 @@ const platformItems = [
   },
 ]
 
-const resourceItems = [
+const resourceItems: HeaderNavItemDef[] = [
   {
     title: "Reviewed",
     href: "/verification",
@@ -145,6 +136,52 @@ const resourceItems = [
     icon: Info,
   },
 ]
+
+function HeaderNavDropdown({
+  label,
+  items,
+  twoColumn,
+}: {
+  label: string
+  items: HeaderNavItemDef[]
+  twoColumn?: boolean
+}) {
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="gap-1 font-medium">
+          {label}
+          <ChevronDown className="h-4 w-4 opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        sideOffset={8}
+        className={cn(
+          "max-h-[min(70vh,520px)] overflow-y-auto p-2",
+          twoColumn ? "w-[min(calc(100vw-2rem),560px)]" : "w-[min(calc(100vw-2rem),400px)]",
+        )}
+      >
+        <div className={cn("grid gap-0.5", twoColumn && "sm:grid-cols-2")}>
+          {items.map((item) => (
+            <DropdownMenuItem key={item.href} asChild className="cursor-pointer p-0 focus:bg-transparent">
+              <Link
+                href={item.href}
+                className="flex w-full items-start gap-3 rounded-md p-3 outline-none hover:bg-muted"
+              >
+                <item.icon className="mt-0.5 h-5 w-5 shrink-0 text-secondary" />
+                <div className="min-w-0 text-left">
+                  <div className="text-sm font-medium text-foreground">{item.title}</div>
+                  <p className="text-xs leading-snug text-muted-foreground">{item.description}</p>
+                </div>
+              </Link>
+            </DropdownMenuItem>
+          ))}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -174,7 +211,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 min-w-0 max-w-7xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
@@ -183,94 +220,15 @@ export function Header() {
           <span className="font-serif text-xl font-medium text-foreground">SourceNest</span>
         </Link>
 
-        {/* Desktop Navigation */}
-        <NavigationMenu className="hidden lg:flex">
-          <NavigationMenuList>
-            {/* Discover */}
-            <NavigationMenuItem>
-              <NavigationMenuTrigger className="bg-transparent">Discover</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid w-[500px] gap-3 p-4 md:grid-cols-2">
-                  {discoverItems.map((item) => (
-                    <li key={item.title}>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href={item.href}
-                          className="flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-muted text-foreground"
-                        >
-                          <item.icon className="mt-0.5 h-5 w-5 text-secondary" />
-                          <div>
-                            <div className="text-sm font-medium text-foreground">{item.title}</div>
-                            <p className="text-xs text-muted-foreground">{item.description}</p>
-                          </div>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                  ))}
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-
-            {/* Platform */}
-            <NavigationMenuItem>
-              <NavigationMenuTrigger className="bg-transparent">Platform</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid w-100 gap-3 p-4">
-                  {platformItems.map((item) => (
-                    <li key={item.title}>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href={item.href}
-                          className="flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-muted text-foreground"
-                        >
-                          <item.icon className="mt-0.5 h-5 w-5 text-secondary" />
-                          <div>
-                            <div className="text-sm font-medium text-foreground">{item.title}</div>
-                            <p className="text-sm text-muted-foreground">{item.description}</p>
-                          </div>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                  ))}
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-
-            {/* Resources */}
-            <NavigationMenuItem>
-              <NavigationMenuTrigger className="bg-transparent">Resources</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid w-[400px] gap-3 p-4">
-                  {resourceItems.map((item) => (
-                    <li key={item.title}>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href={item.href}
-                          className="flex items-start gap-3 rounded-md p-3 transition-colors hover:bg-muted text-foreground"
-                        >
-                          <item.icon className="mt-0.5 h-5 w-5 text-secondary" />
-                          <div>
-                            <div className="text-sm font-medium text-foreground">{item.title}</div>
-                            <p className="text-sm text-muted-foreground">{item.description}</p>
-                          </div>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                  ))}
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-
-            {/* Blog */}
-            <NavigationMenuItem>
-              <NavigationMenuLink asChild>
-                <Link href="/blog" className={cn(navigationMenuTriggerStyle(), "bg-transparent")}>
-                  Insights
-                </Link>
-              </NavigationMenuLink>
-            </NavigationMenuItem>
-          </NavigationMenuList>
-        </NavigationMenu>
+        {/* Desktop navigation: dropdowns (reliable focus/hover vs. NavigationMenu viewport) */}
+        <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Main">
+          <HeaderNavDropdown label="Discover" items={discoverItems} twoColumn />
+          <HeaderNavDropdown label="Platform" items={platformItems} />
+          <HeaderNavDropdown label="Resources" items={resourceItems} />
+          <Button variant="ghost" asChild className="font-medium">
+            <Link href="/blog">Insights</Link>
+          </Button>
+        </nav>
 
         {/* Desktop Actions */}
         <div className="hidden items-center gap-3 lg:flex">

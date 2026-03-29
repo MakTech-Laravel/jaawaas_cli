@@ -32,7 +32,8 @@ import {
   Sparkles,
   Mail,
   Filter,
-  HelpCircle
+  HelpCircle,
+  ClipboardList
 } from "lucide-react"
 import { useState } from "react"
 
@@ -40,6 +41,7 @@ const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Users", href: "/admin/users", icon: Users },
   { name: "Create Manufacturer", href: "/admin/manufacturers/create", icon: UserPlus },
+  { name: "Mfg registrations", href: "/admin/manufacturer-registrations", icon: ClipboardList },
   { name: "Suppliers", href: "/admin/suppliers", icon: Factory, badge: "12" },
   { name: "Products", href: "/admin/products", icon: Package },
   { name: "Industries", href: "/admin/industries", icon: Layers },
@@ -91,7 +93,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen min-w-0 bg-background">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
@@ -181,7 +183,7 @@ export default function AdminLayout({
       </aside>
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {/* Top Header */}
         <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
           <div className="flex items-center gap-4">
@@ -191,12 +193,12 @@ export default function AdminLayout({
             >
               <Menu className="h-6 w-6 text-foreground" />
             </button>
-            <div className="relative hidden md:block">
+            <div className="relative hidden min-w-0 flex-1 md:block md:max-w-md">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input 
                 type="text"
                 placeholder="Search users, suppliers, products..."
-                className="h-9 w-80 rounded-lg border border-input bg-background pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="h-9 w-full min-w-0 rounded-lg border border-input bg-background pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
@@ -212,7 +214,7 @@ export default function AdminLayout({
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
+        <main className="min-w-0 flex-1 overflow-x-auto overflow-y-auto p-4 lg:p-6">
           {children}
         </main>
       </div>

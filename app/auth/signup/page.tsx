@@ -104,18 +104,22 @@ export default function SignUpPage() {
       })
       
       if (result.success) {
-        if (result.pendingReview) {
-          sessionStorage.setItem(
-            REGISTER_SUCCESS_STORAGE_KEY,
-            JSON.stringify({
+        const payload = result.pendingReview
+          ? {
               message: result.message,
-              manufactureStatus: result.manufactureStatus,
-            })
-          )
-          router.push("/auth/register-success")
-        } else {
-          router.push(result.redirectTo)
-        }
+              manufactureStatus: result.manufactureStatus ?? null,
+              isLoggedIn: false as const,
+            }
+          : {
+              message:
+                result.message ||
+                "Your account has been created. Review plans next, or go straight to your dashboard.",
+              manufactureStatus: null as string | null,
+              isLoggedIn: true as const,
+              dashboardPath: result.redirectTo,
+            }
+        sessionStorage.setItem(REGISTER_SUCCESS_STORAGE_KEY, JSON.stringify(payload))
+        router.push("/auth/register-success")
       } else {
         setError(result.message || "Registration failed. Please try again.")
       }

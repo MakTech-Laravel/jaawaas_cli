@@ -102,7 +102,7 @@ export default function ForBuyersPage() {
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="gap-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
+                <Button size="lg" variant="outline" className="gap-2 border-primary-foreground/30 text-primary-foreground bg-primary-foreground/10" asChild>
                   <Link href="/suppliers">
                     Browse Suppliers
                   </Link>

@@ -197,7 +197,7 @@ export default function BuyerDashboardLayout({
             <HelpCircle className="h-3 w-3" />
             Help
           </Link>
-          <Link href="/suppliers" className="flex items-center gap-1 hover:text-foreground">
+          <Link href="/suppliers" className="flex items-center gap-1 text-foreground">
             <Globe className="h-3 w-3" />
             Browse Suppliers
           </Link>
@@ -207,7 +207,7 @@ export default function BuyerDashboardLayout({
   )
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
+    <div className="flex min-h-screen min-w-0 bg-muted/30">
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
         <div 
@@ -225,7 +225,7 @@ export default function BuyerDashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
         {/* Top Header */}
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
           <div className="flex items-center gap-4">
@@ -237,15 +237,13 @@ export default function BuyerDashboardLayout({
             </button>
             
             {/* Search */}
-            <div className="hidden md:flex">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search suppliers, products..."
-                  className="h-9 w-64 rounded-lg border border-input bg-background pl-9 pr-4 text-sm outline-none focus:border-secondary focus:ring-1 focus:ring-secondary"
-                />
-              </div>
+            <div className="relative hidden min-w-0 flex-1 md:block md:max-w-sm">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search suppliers, products..."
+                className="h-9 w-full min-w-0 rounded-lg border border-input bg-background pl-9 pr-4 text-sm outline-none focus:border-secondary focus:ring-1 focus:ring-secondary"
+              />
             </div>
           </div>
 
@@ -303,7 +301,7 @@ export default function BuyerDashboardLayout({
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-5 lg:p-6">
           {children}
         </main>
       </div>
