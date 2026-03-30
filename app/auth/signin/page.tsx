@@ -93,7 +93,10 @@ export default function SignInPage() {
           })
         }
       }
-      const result = await loginWithGoogle(credential, "buyer")
+
+      // Use the currently selected tab as the role (buyer or manufacturer)
+      const role = activeTab
+      const result = await loginWithGoogle(credential, role)
       if (result.success) {
         router.push(result.redirectTo)
         return
@@ -225,7 +228,7 @@ export default function SignInPage() {
             )}
           </Button>
 
-          {activeTab === "buyer" && (
+          {activeTab !== "admin" && (
             <>
               <div className="relative mt-4">
                 <div className="absolute inset-0 flex items-center">

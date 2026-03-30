@@ -75,7 +75,8 @@ export function LoginForm() {
     setGoogleLoading(true);
     try {
       const credential = await getGoogleIdToken();
-      const result = await loginWithGoogle(credential, "buyer");
+      const role = form.getValues ? (form.getValues("role") as any) : form.watch("role");
+      const result = await loginWithGoogle(credential, role);
       if (result.success) {
         toast({ title: "Login Successful", description: "Welcome back!" });
         router.push(result.redirectTo);
@@ -151,7 +152,7 @@ export function LoginForm() {
           Login
         </Button>
 
-        {form.watch("role") === "buyer" && (
+        {form.watch("role") !== "admin" && (
           <>
             <div className="flex items-center gap-3">
               <span className="flex-1 h-px bg-gray-200" />
