@@ -14,7 +14,7 @@ export function WhatIsSection() {
           </p>
         </div>
 
-        <div className="mt-16 grid gap-8 sm:grid-cols-2">
+        <div className="mt-16 grid gap-6 sm:grid-cols-2">
           {/* For Buyers */}
           <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 transition-shadow hover:shadow-lg">
             <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-secondary/10">

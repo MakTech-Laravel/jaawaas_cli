@@ -213,7 +213,7 @@ export default function ProductsPage() {
                       className="group cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-md"
                     >
                       {/* Product Image */}
-                      <div className="relative aspect-[4/3] bg-muted">
+                      <div className="relative aspect-4/3 bg-muted">
                         <div className="absolute inset-0 flex items-center justify-center">
                           <Package className="h-12 w-12 text-muted-foreground/30" />
                         </div>

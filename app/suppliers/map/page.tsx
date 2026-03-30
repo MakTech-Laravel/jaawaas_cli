@@ -122,7 +122,7 @@ export default function GlobalSupplierMapPage() {
         {/* Stats */}
         <section className="border-b border-border bg-muted/50 py-8">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 md:grid-cols-4">
               <div className="text-center">
                 <p className="text-3xl font-bold text-foreground">21,170+</p>
                 <p className="text-sm text-muted-foreground">Reviewed Suppliers</p>
@@ -159,7 +159,7 @@ export default function GlobalSupplierMapPage() {
               {regions.map((region) => (
                 <Card 
                   key={region.name}
-                  className={`cursor-pointer transition-all hover:shadow-lg ${
+                  className={`h-full cursor-pointer transition-all hover:shadow-lg ${
                     selectedRegion === region.name ? "ring-2 ring-secondary" : ""
                   }`}
                   onClick={() => setSelectedRegion(selectedRegion === region.name ? null : region.name)}
@@ -203,12 +203,12 @@ export default function GlobalSupplierMapPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                       {filteredCountries.slice(0, 20).map((country) => (
                         <Link
                           key={country.code}
                           href={`/suppliers?country=${country.code}`}
-                          className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted"
+                          className="w-full flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted"
                         >
                           <span className="text-lg">{country.code === "US" ? "🇺🇸" : country.code === "CN" ? "🇨🇳" : country.code === "IN" ? "🇮🇳" : country.code === "DE" ? "🇩🇪" : "🏳️"}</span>
                           <div className="flex-1">
@@ -236,7 +236,7 @@ export default function GlobalSupplierMapPage() {
         {/* Featured Countries */}
         <section className="border-t border-border bg-muted/30 py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-8 flex items-center justify-between">
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h2 className="font-serif text-2xl font-medium text-foreground lg:text-3xl">
                   Top Manufacturing Countries
@@ -245,21 +245,22 @@ export default function GlobalSupplierMapPage() {
                   Countries with the most reviewed suppliers on our platform
                 </p>
               </div>
-              <Button variant="outline" asChild>
-                <Link href="/suppliers">
+              <Button variant="outline" asChild className="w-full sm:w-auto">
+                <Link href="/suppliers" className="w-full text-center sm:w-auto">
                   View All Suppliers
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {featuredCountries.map((country) => (
                 <Link 
                   key={country.code}
                   href={`/suppliers?country=${country.code}`}
+                  className="block h-full"
                 >
-                  <Card className="h-full transition-all hover:shadow-lg hover:-translate-y-1">
+                  <Card className="h-full rounded-2xl transition-all hover:shadow-lg hover:-translate-y-1">
                     <CardContent className="pt-6">
                       <div className="flex items-center gap-3 mb-4">
                         <span className="text-3xl">{country.flag}</span>
@@ -296,15 +297,15 @@ export default function GlobalSupplierMapPage() {
                 <p className="mx-auto mt-4 max-w-2xl text-primary-foreground/80">
                   Submit a Request for Quotation and let reviewed manufacturers come to you with competitive offers.
                 </p>
-                <div className="mt-8 flex justify-center gap-4">
-                  <Button size="lg" variant="secondary" asChild>
-                    <Link href="/rfq/new">
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 w-full max-w-lg mx-auto">
+                  <Button size="lg" variant="secondary" className="w-full sm:w-auto justify-center" asChild>
+                    <Link href="/rfq/new" className="w-full text-center sm:w-auto">
                       Submit RFQ
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
-                  <Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
-                    <Link href="/suppliers">
+                  <Button size="lg" variant="outline" className="bg-transparent w-full sm:w-auto border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
+                    <Link href="/suppliers" className="w-full text-center sm:w-auto">
                       Browse All Suppliers
                     </Link>
                   </Button>

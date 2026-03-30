@@ -156,7 +156,7 @@ export default function SuppliersPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-8 lg:flex-row">
               {/* Filters Sidebar */}
-              <aside className={`w-full lg:w-64 lg:flex-shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
+              <aside className={`w-full lg:w-64 lg:shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
                 <div className="sticky top-24 rounded-xl border border-border bg-card p-5">
                   <div className="flex items-center justify-between">
                     <h2 className="font-semibold text-foreground">Filters</h2>
@@ -350,9 +350,9 @@ export default function SuppliersPage() {
                       href={`/suppliers/${supplier.slug}`}
                       className="group block rounded-xl border border-border bg-card p-5 transition-all hover:border-secondary hover:shadow-md"
                     >
-                      <div className="flex flex-col gap-4 sm:flex-row">
+                      <div className="flex flex-col gap-6 sm:flex-row">
                         {/* Logo Placeholder */}
-                        <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl bg-muted">
+                        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-muted">
                           <Factory className="h-10 w-10 text-muted-foreground" />
                         </div>
 
