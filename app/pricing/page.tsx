@@ -149,7 +149,7 @@ export default function PricingPage() {
         </section>
 
         {/* Special Launch Plan */}
-        <section className="py-16 lg:py-20 bg-gradient-to-b from-secondary/5 to-background">
+        <section className="py-16 lg:py-20 bg-linear-to-b from-secondary/5 to-background">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center mb-12">
               <Badge className="bg-secondary/20 text-secondary border-secondary/30 mb-4">
@@ -397,7 +397,7 @@ export default function PricingPage() {
             </div>
 
             <div className="mt-12 overflow-x-auto">
-              <table className="w-full min-w-[600px] border-collapse">
+              <table className="w-full min-w-150 border-collapse">
                 <thead>
                   <tr>
                     <th className="border-b border-border p-4 text-left font-medium text-foreground">Feature</th>
@@ -490,15 +490,15 @@ export default function PricingPage() {
               <p className="mt-4 text-primary-foreground/80">
                 Join SourceNest and start reaching global buyers today.
               </p>
-              <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Button size="lg" variant="secondary" className="gap-2 bg-primary-foreground text-primary hover:bg-primary-foreground/90" asChild>
-                  <Link href="/auth/signup?role=manufacturer">
+              <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row w-full max-w-lg mx-auto">
+                <Button size="lg" variant="secondary" className="w-full sm:w-auto justify-center gap-2 bg-primary-foreground text-primary hover:bg-primary-foreground/90" asChild>
+                  <Link href="/auth/signup?role=manufacturer" className="w-full text-center sm:w-auto">
                     Create Account
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="gap-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
-                  <Link href="/contact?type=sales">
+                <Button size="lg" variant="outline" className="bg-transparent w-full sm:w-auto border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
+                  <Link href="/contact?type=sales" className="w-full text-center sm:w-auto">
                     Talk to Sales
                   </Link>
                 </Button>

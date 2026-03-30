@@ -87,7 +87,7 @@ export default function AboutPage() {
         {/* Stats */}
         <section className="bg-muted/50 py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:grid-cols-4">
               {stats.map((stat) => (
                 <div key={stat.label} className="text-center">
                   <div className="font-serif text-4xl font-medium text-foreground">{stat.value}</div>
@@ -132,9 +132,9 @@ export default function AboutPage() {
               </p>
             </div>
 
-            <div className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {values.map((value) => (
-                <div key={value.title} className="rounded-xl bg-card p-6 shadow-sm">
+                <div key={value.title} className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 transition-shadow hover:shadow-lg">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10">
                     <value.icon className="h-6 w-6 text-secondary" />
                   </div>
@@ -181,15 +181,15 @@ export default function AboutPage() {
               <p className="mt-4 text-primary-foreground/80">
                 Whether you&apos;re sourcing products or manufacturing them, we&apos;d love to have you.
               </p>
-              <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Button size="lg" variant="secondary" className="gap-2 bg-primary-foreground text-primary hover:bg-primary-foreground/90" asChild>
-                  <Link href="/auth/signup?role=buyer">
+              <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row w-full max-w-lg mx-auto">
+                <Button size="lg" variant="secondary" className="w-full sm:w-auto justify-center gap-2 bg-primary-foreground text-primary hover:bg-primary-foreground/90" asChild>
+                  <Link href="/auth/signup?role=buyer" className="w-full text-center sm:w-auto">
                     Join as Buyer
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="gap-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
-                  <Link href="/pricing">
+                <Button size="lg" variant="outline" className="bg-transparent w-full sm:w-auto border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
+                  <Link href="/pricing" className="w-full text-center sm:w-auto">
                     Join as Manufacturer
                   </Link>
                 </Button>

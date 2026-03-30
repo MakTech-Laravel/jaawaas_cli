@@ -124,11 +124,11 @@ export default function ManufacturerMessagesPage() {
   const unreadCount = conversations.filter(c => c.unread).length
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] flex-col">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="font-serif text-2xl font-medium text-foreground">Messages</h1>
-          <p className="mt-1 text-muted-foreground">
+    <div className="flex h-[calc(100dvh-7.2rem)] md:h-[calc(100vh-7rem)] flex-col max-w-full overflow-hidden">
+      <div className="mb-2 flex items-center justify-between gap-4 min-w-0 w-full">
+        <div className="min-w-0 flex-1">
+          <h1 className="font-serif text-2xl font-medium text-foreground truncate">Messages</h1>
+          <p className="mt-1 text-sm text-muted-foreground truncate">
             {unreadCount > 0 
               ? `${unreadCount} unread message${unreadCount > 1 ? 's' : ''} from buyers` 
               : 'Communicate with potential buyers'
@@ -140,7 +140,7 @@ export default function ManufacturerMessagesPage() {
       <div className="flex flex-1 overflow-hidden rounded-xl border border-border bg-card">
         {/* Conversations List */}
         <div className={cn(
-          "w-full flex-shrink-0 border-r border-border md:w-80",
+          "w-full shrink-0 border-r border-border md:w-80",
           showConversations ? "block" : "hidden md:block"
         )}>
           {/* Search */}
@@ -177,24 +177,24 @@ export default function ManufacturerMessagesPage() {
                     selectedConversation.id === conv.id && "bg-muted"
                   )}
                 >
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-muted">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
                     <User className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between min-w-0">
                       <span className={cn(
                         "font-medium text-sm truncate",
                         conv.unread ? "text-foreground" : "text-muted-foreground"
                       )}>
                         {conv.name}
                       </span>
-                      <span className="text-xs text-muted-foreground flex-shrink-0">{conv.time}</span>
+                      <span className="text-xs text-muted-foreground shrink-0 ml-2">{conv.time}</span>
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <span>{conv.company}</span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Globe className="h-3 w-3" />
+                      <span className="truncate">{conv.company}</span>
+                      <span className="shrink-0">•</span>
+                      <span className="flex items-center gap-1 truncate">
+                        <Globe className="h-3 w-3 shrink-0" />
                         {conv.country}
                       </span>
                     </div>
@@ -203,7 +203,7 @@ export default function ManufacturerMessagesPage() {
                     </p>
                   </div>
                   {conv.unread && (
-                    <div className="h-2 w-2 rounded-full bg-secondary flex-shrink-0 mt-2" />
+                    <div className="h-2 w-2 rounded-full bg-secondary shrink-0 mt-2" />
                   )}
                 </button>
               ))
@@ -213,12 +213,12 @@ export default function ManufacturerMessagesPage() {
 
         {/* Chat Area */}
         <div className={cn(
-          "flex flex-1 flex-col",
-          !showConversations ? "block" : "hidden md:flex"
+          "flex flex-1 flex-col min-w-0",
+          !showConversations ? "flex flex-1 flex-col" : "hidden md:flex"
         )}>
           {/* Chat Header */}
-          <div className="flex items-center justify-between border-b border-border p-4">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between border-b border-border p-4 min-w-0">
+            <div className="flex items-center gap-3 min-w-0 overflow-hidden">
               <button 
                 className="md:hidden"
                 onClick={() => setShowConversations(true)}
@@ -228,14 +228,14 @@ export default function ManufacturerMessagesPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                 <User className="h-5 w-5 text-muted-foreground" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">{selectedConversation.name}</span>
+                  <span className="font-medium text-foreground truncate">{selectedConversation.name}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{selectedConversation.company}</span>
-                  <span>•</span>
-                  <span>{selectedConversation.country}</span>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <span className="truncate">{selectedConversation.company}</span>
+                  <span className="shrink-0">•</span>
+                  <span className="truncate">{selectedConversation.country}</span>
                 </div>
               </div>
             </div>
@@ -255,7 +255,7 @@ export default function ManufacturerMessagesPage() {
                 )}
               >
                 <div className={cn(
-                  "max-w-[75%] rounded-2xl px-4 py-2.5",
+                  "max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 wrap-break-word overflow-hidden",
                   msg.sender === "manufacturer" 
                     ? "bg-primary text-primary-foreground" 
                     : "bg-muted text-foreground"
@@ -283,7 +283,7 @@ export default function ManufacturerMessagesPage() {
                 placeholder="Type your message..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-1"
+                className="flex-1 min-w-0"
               />
               <Button size="icon" disabled={!newMessage.trim()}>
                 <Send className="h-4 w-4" />

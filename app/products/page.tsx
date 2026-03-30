@@ -105,7 +105,7 @@ export default function ProductsPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-8 lg:flex-row">
               {/* Filters Sidebar */}
-              <aside className={`w-full lg:w-64 lg:flex-shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
+              <aside className={`w-full lg:w-64 lg:shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
                 <div className="sticky top-24 rounded-xl border border-border bg-card p-5">
                   <div className="flex items-center justify-between">
                     <h2 className="font-semibold text-foreground">Filters</h2>

@@ -111,15 +111,15 @@ export default function ForManufacturersPage() {
               <p className="mx-auto mt-6 max-w-2xl text-lg text-primary-foreground/80">
                 Create your digital booth, showcase products, and connect with importers and sourcing professionals worldwide through SourceNest&apos;s premium B2B platform.
               </p>
-              <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Button size="lg" variant="secondary" className="gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90" asChild>
-                  <Link href="/pricing">
+              <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row w-full max-w-lg mx-auto">
+                <Button size="lg" variant="secondary" className="w-full sm:w-auto justify-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90" asChild>
+                  <Link href="/pricing" className="w-full text-center sm:w-auto">
                     View Pricing Plans
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="gap-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
-                  <Link href="/auth/signup?role=manufacturer">
+                <Button size="lg" variant="outline" className="bg-transparent w-full sm:w-auto border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
+                  <Link href="/auth/signup?role=manufacturer" className="w-full text-center sm:w-auto">
                     Get Started
                   </Link>
                 </Button>
@@ -140,9 +140,9 @@ export default function ForManufacturersPage() {
               </p>
             </div>
 
-            <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {features.map((feature) => (
-                <div key={feature.title} className="rounded-xl border border-border bg-card p-6">
+                <div key={feature.title} className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 transition-shadow hover:shadow-lg">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10">
                     <feature.icon className="h-6 w-6 text-secondary" />
                   </div>
@@ -223,8 +223,8 @@ export default function ForManufacturersPage() {
                     </li>
                   ))}
                 </ul>
-                <Button className="mt-8 gap-2" asChild>
-                  <Link href="/pricing">
+                <Button className="mt-8 gap-2 w-full sm:w-auto" asChild>
+                  <Link href="/pricing" className="w-full text-center sm:w-auto">
                     View Pricing Plans
                     <ArrowRight className="h-4 w-4" />
                   </Link>
@@ -244,15 +244,15 @@ export default function ForManufacturersPage() {
               <p className="mt-4 text-lg text-secondary-foreground/80">
                 Join SourceNest today and start receiving inquiries from importers worldwide.
               </p>
-              <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Button size="lg" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90" asChild>
-                  <Link href="/pricing">
+              <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row w-full max-w-lg mx-auto">
+                <Button size="lg" className="w-full sm:w-auto justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90" asChild>
+                  <Link href="/pricing" className="w-full text-center sm:w-auto">
                     Choose Your Plan
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="gap-2 border-secondary-foreground/30 text-secondary-foreground hover:bg-secondary-foreground/10" asChild>
-                  <Link href="/contact">
+                <Button size="lg" variant="outline" className="bg-transparent w-full sm:w-auto border-secondary-foreground/30 text-secondary-foreground hover:bg-secondary-foreground/10" asChild>
+                  <Link href="/contact" className="w-full text-center sm:w-auto">
                     Contact Sales
                   </Link>
                 </Button>

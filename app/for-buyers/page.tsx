@@ -124,9 +124,9 @@ export default function ForBuyersPage() {
               </p>
             </div>
 
-            <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {features.map((feature) => (
-                <div key={feature.title} className="rounded-xl border border-border bg-card p-6">
+                <div key={feature.title} className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 transition-shadow hover:shadow-lg">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10">
                     <feature.icon className="h-6 w-6 text-secondary" />
                   </div>

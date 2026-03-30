@@ -261,7 +261,7 @@ export default function GlobalSupplierMapPage() {
                   className="block h-full"
                 >
                   <Card className="h-full rounded-2xl transition-all hover:shadow-lg hover:-translate-y-1">
-                    <CardContent className="pt-6">
+                    <CardContent className="md:pt-3">
                       <div className="flex items-center gap-3 mb-4">
                         <span className="text-3xl">{country.flag}</span>
                         <div>

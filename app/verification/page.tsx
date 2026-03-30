@@ -148,9 +148,9 @@ export default function VerificationPage() {
               </p>
             </div>
 
-            <div className="mt-16 grid gap-8 md:grid-cols-2">
+            <div className="mt-16 grid gap-6 md:grid-cols-2">
               {verificationSteps.map((step) => (
-                <div key={step.title} className="rounded-2xl border border-border bg-card p-8">
+                <div key={step.title} className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 transition-shadow hover:shadow-lg">
                   <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-secondary/10">
                     <step.icon className="h-7 w-7 text-secondary" />
                   </div>
@@ -182,7 +182,7 @@ export default function VerificationPage() {
               </p>
             </div>
 
-            <div className="mt-14 grid gap-8 md:grid-cols-3">
+            <div className="mt-14 grid gap-6 md:grid-cols-3">
               {badges.map((badge) => (
                 <div key={badge.name} className="text-center">
                   <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-2xl ${badge.color} text-white`}>

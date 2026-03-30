@@ -17,7 +17,7 @@ import {
 
 export default function ManufacturerDashboardPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-hidden">
       {/* Welcome Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -36,8 +36,8 @@ export default function ManufacturerDashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center justify-between">
+        <div className="rounded-xl border border-border bg-card p-5 w-full overflow-hidden">
+          <div className="flex items-center justify-between gap-2 min-w-0">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
               <FileText className="h-5 w-5 text-secondary" />
             </div>
@@ -49,8 +49,8 @@ export default function ManufacturerDashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center justify-between">
+        <div className="rounded-xl border border-border bg-card p-5 w-full overflow-hidden">
+          <div className="flex items-center justify-between gap-2 min-w-0">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
               <Eye className="h-5 w-5 text-secondary" />
             </div>
@@ -62,8 +62,8 @@ export default function ManufacturerDashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center justify-between">
+        <div className="rounded-xl border border-border bg-card p-5 w-full overflow-hidden">
+          <div className="flex items-center justify-between gap-2 min-w-0">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
               <DollarSign className="h-5 w-5 text-secondary" />
             </div>
@@ -74,8 +74,8 @@ export default function ManufacturerDashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center justify-between">
+        <div className="rounded-xl border border-border bg-card p-5 w-full overflow-hidden">
+          <div className="flex items-center justify-between gap-2 min-w-0">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
               <Star className="h-5 w-5 text-secondary" />
             </div>
@@ -95,11 +95,11 @@ export default function ManufacturerDashboardPage() {
       </div>
 
       {/* Main Content */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Recent Inquiries */}
-        <div className="lg:col-span-2 rounded-xl border border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border p-5">
-            <h2 className="font-semibold text-foreground">Recent Inquiries</h2>
+        <div className="md:col-span-2 lg:col-span-2 rounded-xl border border-border bg-card overflow-hidden">
+          <div className="flex items-center justify-between gap-4 border-b border-border p-5 min-w-0">
+            <h2 className="font-semibold text-foreground truncate">Recent Inquiries</h2>
             <Button variant="ghost" size="sm" className="gap-1 text-secondary" asChild>
               <Link href="/dashboard/manufacturer/inquiries">
                 View all
@@ -107,32 +107,42 @@ export default function ManufacturerDashboardPage() {
               </Link>
             </Button>
           </div>
-          <div className="divide-y divide-border">
+            <div className="divide-y divide-border">
             {[
               { id: "1", buyer: "Global Retail Inc.", product: "TWS Wireless Earbuds", quantity: "5,000 units", time: "2 hours ago", status: "New" },
               { id: "2", buyer: "Fashion Forward Ltd.", product: "Smart LED Bulbs", quantity: "10,000 units", time: "5 hours ago", status: "New" },
               { id: "3", buyer: "TechMart USA", product: "Power Banks", quantity: "3,000 units", time: "1 day ago", status: "Quoted" },
               { id: "4", buyer: "EuroTrade GmbH", product: "Wireless Earbuds", quantity: "8,000 units", time: "2 days ago", status: "Quoted" },
             ].map((inquiry) => (
-              <div key={inquiry.id} className="flex items-start justify-between p-4 hover:bg-muted/50 transition-colors">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium text-foreground">{inquiry.buyer}</h3>
-                    <Badge 
-                      variant={inquiry.status === "New" ? "default" : "secondary"}
-                      className={inquiry.status === "New" ? "bg-secondary" : ""}
-                    >
-                      {inquiry.status}
-                    </Badge>
+              <div key={inquiry.id} className="flex items-start gap-3 p-4 hover:bg-muted/50 transition-colors sm:gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <h3 className="font-medium truncate text-foreground">{inquiry.buyer}</h3>
+                      <Badge 
+                        variant={inquiry.status === "New" ? "default" : "secondary"}
+                        className={inquiry.status === "New" ? "bg-secondary shrink-0" : "shrink-0"}
+                      >
+                        {inquiry.status}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">{inquiry.time}</span>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-1 text-sm text-muted-foreground truncate">
                     {inquiry.product} • {inquiry.quantity}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground">{inquiry.time}</span>
-                  <Button size="sm" variant="outline" asChild>
-                    <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id}`}>View</Link>
+
+                <div className="shrink-0">
+                  <Button size="sm" variant="outline" className="h-8 px-2 sm:h-9 sm:px-4" asChild>
+                    <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id}`}>
+                      <span className="hidden sm:inline">View</span>
+                      <Eye className="h-4 w-4 sm:hidden" />
+                    </Link>
                   </Button>
                 </div>
               </div>
@@ -141,33 +151,33 @@ export default function ManufacturerDashboardPage() {
         </div>
 
         {/* Performance Stats */}
-        <div className="space-y-6">
+        <div className="space-y-6 md:col-span-2 lg:col-span-1 min-w-0">
           {/* Response Rate */}
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h2 className="font-semibold text-foreground">Response Metrics</h2>
+          <div className="rounded-xl border border-border bg-card p-5 w-full overflow-hidden">
+            <h2 className="font-semibold text-foreground truncate">Response Metrics</h2>
             <div className="mt-4 space-y-4">
               <div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Response Rate</span>
-                  <span className="font-medium text-foreground">98%</span>
+                <div className="flex items-center justify-between gap-2 text-sm min-w-0">
+                  <span className="text-muted-foreground truncate">Response Rate</span>
+                  <span className="font-medium text-foreground shrink-0">98%</span>
                 </div>
                 <div className="mt-2 h-2 rounded-full bg-muted">
                   <div className="h-full w-[98%] rounded-full bg-secondary" />
                 </div>
               </div>
               <div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Quote Conversion</span>
-                  <span className="font-medium text-foreground">72%</span>
+                <div className="flex items-center justify-between gap-2 text-sm min-w-0">
+                  <span className="text-muted-foreground truncate">Quote Conversion</span>
+                  <span className="font-medium text-foreground shrink-0">72%</span>
                 </div>
                 <div className="mt-2 h-2 rounded-full bg-muted">
                   <div className="h-full w-[72%] rounded-full bg-secondary" />
                 </div>
               </div>
               <div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">On-time Delivery</span>
-                  <span className="font-medium text-foreground">99%</span>
+                <div className="flex items-center justify-between gap-2 text-sm min-w-0">
+                  <span className="text-muted-foreground truncate">On-time Delivery</span>
+                  <span className="font-medium text-foreground shrink-0">99%</span>
                 </div>
                 <div className="mt-2 h-2 rounded-full bg-muted">
                   <div className="h-full w-[99%] rounded-full bg-secondary" />
@@ -177,24 +187,24 @@ export default function ManufacturerDashboardPage() {
           </div>
 
           {/* Quick Stats */}
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h2 className="font-semibold text-foreground">Quick Stats</h2>
+          <div className="rounded-xl border border-border bg-card p-5 w-full overflow-hidden">
+            <h2 className="font-semibold text-foreground truncate">Quick Stats</h2>
             <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Active Products</span>
-                <span className="font-medium text-foreground">2,450</span>
+              <div className="flex items-center justify-between gap-2 min-w-0">
+                <span className="text-sm text-muted-foreground truncate">Active Products</span>
+                <span className="font-medium text-foreground shrink-0">2,450</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Pending Quotes</span>
-                <span className="font-medium text-foreground">5</span>
+              <div className="flex items-center justify-between gap-2 min-w-0">
+                <span className="text-sm text-muted-foreground truncate">Pending Quotes</span>
+                <span className="font-medium text-foreground shrink-0">5</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Unread Messages</span>
-                <span className="font-medium text-foreground">3</span>
+              <div className="flex items-center justify-between gap-2 min-w-0">
+                <span className="text-sm text-muted-foreground truncate">Unread Messages</span>
+                <span className="font-medium text-foreground shrink-0">3</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Avg. Response Time</span>
-                <span className="font-medium text-foreground">2 hours</span>
+              <div className="flex items-center justify-between gap-2 min-w-0">
+                <span className="text-sm text-muted-foreground truncate">Avg. Response Time</span>
+                <span className="font-medium text-foreground shrink-0">2 hours</span>
               </div>
             </div>
           </div>
@@ -202,9 +212,9 @@ export default function ManufacturerDashboardPage() {
       </div>
 
       {/* Recent Activity */}
-      <div className="rounded-xl border border-border bg-card">
-        <div className="flex items-center justify-between border-b border-border p-5">
-          <h2 className="font-semibold text-foreground">Recent Activity</h2>
+      <div className="rounded-xl border border-border bg-card w-full overflow-hidden">
+        <div className="flex items-center justify-between gap-4 border-b border-border p-5 min-w-0">
+          <h2 className="font-semibold text-foreground truncate">Recent Activity</h2>
         </div>
         <div className="p-5">
           <div className="space-y-4">
@@ -219,8 +229,8 @@ export default function ManufacturerDashboardPage() {
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
                   <activity.icon className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm text-foreground">{activity.action}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground truncate">{activity.action}</p>
                   <p className="text-xs text-muted-foreground">{activity.time}</p>
                 </div>
               </div>

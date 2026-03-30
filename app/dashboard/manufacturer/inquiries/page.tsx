@@ -109,7 +109,7 @@ export default function ManufacturerInquiriesPage() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-hidden">
       {/* Header */}
       <div>
         <h1 className="font-serif text-2xl font-medium text-foreground">Buyer Inquiries</h1>
@@ -119,7 +119,7 @@ export default function ManufacturerInquiriesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="text-2xl font-bold text-foreground">{inquiries.length}</div>
           <p className="text-sm text-muted-foreground">Total Inquiries</p>
@@ -170,9 +170,9 @@ export default function ManufacturerInquiriesPage() {
           return (
             <div 
               key={inquiry.id} 
-              className="rounded-xl border border-border bg-card p-5 transition-all hover:shadow-md"
+              className="rounded-xl border border-border bg-card p-4 sm:p-5 transition-all hover:shadow-md overflow-hidden"
             >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between min-w-0">
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium text-muted-foreground">{inquiry.id}</span>
@@ -194,26 +194,26 @@ export default function ManufacturerInquiriesPage() {
                   </div>
                 </div>
                 
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-col gap-3 sm:items-end min-w-0">
                   <span className="text-xs text-muted-foreground">{inquiry.date}</span>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="gap-1" asChild>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" className="h-8 px-2 sm:h-9 sm:px-4 gap-1" asChild>
                       <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id.replace('INQ-00', '')}`}>
                         <Eye className="h-4 w-4" />
-                        View
+                        <span className="hidden sm:inline">View</span>
                       </Link>
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-1" asChild>
+                    <Button variant="outline" size="sm" className="h-8 px-2 sm:h-9 sm:px-4 gap-1" asChild>
                       <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id.replace('INQ-00', '')}`}>
                         <MessageSquare className="h-4 w-4" />
-                        Reply
+                        <span className="hidden sm:inline">Reply</span>
                       </Link>
                     </Button>
                     {inquiry.status === "New" && (
-                      <Button size="sm" className="gap-1" asChild>
+                      <Button size="sm" className="h-8 px-2 sm:h-9 sm:px-4 gap-1" asChild>
                         <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id.replace('INQ-00', '')}`}>
                           <Send className="h-4 w-4" />
-                          Send Quote
+                          <span className="hidden sm:inline">Send Quote</span>
                         </Link>
                       </Button>
                     )}
