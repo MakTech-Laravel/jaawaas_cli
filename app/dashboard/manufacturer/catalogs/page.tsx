@@ -81,7 +81,7 @@ export default function ManufacturerCatalogsPage() {
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
                 <FileBox className="h-5 w-5 text-secondary" />
@@ -94,7 +94,7 @@ export default function ManufacturerCatalogsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
                 <FileBox className="h-5 w-5 text-emerald-700" />
@@ -107,7 +107,7 @@ export default function ManufacturerCatalogsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-4 sm:p-5">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
                 <Download className="h-5 w-5 text-blue-700" />
@@ -124,62 +124,88 @@ export default function ManufacturerCatalogsPage() {
       {/* Catalogs List */}
       <div className="grid gap-4">
         {catalogs.map((catalog) => (
-          <Card key={catalog.id}>
-            <CardContent className="p-5">
+          <Card key={catalog.id} className="w-full overflow-hidden relative">
+            <CardContent className="p-4 sm:p-5">
+              {/* Mobile: floating menu at top-right to avoid centering under stacked buttons */}
+              <div className="absolute right-4 top-4 sm:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => toggleStatus(catalog.id)}>
+                      {catalog.status === "active" ? "Set as Draft" : "Publish"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="text-destructive"
+                      onClick={() => deleteCatalog(catalog.id)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
+                <div className="flex items-start gap-4 min-w-0">
+                  <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-muted">
                     <File className="h-7 w-7 text-muted-foreground" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-foreground">{catalog.name}</h3>
+                      <h3 className="font-semibold text-foreground truncate">{catalog.name}</h3>
                       <Badge className={catalog.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}>
                         {catalog.status === "active" ? "Active" : "Draft"}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">{catalog.fileName}</p>
-                    <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{catalog.fileSize}</span>
-                      <span className="flex items-center gap-1">
+                    <p className="text-sm text-muted-foreground truncate">{catalog.fileName}</p>
+                    <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-muted-foreground">
+                      <span className="truncate">{catalog.fileSize}</span>
+                      <span className="flex items-center gap-1 truncate">
                         <Calendar className="h-3 w-3" />
                         {catalog.uploadedAt}
                       </span>
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 truncate">
                         <Download className="h-3 w-3" />
                         {catalog.downloads} downloads
                       </span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="gap-1">
+                <div className="flex flex-col sm:flex-row items-center gap-2 flex-shrink-0 mt-2 sm:mt-0 w-full sm:w-auto">
+                  <Button variant="outline" size="sm" className="gap-1 w-full sm:w-auto justify-center">
                     <Eye className="h-3 w-3" />
                     Preview
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-1">
+                  <Button variant="outline" size="sm" className="gap-1 w-full sm:w-auto justify-center">
                     <Download className="h-3 w-3" />
                     Download
                   </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => toggleStatus(catalog.id)}>
-                        {catalog.status === "active" ? "Set as Draft" : "Publish"}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-destructive"
-                        onClick={() => deleteCatalog(catalog.id)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  {/* Inline menu for sm+ */}
+                  <div className="hidden sm:block">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => toggleStatus(catalog.id)}>
+                          {catalog.status === "active" ? "Set as Draft" : "Publish"}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => deleteCatalog(catalog.id)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </div>
             </CardContent>

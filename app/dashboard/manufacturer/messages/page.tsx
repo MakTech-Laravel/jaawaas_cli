@@ -141,7 +141,7 @@ export default function ManufacturerMessagesPage() {
         {/* Conversations List */}
         <div className={cn(
           "w-full shrink-0 border-r border-border md:w-80",
-          showConversations ? "block" : "hidden md:block"
+          showConversations ? "flex flex-col" : "hidden md:flex md:flex-col"
         )}>
           {/* Search */}
           <div className="border-b border-border p-3">
@@ -158,7 +158,7 @@ export default function ManufacturerMessagesPage() {
           </div>
 
           {/* Conversation List */}
-          <div className="overflow-auto h-full">
+          <div className="overflow-y-auto flex-1 h-full min-h-0">
             {filteredConversations.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-8 text-center">
                 <MessageSquare className="h-12 w-12 text-muted-foreground/30" />

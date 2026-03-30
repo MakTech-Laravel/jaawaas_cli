@@ -265,9 +265,10 @@ export default function ManufacturerProductsPage() {
         </Select>
       </div>
 
-      {/* Products Table */}
+      {/* Products Table (desktop) + Cards (mobile) */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop table - visible on md+ */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-muted/50 text-left text-sm">
@@ -366,6 +367,99 @@ export default function ManufacturerProductsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile cards - visible below md */}
+        <div className="md:hidden divide-y divide-border">
+          {filteredProducts.map((product) => (
+            <div key={product.id} className="p-4 hover:bg-muted/50 transition-colors">
+              <div className="flex items-start gap-3">
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-muted">
+                  <Package className="h-6 w-6 text-muted-foreground/50" />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground truncate">{product.name}</p>
+                      <p className="text-sm text-muted-foreground truncate">{product.category}</p>
+                    </div>
+                    <div className="text-sm text-foreground ml-2">{product.price}</div>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
+                    <div>{product.moq}</div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1">
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                        <span>{product.views.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        <span>{product.inquiries}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between">
+                    <div>
+                      <Badge 
+                        variant={product.status === "Active" ? "default" : "secondary"}
+                        className={product.status === "Active" ? "bg-emerald-100 text-emerald-700" : ""}
+                      >
+                        {product.status}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => openEditDialog(product)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEditDialog(product)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Product
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openViewDialog(product)}>
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            View Product
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => duplicateProduct(product)}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            Duplicate Product
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => toggleProductStatus(product.id)}>
+                            <Power className="mr-2 h-4 w-4" />
+                            {product.status === "Active" ? "Set as Draft" : "Set as Active"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => setDeletingProductId(product.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Product
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {filteredProducts.length === 0 && (
