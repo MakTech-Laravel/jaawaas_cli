@@ -96,7 +96,7 @@ export default function ExportMarketsPage() {
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="md:pt-3">
             <div className="flex items-center gap-4">
               <div className="rounded-lg bg-secondary/20 p-3">
                 <Globe className="h-5 w-5 text-secondary" />
@@ -109,7 +109,7 @@ export default function ExportMarketsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="md:pt-3">
             <div className="flex items-center gap-4">
               <div className="rounded-lg bg-primary/20 p-3">
                 <Users className="h-5 w-5 text-primary" />
@@ -122,7 +122,7 @@ export default function ExportMarketsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="md:pt-3">
             <div className="flex items-center gap-4">
               <div className="rounded-lg bg-green-500/20 p-3">
                 <Package className="h-5 w-5 text-green-600" />
@@ -135,7 +135,7 @@ export default function ExportMarketsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="md:pt-3">
             <div className="flex items-center gap-4">
               <div className="rounded-lg bg-amber-500/20 p-3">
                 <TrendingUp className="h-5 w-5 text-amber-600" />
@@ -158,30 +158,34 @@ export default function ExportMarketsPage() {
         <CardContent>
           <div className="space-y-4">
             {currentMarkets.map((market) => (
-              <div key={market.region} className="flex items-center justify-between p-4 rounded-lg border border-border">
-                <div className="flex items-center gap-4">
-                  <div className="rounded-lg bg-secondary/20 p-2">
+              <div key={market.region} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border border-border">
+                <div className="flex items-start gap-4 min-w-0">
+                  <div className="rounded-lg bg-secondary/20 p-2 flex-shrink-0">
                     <MapPin className="h-5 w-5 text-secondary" />
                   </div>
-                  <div>
-                    <p className="font-medium">{market.region}</p>
-                    <p className="text-sm text-muted-foreground">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{market.region}</p>
+                    <p className="text-sm text-muted-foreground truncate">
                       {market.countries.join(", ")}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className="text-right">
-                    <p className="font-medium">{market.inquiries}</p>
-                    <p className="text-xs text-muted-foreground">Inquiries</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">{market.orders}</p>
-                    <p className="text-xs text-muted-foreground">Orders</p>
+
+                <div className="flex flex-col sm:flex-row items-center gap-2 mt-3 sm:mt-0 w-full sm:w-auto">
+                  <div className="flex justify-between sm:justify-end w-full sm:w-auto gap-4">
+                    <div className="text-left sm:text-right">
+                      <p className="font-medium">{market.inquiries}</p>
+                      <p className="text-xs text-muted-foreground">Inquiries</p>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <p className="font-medium">{market.orders}</p>
+                      <p className="text-xs text-muted-foreground">Orders</p>
+                    </div>
                   </div>
                   <Button 
                     variant="outline" 
                     size="sm"
+                    className="w-full sm:w-auto"
                     onClick={() => {
                       setManagingMarket(market)
                       setShowManageDialog(true)
