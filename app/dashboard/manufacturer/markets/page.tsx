@@ -160,7 +160,7 @@ export default function ExportMarketsPage() {
             {currentMarkets.map((market) => (
               <div key={market.region} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border border-border">
                 <div className="flex items-start gap-4 min-w-0">
-                  <div className="rounded-lg bg-secondary/20 p-2 flex-shrink-0">
+                  <div className="rounded-lg bg-secondary/20 p-2 shrink-0">
                     <MapPin className="h-5 w-5 text-secondary" />
                   </div>
                   <div className="min-w-0">

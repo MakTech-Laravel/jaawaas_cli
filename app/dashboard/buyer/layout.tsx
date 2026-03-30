@@ -234,6 +234,7 @@ export default function BuyerDashboardLayout({
             </button>
             
             {/* Search */}
+            {/*
             <div className="relative hidden min-w-0 flex-1 md:block md:max-w-sm">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -242,6 +243,7 @@ export default function BuyerDashboardLayout({
                 className="h-9 w-full min-w-0 rounded-lg border border-input bg-background pl-9 pr-4 text-sm outline-none focus:border-secondary focus:ring-1 focus:ring-secondary"
               />
             </div>
+            */}
           </div>
 
           <div className="flex items-center gap-3">

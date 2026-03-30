@@ -11,7 +11,10 @@ import {
   Paperclip,
   Factory,
   CheckCircle,
-  MoreVertical
+  MoreVertical,
+  ArrowLeft,
+  MessageSquare,
+  Globe
 } from "lucide-react"
 
 const conversations = [
@@ -61,7 +64,7 @@ const messages = [
   { 
     id: "1", 
     sender: "supplier", 
-    text: "Hello! Thank you for reaching out to TechVision Electronics. How can I assist you today?",
+    text: "Hello! Thank you for reaching out. How can I assist you today?",
     time: "10:30 AM"
   },
   { 
@@ -85,7 +88,7 @@ const messages = [
   { 
     id: "5", 
     sender: "supplier", 
-    text: "Absolutely! We can send 3 sample units for evaluation. The sample cost is $35 including express shipping. Custom branding will add $0.50 per unit. Would you like me to arrange the samples?",
+    text: "Absolutely! We can send 3 sample units for evaluation. The sample cost is $35 including express shipping. Custom branding will add $0.50 per unit.",
     time: "11:00 AM"
   },
   { 
@@ -94,33 +97,40 @@ const messages = [
     text: "That sounds reasonable. Please send the samples. I'll share the shipping address.",
     time: "11:05 AM"
   },
-  { 
-    id: "7", 
-    sender: "supplier", 
-    text: "Thank you for your inquiry. We can offer a competitive price for the TWS earbuds. I'll prepare a formal quotation and send it to you shortly. In the meantime, please share your shipping address for the samples.",
-    time: "2 hours ago"
-  },
 ]
 
 export default function BuyerMessagesPage() {
   const [selectedConversation, setSelectedConversation] = useState(conversations[0])
   const [newMessage, setNewMessage] = useState("")
   const [showConversations, setShowConversations] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const filteredConversations = conversations.filter(conv => 
+    conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (conv.lastMessage || "").toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const unreadCount = conversations.filter(c => c.unread).length
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] flex-col">
-      <div className="mb-4">
-        <h1 className="font-serif text-2xl font-medium text-foreground">Messages</h1>
-        <p className="mt-1 text-muted-foreground">
-          Communicate with suppliers directly
-        </p>
+    <div className="flex h-[calc(100dvh-7.2rem)] md:h-[calc(100vh-7rem)] flex-col max-w-full overflow-hidden">
+      <div className="mb-2 flex items-center justify-between gap-4 min-w-0 w-full">
+        <div className="min-w-0 flex-1">
+          <h1 className="font-serif text-2xl font-medium text-foreground truncate">Messages</h1>
+          <p className="mt-1 text-sm text-muted-foreground truncate">
+            {unreadCount > 0 
+              ? `${unreadCount} unread message${unreadCount > 1 ? 's' : ''} from suppliers` 
+              : 'Communicate with suppliers directly'
+            }
+          </p>
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden rounded-xl border border-border bg-card">
         {/* Conversations List */}
         <div className={cn(
-          "w-full flex-shrink-0 border-r border-border md:w-80",
-          showConversations ? "block" : "hidden md:block"
+          "w-full shrink-0 border-r border-border md:w-80",
+          showConversations ? "flex flex-col" : "hidden md:flex md:flex-col"
         )}>
           {/* Search */}
           <div className="border-b border-border p-3">
@@ -128,84 +138,80 @@ export default function BuyerMessagesPage() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search conversations..."
+                placeholder="Search suppliers..."
                 className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
 
           {/* Conversation List */}
-          <div className="overflow-auto h-full">
-            {conversations.map((conv) => (
-              <button
-                key={conv.id}
-                onClick={() => {
-                  setSelectedConversation(conv)
-                  setShowConversations(false)
-                }}
-                className={cn(
-                  "flex w-full items-start gap-3 border-b border-border p-4 text-left transition-colors hover:bg-muted/50",
-                  selectedConversation.id === conv.id && "bg-muted"
-                )}
-              >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-muted">
-                  <Factory className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
+          <div className="overflow-y-auto flex-1 h-full min-h-0">
+            {filteredConversations.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-8 text-center">
+                <MessageSquare className="h-12 w-12 text-muted-foreground/30" />
+                <p className="mt-4 text-sm text-muted-foreground">No conversations found</p>
+              </div>
+            ) : (
+              filteredConversations.map((conv) => (
+                <button
+                  key={conv.id}
+                  onClick={() => {
+                    setSelectedConversation(conv)
+                    setShowConversations(false)
+                  }}
+                  className={cn(
+                    "flex w-full items-start gap-3 border-b border-border p-4 text-left transition-colors hover:bg-muted/50",
+                    selectedConversation.id === conv.id && "bg-muted"
+                  )}
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <Factory className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between min-w-0">
                       <span className={cn(
-                        "font-medium text-sm",
+                        "font-medium text-sm truncate",
                         conv.unread ? "text-foreground" : "text-muted-foreground"
                       )}>
                         {conv.name}
                       </span>
-                      {conv.reviewed && (
-                        <CheckCircle className="h-3 w-3 text-secondary" />
-                      )}
+                      <span className="text-xs text-muted-foreground shrink-0 ml-2">{conv.time}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">{conv.time}</span>
+                    <p className="mt-1 text-sm text-muted-foreground truncate">
+                      {conv.lastMessage}
+                    </p>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground truncate">
-                    {conv.lastMessage}
-                  </p>
-                </div>
-                {conv.unread && (
-                  <div className="h-2 w-2 rounded-full bg-secondary flex-shrink-0 mt-2" />
-                )}
-              </button>
-            ))}
+                  {conv.unread && (
+                    <div className="h-2 w-2 rounded-full bg-secondary shrink-0 mt-2" />
+                  )}
+                </button>
+              ))
+            )}
           </div>
         </div>
 
         {/* Chat Area */}
         <div className={cn(
-          "flex flex-1 flex-col",
-          !showConversations ? "block" : "hidden md:flex"
+          "flex flex-1 flex-col min-w-0",
+          !showConversations ? "flex flex-1 flex-col" : "hidden md:flex"
         )}>
           {/* Chat Header */}
-          <div className="flex items-center justify-between border-b border-border p-4">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between border-b border-border p-4 min-w-0">
+            <div className="flex items-center gap-3 min-w-0 overflow-hidden">
               <button 
                 className="md:hidden"
                 onClick={() => setShowConversations(true)}
               >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+                <ArrowLeft className="h-5 w-5" />
               </button>
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                 <Factory className="h-5 w-5 text-muted-foreground" />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">{selectedConversation.name}</span>
-                  {selectedConversation.reviewed && (
-                    <Badge variant="secondary" className="text-xs">
-                      <CheckCircle className="mr-1 h-3 w-3" />
-                      Reviewed
-                    </Badge>
-                  )}
+                  <span className="font-medium text-foreground truncate">{selectedConversation.name}</span>
                 </div>
                 <span className="text-xs text-muted-foreground">Usually responds within 2 hours</span>
               </div>
@@ -226,7 +232,7 @@ export default function BuyerMessagesPage() {
                 )}
               >
                 <div className={cn(
-                  "max-w-[75%] rounded-2xl px-4 py-2.5",
+                  "max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 wrap-break-word overflow-hidden",
                   msg.sender === "buyer" 
                     ? "bg-primary text-primary-foreground" 
                     : "bg-muted text-foreground"
@@ -254,9 +260,9 @@ export default function BuyerMessagesPage() {
                 placeholder="Type your message..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                className="flex-1"
+                className="flex-1 min-w-0"
               />
-              <Button size="icon">
+              <Button size="icon" disabled={!newMessage.trim()}>
                 <Send className="h-4 w-4" />
               </Button>
             </div>

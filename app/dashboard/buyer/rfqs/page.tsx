@@ -158,9 +158,10 @@ export default function BuyerRFQsPage() {
         </Select>
       </div>
 
-      {/* RFQ Table */}
+      {/* RFQ Table (desktop) and cards (mobile) */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-muted/50 text-left text-sm">
@@ -215,6 +216,45 @@ export default function BuyerRFQsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile cards */}
+        {filteredRFQs.length > 0 && (
+          <div className="md:hidden p-4 space-y-3">
+            {filteredRFQs.map((rfq) => {
+              const StatusIcon = statusConfig[rfq.status]?.icon || Clock
+              return (
+                <div key={rfq.id} className="rounded-lg border border-border p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground truncate">{rfq.product}</p>
+                      <p className="text-sm text-muted-foreground truncate">{rfq.supplier}</p>
+                      <p className="text-sm text-muted-foreground mt-1 truncate">{rfq.quantity}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge className={statusConfig[rfq.status]?.color + " text-xs"}>
+                        <StatusIcon className="mr-1 h-3 w-3" />
+                        {rfq.status}
+                      </Badge>
+                      <p className="text-xs text-muted-foreground">{rfq.date}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <Button className="flex-1" variant="outline">
+                      <Eye className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
+                    <Button className="flex-1" variant="outline" asChild>
+                      <Link href="/dashboard/buyer/messages">
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Message
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {filteredRFQs.length === 0 && (
           <div className="py-12 text-center">

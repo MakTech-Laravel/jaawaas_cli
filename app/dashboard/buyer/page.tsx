@@ -18,6 +18,11 @@ import {
 const recommendedSuppliers = getFeaturedSuppliers().slice(3, 6)
 
 export default function BuyerDashboardPage() {
+  const rfqs = [
+    { id: "RFQ-001", product: "TWS Wireless Earbuds", supplier: "TechVision Electronics", status: "Quoted", date: "Mar 12, 2026" },
+    { id: "RFQ-002", product: "Organic Cotton Fabric", supplier: "EcoThread Textiles", status: "Pending", date: "Mar 10, 2026" },
+    { id: "RFQ-003", product: "CNC Machining Center", supplier: "GlobalFab Machinery", status: "In Review", date: "Mar 8, 2026" },
+  ]
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
@@ -86,8 +91,8 @@ export default function BuyerDashboardPage() {
       {/* Recent Activity & Quick Actions */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Messages */}
-        <div className="lg:col-span-2 rounded-xl border border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border p-5">
+        <div className="lg:col-span-2 rounded-xl border border-border bg-card min-w-0">
+          <div className="flex items-center justify-between border-b border-border p-4 sm:p-5">
             <h2 className="font-semibold text-foreground">Recent Messages</h2>
             <Button variant="ghost" size="sm" className="gap-1 text-secondary" asChild>
               <Link href="/dashboard/buyer/messages">
@@ -105,14 +110,14 @@ export default function BuyerDashboardPage() {
               <Link 
                 key={i} 
                 href="/dashboard/buyer/messages"
-                className="flex items-start gap-4 p-4 hover:bg-muted/50 transition-colors"
+                className="flex items-start gap-3 p-3 sm:p-4 hover:bg-muted/50 transition-colors min-w-0"
               >
                 <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-muted">
                   <Factory className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className={`font-medium ${msg.unread ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className={`font-medium truncate ${msg.unread ? 'text-foreground' : 'text-muted-foreground'}`}>
                       {msg.name}
                     </p>
                     <span className="text-xs text-muted-foreground">{msg.time}</span>
@@ -128,7 +133,7 @@ export default function BuyerDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="rounded-xl border border-border bg-card p-5">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
           <h2 className="font-semibold text-foreground">Quick Actions</h2>
           <div className="mt-4 space-y-3">
             <Button className="w-full justify-start gap-2" variant="outline" asChild>
@@ -155,7 +160,7 @@ export default function BuyerDashboardPage() {
 
       {/* RFQ Status */}
       <div className="rounded-xl border border-border bg-card">
-        <div className="flex items-center justify-between border-b border-border p-5">
+        <div className="flex items-center justify-between border-b border-border p-4 sm:p-5">
           <h2 className="font-semibold text-foreground">RFQ Status</h2>
           <Button variant="ghost" size="sm" className="gap-1 text-secondary" asChild>
             <Link href="/dashboard/buyer/rfqs">
@@ -164,7 +169,7 @@ export default function BuyerDashboardPage() {
             </Link>
           </Button>
         </div>
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-muted/50 text-left text-sm">
@@ -176,11 +181,7 @@ export default function BuyerDashboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {[
-                { id: "RFQ-001", product: "TWS Wireless Earbuds", supplier: "TechVision Electronics", status: "Quoted", date: "Mar 12, 2026" },
-                { id: "RFQ-002", product: "Organic Cotton Fabric", supplier: "EcoThread Textiles", status: "Pending", date: "Mar 10, 2026" },
-                { id: "RFQ-003", product: "CNC Machining Center", supplier: "GlobalFab Machinery", status: "In Review", date: "Mar 8, 2026" },
-              ].map((rfq) => (
+              {rfqs.map((rfq) => (
                 <tr key={rfq.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-5 py-4 text-sm font-medium text-foreground">{rfq.id}</td>
                   <td className="px-5 py-4 text-sm text-muted-foreground">{rfq.product}</td>
@@ -200,6 +201,28 @@ export default function BuyerDashboardPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile RFQ cards */}
+        <div className="md:hidden p-4 space-y-3">
+          {rfqs.map((rfq) => (
+            <div key={rfq.id} className="rounded-lg border border-border p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{rfq.id} • {rfq.product}</p>
+                  <p className="text-sm text-muted-foreground truncate">{rfq.supplier}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <Badge variant={rfq.status === "Quoted" ? "default" : rfq.status === "Pending" ? "secondary" : "outline"} className="text-xs">
+                    {rfq.status === "Quoted" && <CheckCircle className="mr-1 h-3 w-3" />}
+                    {rfq.status === "Pending" && <Clock className="mr-1 h-3 w-3" />}
+                    {rfq.status}
+                  </Badge>
+                  <p className="text-xs text-muted-foreground">{rfq.date}</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
