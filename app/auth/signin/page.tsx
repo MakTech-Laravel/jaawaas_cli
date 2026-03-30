@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/lib/auth-context"
 import type { UserRole } from "@/lib/roles/dashboard-route"
 import { Eye, EyeOff, Loader2, Users, Factory, Shield, AlertCircle } from "lucide-react"
+import { FcGoogle } from "react-icons/fc";
 import { useToast } from "@/hooks/use-toast"
 
 function RestoredAccountNotifier() {
@@ -189,6 +190,29 @@ export default function SignInPage() {
               `Sign in as ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`
             )}
           </Button>
+
+          {activeTab === "buyer" && (
+            <>
+              <div className="relative mt-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or</span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                onClick={() => {}}
+                aria-label="Continue with Google"
+                className="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 mt-3"
+              >
+                <FcGoogle className="w-4 h-4" />
+                Continue with Google
+              </Button>
+            </>
+          )}
         </form>
 
         <p className="mt-8 text-center text-sm text-muted-foreground">

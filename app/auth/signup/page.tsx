@@ -20,6 +20,7 @@ import { REGISTER_SUCCESS_STORAGE_KEY } from "@/lib/register-success-storage"
 import { countries } from "@/lib/data/countries"
 import { cn } from "@/lib/utils"
 import { Eye, EyeOff, Loader2, Users, Factory, Check, AlertCircle, Upload, FileText, X, Camera, Globe, Building2, Info } from "lucide-react"
+import { FcGoogle } from "react-icons/fc";
 import { Separator } from "@/components/ui/separator"
 
 export default function SignUpPage() {
@@ -587,6 +588,26 @@ export default function SignUpPage() {
             </>
           )
         })()}
+
+        {formData.role === "buyer" && (
+          <>
+            <div className="flex items-center gap-3 mt-3">
+              <span className="flex-1 h-px bg-gray-200" />
+              <span className="text-sm text-muted-foreground">OR</span>
+              <span className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            <Button
+              type="button"
+              onClick={() => {}}
+              aria-label="Continue with Google"
+              className="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 mt-2"
+            >
+              <FcGoogle className="w-5 h-5" />
+              Continue with Google
+            </Button>
+          </>
+        )}
       </form>
 
       <p className="mt-8 text-center text-sm text-muted-foreground">

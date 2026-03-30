@@ -13,6 +13,7 @@ import {
 } from "../ui/form";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { FcGoogle } from "react-icons/fc";
 import {
   Select,
   SelectContent,
@@ -121,6 +122,26 @@ export function LoginForm() {
         <Button type="submit" className="w-full">
           Login
         </Button>
+
+        {form.watch("role") === "buyer" && (
+          <>
+            <div className="flex items-center gap-3">
+              <span className="flex-1 h-px bg-gray-200" />
+              <span className="text-sm text-muted-foreground">OR</span>
+              <span className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            <Button
+              type="button"
+              onClick={() => {}}
+              aria-label="Continue with Google"
+              className="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
+            >
+              <FcGoogle className="w-4 h-4" />
+              Continue with Google
+            </Button>
+          </>
+        )}
       </form>
     </Form>
   );
