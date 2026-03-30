@@ -2,7 +2,12 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import type { LoginInput, User as ApiUser } from "@/lib/types"
-import { login as loginRequest, register as registerRequest } from "@/lib/api/auth"
+import {
+  completeSocialProfile,
+  googleTokenLogin,
+  login as loginRequest,
+  register as registerRequest,
+} from "@/lib/api/auth"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import {
   getDashboardPathByRole,
@@ -44,6 +49,7 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   login: (email: string, password: string, role?: UserRole) => Promise<{ success: boolean; redirectTo: string }>
+  loginWithGoogle: (googleIdToken: string, role?: UserRole) => Promise<{ success: boolean; redirectTo: string; message?: string }>
   signup: (data: SignupData) => Promise<SignupResult>
   logout: () => void
   setToken: (token: string | null) => void
@@ -233,6 +239,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const loginWithGoogle = async (
+    googleIdToken: string,
+    role: UserRole = "buyer"
+  ): Promise<{ success: boolean; redirectTo: string; message?: string }> => {
+    setIsLoading(true)
+
+    try {
+      const response = await googleTokenLogin({ token: googleIdToken, role })
+
+      if (response.success && response.data?.access_token && response.data.user) {
+        setToken(response.data.access_token)
+        setUser(response.data.user)
+        return {
+          success: true,
+          redirectTo: getDashboardPathByRole(response.data.user.role),
+        }
+      }
+
+      const setupToken = (response as { setup_token?: string }).setup_token
+      if (response.success && setupToken) {
+        const completed = await completeSocialProfile(setupToken)
+        if (completed.success && completed.data?.access_token && completed.data.user) {
+          setToken(completed.data.access_token)
+          setUser(completed.data.user)
+          return {
+            success: true,
+            redirectTo: getDashboardPathByRole(completed.data.user.role),
+          }
+        }
+
+        return {
+          success: false,
+          redirectTo: "",
+          message: completed.message || "Profile completion failed.",
+        }
+      }
+
+      return {
+        success: false,
+        redirectTo: "",
+        message: response.message || "Google login failed.",
+      }
+    } catch (err: unknown) {
+      return { success: false, redirectTo: "", message: getApiErrorMessage(err) }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const logout = () => {
     setUser(null)
     setToken(null)
@@ -253,6 +308,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
+        loginWithGoogle,
         signup,
         logout,
         setToken,

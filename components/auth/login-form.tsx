@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginSchema, LoginInput } from "../../lib/types";
+import { useState } from "react";
 import {
   Form,
   FormControl,
@@ -26,11 +27,13 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../lib/auth-context";
 import { login } from "../../lib/api/auth";
 import { getDashboardPathByRole } from "../../lib/roles/dashboard-route";
+import { getGoogleIdToken } from "../../lib/google-identity";
 
 export function LoginForm() {
   const { toast } = useToast();
   const router = useRouter();
-  const { setToken, setUser } = useAuth();
+  const { setToken, setUser, loginWithGoogle } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(LoginSchema),
@@ -65,6 +68,31 @@ export function LoginForm() {
         description: "An error occurred while trying to log in.",
         variant: "destructive",
       });
+    }
+  }
+
+  async function onGoogle() {
+    setGoogleLoading(true);
+    try {
+      const credential = await getGoogleIdToken();
+      const result = await loginWithGoogle(credential, "buyer");
+      if (result.success) {
+        toast({ title: "Login Successful", description: "Welcome back!" });
+        router.push(result.redirectTo);
+        return;
+      }
+
+      toast({
+        title: "Google login failed",
+        description: result.message || "Please try again.",
+        variant: "destructive",
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Google login failed. Please try again.";
+      toast({ title: "Google login failed", description: message, variant: "destructive" });
+    } finally {
+      setGoogleLoading(false);
     }
   }
 
@@ -133,12 +161,13 @@ export function LoginForm() {
 
             <Button
               type="button"
-              onClick={() => {}}
+              onClick={onGoogle}
               aria-label="Continue with Google"
               className="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
+              disabled={googleLoading}
             >
               <FcGoogle className="w-4 h-4" />
-              Continue with Google
+              {googleLoading ? "Connecting..." : "Continue with Google"}
             </Button>
           </>
         )}

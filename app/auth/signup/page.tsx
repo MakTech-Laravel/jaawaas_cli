@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils"
 import { Eye, EyeOff, Loader2, Users, Factory, Check, AlertCircle, Upload, FileText, X, Camera, Globe, Building2, Info } from "lucide-react"
 import { FcGoogle } from "react-icons/fc";
 import { Separator } from "@/components/ui/separator"
+import { decodeGoogleIdTokenPayload, getGoogleIdToken } from "@/lib/google-identity"
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -29,7 +30,7 @@ export default function SignUpPage() {
     typeof window !== "undefined"
       ? (new URLSearchParams(window.location.search).get("role") as "buyer" | "manufacturer" | null)
       : null
-  const { signup } = useAuth()
+  const { signup, loginWithGoogle } = useAuth()
   
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -105,6 +106,13 @@ export default function SignUpPage() {
       })
       
       if (result.success) {
+        // If the registration returned an active session (not pending review)
+        // and the selected role is buyer, redirect straight to the dashboard.
+        if (!result.pendingReview && formData.role === "buyer") {
+          router.push(result.redirectTo)
+          return
+        }
+
         const payload = result.pendingReview
           ? {
               message: result.message,
@@ -119,6 +127,7 @@ export default function SignUpPage() {
               isLoggedIn: true as const,
               dashboardPath: result.redirectTo,
             }
+
         sessionStorage.setItem(REGISTER_SUCCESS_STORAGE_KEY, JSON.stringify(payload))
         router.push("/auth/register-success")
       } else {
@@ -126,6 +135,39 @@ export default function SignUpPage() {
       }
     } catch {
       setError("An error occurred. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogle = async () => {
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const credential = await getGoogleIdToken()
+      if (process.env.NODE_ENV !== "production") {
+        const payload = decodeGoogleIdTokenPayload(credential)
+        if (payload) {
+          // eslint-disable-next-line no-console
+          console.log("[google-id-token payload]", {
+            iss: payload.iss,
+            aud: payload.aud,
+            azp: payload.azp,
+            email: payload.email,
+            exp: payload.exp,
+          })
+        }
+      }
+      const result = await loginWithGoogle(credential, "buyer")
+      if (result.success) {
+        router.push(result.redirectTo)
+        return
+      }
+      setError(result.message || "Google login failed. Please try again.")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Google login failed. Please try again."
+      setError(message)
     } finally {
       setIsLoading(false)
     }
@@ -599,9 +641,10 @@ export default function SignUpPage() {
 
             <Button
               type="button"
-              onClick={() => {}}
+              onClick={handleGoogle}
               aria-label="Continue with Google"
               className="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 mt-2"
+              disabled={isLoading}
             >
               <FcGoogle className="w-5 h-5" />
               Continue with Google

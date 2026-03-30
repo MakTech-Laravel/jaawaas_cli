@@ -13,6 +13,7 @@ import type { UserRole } from "@/lib/roles/dashboard-route"
 import { Eye, EyeOff, Loader2, Users, Factory, Shield, AlertCircle } from "lucide-react"
 import { FcGoogle } from "react-icons/fc";
 import { useToast } from "@/hooks/use-toast"
+import { decodeGoogleIdTokenPayload, getGoogleIdToken } from "@/lib/google-identity"
 
 function RestoredAccountNotifier() {
   const router = useRouter()
@@ -40,7 +41,7 @@ export default function SignInPage() {
     typeof window !== "undefined"
       ? ((new URLSearchParams(window.location.search).get("role") || "buyer") as UserRole)
       : "buyer"
-  const { login } = useAuth()
+  const { login, loginWithGoogle } = useAuth()
 
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -68,6 +69,39 @@ export default function SignInPage() {
       }
     } catch {
       setError("An error occurred. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogle = async () => {
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const credential = await getGoogleIdToken()
+      if (process.env.NODE_ENV !== "production") {
+        const payload = decodeGoogleIdTokenPayload(credential)
+        if (payload) {
+          // eslint-disable-next-line no-console
+          console.log("[google-id-token payload]", {
+            iss: payload.iss,
+            aud: payload.aud,
+            azp: payload.azp,
+            email: payload.email,
+            exp: payload.exp,
+          })
+        }
+      }
+      const result = await loginWithGoogle(credential, "buyer")
+      if (result.success) {
+        router.push(result.redirectTo)
+        return
+      }
+      setError(result.message || "Google login failed. Please try again.")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Google login failed. Please try again."
+      setError(message)
     } finally {
       setIsLoading(false)
     }
@@ -204,9 +238,10 @@ export default function SignInPage() {
 
               <Button
                 type="button"
-                onClick={() => {}}
+                onClick={handleGoogle}
                 aria-label="Continue with Google"
                 className="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 mt-3"
+                disabled={isLoading}
               >
                 <FcGoogle className="w-4 h-4" />
                 Continue with Google
