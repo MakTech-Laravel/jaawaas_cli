@@ -5,6 +5,8 @@ import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import {
   Table,
   TableBody,
@@ -44,7 +46,27 @@ import {
   MapPin,
   Mail,
   Building2,
+  MoreVertical,
+  MessageSquare,
+  FileQuestion,
+  X,
+  Ban,
 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 function displayName(row: ManufacturerApplication) {
   const n = [row.first_name, row.last_name].filter(Boolean).join(" ").trim()
@@ -68,6 +90,15 @@ export default function ManufacturerRegistrationsPage() {
   const [viewOpen, setViewOpen] = useState(false)
   const [viewTarget, setViewTarget] = useState<ManufacturerApplication | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<ManufacturerApplication | null>(null)
+  const [messageTarget, setMessageTarget] = useState<ManufacturerApplication | null>(null)
+  const [messageText, setMessageText] = useState("")
+  const [showMessageDialog, setShowMessageDialog] = useState(false)
+  const [infoTarget, setInfoTarget] = useState<ManufacturerApplication | null>(null)
+  const [infoRequestText, setInfoRequestText] = useState("")
+  const [showInfoDialog, setShowInfoDialog] = useState(false)
+  const [rejectTarget, setRejectTarget] = useState<ManufacturerApplication | null>(null)
+  const [rejectReason, setRejectReason] = useState("")
+  const [showRejectDialog, setShowRejectDialog] = useState(false)
 
   const rows = useMemo(() => {
     if (statusFilter === "all") return applications
@@ -105,6 +136,55 @@ export default function ManufacturerRegistrationsPage() {
     })
   }
 
+  const updateApplicationStatus = (id: number | string, status: string) => {
+    setApplications((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)))
+  }
+
+  const openMessage = (row: ManufacturerApplication) => {
+    setMessageTarget(row)
+    setMessageText("")
+    setShowMessageDialog(true)
+  }
+
+  const sendMessage = () => {
+    if (!messageTarget) return
+    toast({ title: "Message sent (demo)", description: `Message sent to ${messageTarget.email}` })
+    setShowMessageDialog(false)
+    setMessageTarget(null)
+  }
+
+  const openInfoRequest = (row: ManufacturerApplication) => {
+    setInfoTarget(row)
+    setInfoRequestText("")
+    setShowInfoDialog(true)
+  }
+
+  const submitInfoRequest = () => {
+    if (!infoTarget) return
+    updateApplicationStatus(infoTarget.id, "needs_info")
+    toast({ title: "Info requested (demo)", description: `Requested more info from ${infoTarget.email}` })
+    setShowInfoDialog(false)
+    setInfoTarget(null)
+  }
+
+  const openReject = (row: ManufacturerApplication) => {
+    setRejectTarget(row)
+    setRejectReason("")
+    setShowRejectDialog(true)
+  }
+
+  const submitReject = () => {
+    if (!rejectTarget) return
+    updateApplicationStatus(rejectTarget.id, "rejected")
+    toast({ title: "Rejected (demo)", description: `${displayCompany(rejectTarget)} marked rejected.` })
+    setShowRejectDialog(false)
+    setRejectTarget(null)
+    if (viewTarget?.id === rejectTarget.id) {
+      setViewOpen(false)
+      setViewTarget(null)
+    }
+  }
+
   const confirmDelete = () => {
     if (!deleteTarget) return
     const name = displayCompany(deleteTarget)
@@ -131,39 +211,94 @@ export default function ManufacturerRegistrationsPage() {
       ? "h-10 px-4 gap-2.5 min-w-0 flex-1 sm:flex-none sm:min-w-24 text-sm font-medium" 
       : "h-8 w-8"
 
+    if (isStack) {
+      return (
+        <div className={wrap}>
+          <Button
+            size="default"
+            variant="default"
+            className={btnBaseClass}
+            disabled={!pending}
+            title={pending ? "Approve application" : "Only pending applications can be approved"}
+            onClick={() => onApprove(row)}
+          >
+            <Check className="h-4 w-4 shrink-0" />
+            <span className="truncate">Approve</span>
+          </Button>
+          <Button
+            size="default"
+            variant="destructive"
+            className={btnBaseClass}
+            title="Remove from list"
+            onClick={() => setDeleteTarget(row)}
+          >
+            <Trash2 className="h-4 w-4 shrink-0" />
+            <span className="truncate">Delete</span>
+          </Button>
+          <Button
+            size="default"
+            variant="outline"
+            className={btnBaseClass}
+            title="View full application"
+            onClick={() => openView(row)}
+          >
+            <Eye className="h-4 w-4 shrink-0" />
+            <span className="truncate">View</span>
+          </Button>
+        </div>
+      )
+    }
+
     return (
       <div className={wrap}>
-        <Button
-          size={isStack ? "default" : "icon"}
-          variant="default"
-          className={btnBaseClass}
-          disabled={!pending}
-          title={pending ? "Approve application" : "Only pending applications can be approved"}
-          onClick={() => onApprove(row)}
-        >
-          <Check className="h-4 w-4 shrink-0" />
-          {isStack && <span className="truncate">Approve</span>}
-        </Button>
-        <Button
-          size={isStack ? "default" : "icon"}
-          variant="destructive"
-          className={btnBaseClass}
-          title="Remove from list"
-          onClick={() => setDeleteTarget(row)}
-        >
-          <Trash2 className="h-4 w-4 shrink-0" />
-          {isStack && <span className="truncate">Delete</span>}
-        </Button>
-        <Button
-          size={isStack ? "default" : "icon"}
-          variant="outline"
-          className={btnBaseClass}
-          title="View full application"
-          onClick={() => openView(row)}
-        >
-          <Eye className="h-4 w-4 shrink-0" />
-          {isStack && <span className="truncate">View</span>}
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => openView(row)}>
+              <Eye className="mr-2 h-4 w-4" />
+              View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openMessage(row)}>
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Send Message
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openInfoRequest(row)}>
+              <FileQuestion className="mr-2 h-4 w-4" />
+              Request More Info
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {pending && (
+              <DropdownMenuItem onClick={() => onApprove(row)}>
+                <Check className="mr-2 h-4 w-4 text-emerald-600" />
+                Approve
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={() => openReject(row)}>
+              <X className="mr-2 h-4 w-4 text-red-600" />
+              Reject
+            </DropdownMenuItem>
+            {row.status === "suspended" ? (
+              <DropdownMenuItem onClick={() => updateApplicationStatus(row.id, "approved")}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reactivate
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onClick={() => updateApplicationStatus(row.id, "suspended")}>
+                <Ban className="mr-2 h-4 w-4 text-orange-600" />
+                Suspend
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget(row)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     )
   }
@@ -343,6 +478,78 @@ export default function ManufacturerRegistrationsPage() {
           application={viewTarget}
         />
       ) : null}
+
+      {/* Send Message Dialog */}
+      <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Message</DialogTitle>
+            <DialogDescription>
+              Send a message to {messageTarget?.company_name || messageTarget?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Label>Message</Label>
+            <Textarea
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              className="mt-2 min-h-[120px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMessageDialog(false)}>Cancel</Button>
+            <Button onClick={sendMessage}>Send</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Request Info Dialog */}
+      <Dialog open={showInfoDialog} onOpenChange={setShowInfoDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Request Additional Information</DialogTitle>
+            <DialogDescription>
+              Request more details from {infoTarget?.company_name || infoTarget?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Label>Message</Label>
+            <Textarea
+              value={infoRequestText}
+              onChange={(e) => setInfoRequestText(e.target.value)}
+              className="mt-2 min-h-[120px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInfoDialog(false)}>Cancel</Button>
+            <Button onClick={submitInfoRequest}>Send Request</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Application</DialogTitle>
+            <DialogDescription>
+              Provide a reason for rejecting {rejectTarget ? displayCompany(rejectTarget) : "this application"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Label>Reason for Rejection</Label>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="mt-2 min-h-[100px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={submitReject}>Reject</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
