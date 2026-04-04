@@ -22,6 +22,19 @@ type SocialLoginEnvelope = LoginResponse & {
   setup_token?: string
 }
 
+export type SocialCompleteProfileInput = {
+  setupToken: string
+  role?: "buyer" | "manufacturer"
+  companyName: string
+  agreedToTerms: boolean
+  city?: string
+  country?: string
+  companyWebsite?: string
+  notes?: string
+  businessLicense?: File | null
+  factoryImages?: File[]
+}
+
 export async function googleTokenLogin(input: {
   token: string
   role: "buyer" | "manufacturer" | "admin"
@@ -30,9 +43,41 @@ export async function googleTokenLogin(input: {
   return response.data
 }
 
-export async function completeSocialProfile(setupToken: string): Promise<LoginResponse> {
+export async function completeSocialProfile(input: SocialCompleteProfileInput): Promise<LoginResponse> {
   const form = new FormData()
-  form.append("setup_token", setupToken)
+  form.append("setup_token", input.setupToken)
+  form.append("company_name", input.companyName)
+  form.append("agreed_to_terms", input.agreedToTerms ? "1" : "0")
+
+  if (input.role) {
+    form.append("role", input.role)
+  }
+
+  if (input.city) {
+    form.append("city", input.city)
+  }
+
+  if (input.country) {
+    form.append("country", input.country)
+  }
+
+  if (input.companyWebsite) {
+    form.append("company_website", input.companyWebsite)
+  }
+
+  if (input.notes) {
+    form.append("notes", input.notes)
+  }
+
+  if (input.businessLicense) {
+    form.append("business_licence", input.businessLicense)
+  }
+
+  if (input.factoryImages && input.factoryImages.length > 0) {
+    input.factoryImages.forEach((file, index) => {
+      form.append(`factory_images[${index}]`, file)
+    })
+  }
 
   const response = await apiClient.post<LoginResponse>("/auth/social/complete-profile", form, {
     headers: {

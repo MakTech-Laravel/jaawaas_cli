@@ -14,6 +14,7 @@ import { Eye, EyeOff, Loader2, Users, Factory, Shield, AlertCircle } from "lucid
 import { FcGoogle } from "react-icons/fc";
 import { useToast } from "@/hooks/use-toast"
 import { decodeGoogleIdTokenPayload, getGoogleIdToken } from "@/lib/google-identity"
+import { SocialCompleteProfileModal } from "@/components/auth/social-complete-profile-modal"
 
 function RestoredAccountNotifier() {
   const router = useRouter()
@@ -47,6 +48,10 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [activeTab, setActiveTab] = useState<UserRole>(defaultTab)
+  const [socialSetupState, setSocialSetupState] = useState<{
+    setupToken: string
+    role: "buyer" | "manufacturer"
+  } | null>(null)
 
   const [formData, setFormData] = useState({
     email: "",
@@ -101,6 +106,15 @@ export default function SignInPage() {
         router.push(result.redirectTo)
         return
       }
+
+      if (result.needsProfileCompletion) {
+        setSocialSetupState({
+          setupToken: result.setupToken,
+          role: result.role,
+        })
+        return
+      }
+
       setError(result.message || "Google login failed. Please try again.")
     } catch (err) {
       const message = err instanceof Error ? err.message : "Google login failed. Please try again."
@@ -266,6 +280,21 @@ export default function SignInPage() {
           </Link>
         </p>
       </div>
+
+      <SocialCompleteProfileModal
+        open={!!socialSetupState}
+        setupToken={socialSetupState?.setupToken || ""}
+        role={socialSetupState?.role || "buyer"}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSocialSetupState(null)
+          }
+        }}
+        onCompleted={(redirectTo) => {
+          setSocialSetupState(null)
+          router.push(redirectTo)
+        }}
+      />
     </>
   )
 }

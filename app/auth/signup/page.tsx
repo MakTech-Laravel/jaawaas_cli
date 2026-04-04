@@ -163,6 +163,16 @@ export default function SignUpPage() {
         router.push(result.redirectTo)
         return
       }
+
+      if (result.needsProfileCompletion) {
+        const params = new URLSearchParams({
+          setup_token: result.setupToken,
+          role: result.role,
+        })
+        router.push(`/auth/social-complete?${params.toString()}`)
+        return
+      }
+
       setError(result.message || "Google login failed. Please try again.")
     } catch (err) {
       const message = err instanceof Error ? err.message : "Google login failed. Please try again."

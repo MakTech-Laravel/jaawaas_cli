@@ -7,6 +7,7 @@ import {
   googleTokenLogin,
   login as loginRequest,
   register as registerRequest,
+  type SocialCompleteProfileInput,
 } from "@/lib/api/auth"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import {
@@ -21,6 +22,27 @@ export type SignupResult =
   | { success: true; pendingReview: true; message: string; manufactureStatus?: string | null }
   | { success: true; pendingReview: false; redirectTo: string; message?: string }
   | { success: false; message?: string }
+
+type SocialSetupRole = "buyer" | "manufacturer"
+
+export type GoogleLoginResult =
+  | { success: true; redirectTo: string; message?: string }
+  | {
+      success: false
+      redirectTo: ""
+      message?: string
+      needsProfileCompletion: true
+      setupToken: string
+      role: SocialSetupRole
+    }
+  | { success: false; redirectTo: ""; message?: string; needsProfileCompletion?: false }
+
+export type CompleteGoogleProfileInput = SocialCompleteProfileInput & { role: SocialSetupRole }
+
+export type CompleteGoogleProfileResult =
+  | { success: true; redirectTo: string; message?: string; pendingReview?: false }
+  | { success: false; redirectTo: ""; message?: string; pendingReview?: false }
+  | { success: false; redirectTo: ""; pendingReview: true; message: string }
 
 export type ManufacturerStatus =
   | "draft"
@@ -49,7 +71,8 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   login: (email: string, password: string, role?: UserRole) => Promise<{ success: boolean; redirectTo: string }>
-  loginWithGoogle: (googleIdToken: string, role?: UserRole) => Promise<{ success: boolean; redirectTo: string; message?: string }>
+  loginWithGoogle: (googleIdToken: string, role?: UserRole) => Promise<GoogleLoginResult>
+  completeGoogleProfile: (input: CompleteGoogleProfileInput) => Promise<CompleteGoogleProfileResult>
   signup: (data: SignupData) => Promise<SignupResult>
   logout: () => void
   setToken: (token: string | null) => void
@@ -95,6 +118,23 @@ function toAuthUser(user: User | ApiUser): User {
   }
 
   return user
+}
+
+function extractSetupToken(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") {
+    return null
+  }
+
+  const tokenValue =
+    (payload as Record<string, unknown>).setup_token ??
+    (payload as Record<string, unknown>).setupToken
+
+  if (typeof tokenValue !== "string") {
+    return null
+  }
+
+  const trimmed = tokenValue.trim()
+  return trimmed.length > 0 ? trimmed : null
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -242,10 +282,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithGoogle = async (
     googleIdToken: string,
     role: UserRole = "buyer"
-  ): Promise<{ success: boolean; redirectTo: string; message?: string }> => {
+  ): Promise<GoogleLoginResult> => {
     setIsLoading(true)
 
     try {
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.log("[google-token payload to backend]", {
+          token: googleIdToken,
+          role,
+        })
+      }
+
       const response = await googleTokenLogin({ token: googleIdToken, role })
 
       if (response.success && response.data?.access_token && response.data.user) {
@@ -257,22 +305,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const setupToken = (response as { setup_token?: string }).setup_token
-      if (response.success && setupToken) {
-        const completed = await completeSocialProfile(setupToken)
-        if (completed.success && completed.data?.access_token && completed.data.user) {
-          setToken(completed.data.access_token)
-          setUser(completed.data.user)
+      const setupToken = extractSetupToken(response) || extractSetupToken(response.data)
+
+      if (setupToken) {
+        if (role === "admin") {
           return {
-            success: true,
-            redirectTo: getDashboardPathByRole(completed.data.user.role),
+            success: false,
+            redirectTo: "",
+            message: "Google sign-in is not available for admin accounts.",
           }
         }
 
+        const completionRole: SocialSetupRole = role === "manufacturer" ? "manufacturer" : "buyer"
         return {
           success: false,
           redirectTo: "",
-          message: completed.message || "Profile completion failed.",
+          needsProfileCompletion: true,
+          setupToken,
+          role: completionRole,
+          message: response.message || "Please complete your profile to continue.",
         }
       }
 
@@ -280,6 +331,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         success: false,
         redirectTo: "",
         message: response.message || "Google login failed.",
+      }
+    } catch (err: unknown) {
+      return { success: false, redirectTo: "", message: getApiErrorMessage(err) }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const completeGoogleProfile = async (
+    input: CompleteGoogleProfileInput
+  ): Promise<CompleteGoogleProfileResult> => {
+    setIsLoading(true)
+
+    try {
+      const response = await completeSocialProfile(input)
+
+      if (response.success && response.data?.access_token && response.data.user) {
+        setToken(response.data.access_token)
+        setUser(response.data.user)
+        return {
+          success: true,
+          redirectTo: getDashboardPathByRole(response.data.user.role),
+        }
+      }
+
+      if (response.success) {
+        return {
+          success: false,
+          redirectTo: "",
+          pendingReview: true,
+          message:
+            response.message ||
+            "Thank you for registering. Your account is currently pending review.",
+        }
+      }
+
+      return {
+        success: false,
+        redirectTo: "",
+        message: response.message || "Profile completion failed.",
       }
     } catch (err: unknown) {
       return { success: false, redirectTo: "", message: getApiErrorMessage(err) }
@@ -309,6 +400,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         login,
         loginWithGoogle,
+        completeGoogleProfile,
         signup,
         logout,
         setToken,

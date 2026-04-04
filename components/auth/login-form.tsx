@@ -83,6 +83,15 @@ export function LoginForm() {
         return;
       }
 
+      if (result.needsProfileCompletion) {
+        const params = new URLSearchParams({
+          setup_token: result.setupToken,
+          role: result.role,
+        });
+        router.push(`/auth/social-complete?${params.toString()}`);
+        return;
+      }
+
       toast({
         title: "Google login failed",
         description: result.message || "Please try again.",
