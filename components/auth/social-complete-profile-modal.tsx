@@ -324,9 +324,9 @@ export function SocialCompleteProfileModal({
 
                     {formData.businessLicense ? (
                       <div className="flex items-center justify-between rounded-lg border border-secondary/30 bg-secondary/5 p-3">
-                        <div>
-                          <p className="text-sm font-medium text-foreground">
-                            {formData.businessLicense.name}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-foreground truncate" title={decodeURIComponent(formData.businessLicense.name)}>
+                            {decodeURIComponent(formData.businessLicense.name)}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {(formData.businessLicense.size / 1024 / 1024).toFixed(2)} MB
@@ -380,7 +380,9 @@ export function SocialCompleteProfileModal({
                             key={`${photo.name}-${index}`}
                             className="flex items-center justify-between rounded-lg border p-2"
                           >
-                            <span className="truncate text-sm">{photo.name}</span>
+                            <span className="truncate text-sm" title={decodeURIComponent(photo.name)}>
+                              {decodeURIComponent(photo.name)}
+                            </span>
                             <Button
                               type="button"
                               variant="ghost"
