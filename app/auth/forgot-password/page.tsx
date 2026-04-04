@@ -6,56 +6,98 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Loader2, Mail, CheckCircle } from "lucide-react"
+import { forgotPassword, resetPassword } from "@/lib/api/auth"
+import { getApiErrorMessage } from "@/lib/api/errors"
 
 export default function ForgotPasswordPage() {
+  const [step, setStep] = useState<"request" | "reset" | "done">("request")
   const [isLoading, setIsLoading] = useState(false)
-  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [error, setError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
   const [email, setEmail] = useState("")
+  const [otp, setOtp] = useState("")
+  const [password, setPassword] = useState("")
+  const [passwordConfirmation, setPasswordConfirmation] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRequestResetCode = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
     setIsLoading(true)
-    
-    // Simulate sending reset email
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    setIsSubmitted(true)
-    setIsLoading(false)
+
+    try {
+      const response = await forgotPassword(email.trim())
+
+      if (response.success) {
+        setOtp("")
+        setPassword("")
+        setPasswordConfirmation("")
+        setStep("reset")
+        return
+      }
+
+      setError(response.message || "Could not send reset code.")
+    } catch (err) {
+      setError(getApiErrorMessage(err))
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  if (isSubmitted) {
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+
+    if (password !== passwordConfirmation) {
+      setError("Password confirmation does not match.")
+      return
+    }
+
+    if (!email.trim()) {
+      setError("Email is missing. Please request a reset code again.")
+      setStep("request")
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const response = await resetPassword({
+        otp: otp.trim(),
+        email: email.trim(),
+        password,
+        passwordConfirmation,
+      })
+
+      if (response.success) {
+        setSuccessMessage(response.message || "Your password has been reset successfully.")
+        setStep("done")
+        return
+      }
+
+      setError(response.message || "Could not reset password.")
+    } catch (err) {
+      setError(getApiErrorMessage(err))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (step === "done") {
     return (
       <div className="text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-secondary/10">
           <CheckCircle className="h-8 w-8 text-secondary" />
         </div>
         <h1 className="mt-6 font-serif text-3xl font-medium text-foreground">
-          Check your email
+          Password reset complete
         </h1>
-        <p className="mt-2 text-muted-foreground">
-          We&apos;ve sent a password reset link to
-        </p>
-        <p className="mt-1 font-medium text-foreground">{email}</p>
-        
-        <div className="mt-8 space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Didn&apos;t receive the email? Check your spam folder or
-          </p>
-          <Button 
-            variant="outline" 
-            onClick={() => setIsSubmitted(false)}
-            className="w-full"
-          >
-            Try another email address
-          </Button>
-        </div>
+        <p className="mt-2 text-muted-foreground">{successMessage}</p>
 
-        <p className="mt-8 text-sm text-muted-foreground">
-          Remember your password?{" "}
-          <Link href="/auth/signin" className="font-medium text-secondary hover:underline">
-            Back to sign in
+        <div className="mt-8 space-y-4">
+          <Link href="/auth/signin">
+            <Button className="w-full">Back to sign in</Button>
           </Link>
-        </p>
+        </div>
       </div>
     )
   }
@@ -75,38 +117,118 @@ export default function ForgotPasswordPage() {
           <Mail className="h-8 w-8 text-secondary" />
         </div>
         <h1 className="mt-6 font-serif text-3xl font-medium text-foreground">
-          Forgot your password?
+          {step === "request" ? "Forgot your password?" : "Reset your password"}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          No worries, we&apos;ll send you reset instructions.
+          {step === "request"
+            ? "No worries, we&apos;ll send you reset instructions."
+            : "Enter the OTP and your new password to complete reset."}
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email address</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="you@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={isLoading}
-          />
-        </div>
+      {error && (
+        <p className="mt-6 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+      )}
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Sending...
-            </>
-          ) : (
-            "Send reset link"
-          )}
-        </Button>
-      </form>
+      {step === "request" ? (
+        <form onSubmit={handleRequestResetCode} className="mt-8 space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email address</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              "Send reset code"
+            )}
+          </Button>
+        </form>
+      ) : (
+        <form onSubmit={handleResetPassword} className="mt-8 space-y-4">
+          {/* Keep email hidden in UI but include it in reset payload */}
+          <input type="hidden" name="email" value={email} readOnly />
+
+          <div className="space-y-2">
+            <Label htmlFor="otp">OTP code</Label>
+            <Input
+              id="otp"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="Enter OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="new-password">New password</Label>
+            <Input
+              id="new-password"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirm password</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              value={passwordConfirmation}
+              onChange={(e) => setPasswordConfirmation(e.target.value)}
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Resetting...
+              </>
+            ) : (
+              "Reset password"
+            )}
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            disabled={isLoading}
+            onClick={() => {
+              setStep("request")
+              setOtp("")
+              setPassword("")
+              setPasswordConfirmation("")
+              setError("")
+            }}
+          >
+            Use another email
+          </Button>
+        </form>
+      )}
 
       <p className="mt-8 text-center text-sm text-muted-foreground">
         Remember your password?{" "}

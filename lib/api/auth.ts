@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, publicApiClient } from "./client";
 import { LoginInput, LoginResponse } from "@/lib/types";
 
 export async function login(data: LoginInput): Promise<LoginResponse> {
@@ -85,5 +85,34 @@ export async function completeSocialProfile(input: SocialCompleteProfileInput): 
     },
   })
 
+  return response.data
+}
+
+type PasswordActionResponse = {
+  success: boolean
+  message: string
+}
+
+export async function forgotPassword(email: string): Promise<PasswordActionResponse> {
+  const response = await publicApiClient.post<PasswordActionResponse>("/forgot-password", {
+    email,
+  })
+  return response.data
+}
+
+export type ResetPasswordInput = {
+  otp: string
+  email: string
+  password: string
+  passwordConfirmation: string
+}
+
+export async function resetPassword(input: ResetPasswordInput): Promise<PasswordActionResponse> {
+  const response = await publicApiClient.post<PasswordActionResponse>("/reset-password", {
+    otp: input.otp,
+    email: input.email,
+    password: input.password,
+    password_confirmation: input.passwordConfirmation,
+  })
   return response.data
 }
