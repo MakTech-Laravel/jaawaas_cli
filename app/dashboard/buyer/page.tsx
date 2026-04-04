@@ -1,7 +1,10 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { getFeaturedSuppliers } from "@/lib/data/suppliers"
+import { useAuth } from "@/lib/auth-context"
 import { 
   MessageSquare, 
   FileText, 
@@ -18,17 +21,21 @@ import {
 const recommendedSuppliers = getFeaturedSuppliers().slice(3, 6)
 
 export default function BuyerDashboardPage() {
+  const { user } = useAuth()
   const rfqs = [
     { id: "RFQ-001", product: "TWS Wireless Earbuds", supplier: "TechVision Electronics", status: "Quoted", date: "Mar 12, 2026" },
     { id: "RFQ-002", product: "Organic Cotton Fabric", supplier: "EcoThread Textiles", status: "Pending", date: "Mar 10, 2026" },
     { id: "RFQ-003", product: "CNC Machining Center", supplier: "GlobalFab Machinery", status: "In Review", date: "Mar 8, 2026" },
   ]
+  
+  const userDisplayName = user?.firstName || user?.name || "Buyer"
+  
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
       <div>
         <h1 className="font-serif text-2xl font-medium text-foreground sm:text-3xl">
-          Welcome back, John
+          Welcome back, {userDisplayName}
         </h1>
         <p className="mt-1 text-muted-foreground">
           Here's what's happening with your sourcing activities.
