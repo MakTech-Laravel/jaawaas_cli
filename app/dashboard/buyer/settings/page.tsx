@@ -20,6 +20,7 @@ import {
   Save
 } from "lucide-react"
 import { AccountDangerZone } from "@/components/settings/account-danger-zone"
+import { TwoFactorSettings } from "@/components/settings/two-factor-settings"
 
 export default function BuyerSettingsPage() {
   const [notifications, setNotifications] = useState({
@@ -221,11 +222,7 @@ export default function BuyerSettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <p className="font-medium text-foreground">Two-Factor Authentication</p>
-                <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
-                <Button variant="outline" size="sm" className="mt-2">Enable</Button>
-              </div>
+              <TwoFactorSettings />
               <div className="border-t border-border pt-4">
                 <p className="font-medium text-foreground">Login History</p>
                 <p className="text-sm text-muted-foreground">View recent login activity</p>

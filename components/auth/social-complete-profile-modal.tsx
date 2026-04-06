@@ -262,7 +262,7 @@ export function SocialCompleteProfileModal({
                       <SelectTrigger id="socialCountry">
                         <SelectValue placeholder="Select your country" />
                       </SelectTrigger>
-                      <SelectContent className="max-h-[300px]">
+                      <SelectContent className="max-h-75">
                         {countries.map((country) => (
                           <SelectItem key={country.code} value={country.code}>
                             {country.name}
