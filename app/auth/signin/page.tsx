@@ -69,8 +69,19 @@ export default function SignInPage() {
 
       if (result.success) {
         router.push(result.redirectTo)
+      } else if (result.requiresTwoFactor) {
+        const params = new URLSearchParams({
+          token: result.twoFactorToken,
+          role: result.role,
+        })
+
+        if (formData.remember) {
+          params.set("remember", "1")
+        }
+
+        router.push(`/auth/two-factor?${params.toString()}`)
       } else {
-        setError("Invalid email or password. Please try again.")
+        setError(result.message || "Invalid email or password. Please try again.")
       }
     } catch {
       setError("An error occurred. Please try again.")
@@ -107,7 +118,16 @@ export default function SignInPage() {
         return
       }
 
-      if (result.needsProfileCompletion) {
+      if ("requiresTwoFactor" in result && result.requiresTwoFactor) {
+        const params = new URLSearchParams({
+          token: result.twoFactorToken,
+          role: result.role,
+        })
+        router.push(`/auth/two-factor?${params.toString()}`)
+        return
+      }
+
+      if ("needsProfileCompletion" in result && result.needsProfileCompletion) {
         setSocialSetupState({
           setupToken: result.setupToken,
           role: result.role,

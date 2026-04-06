@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { LoginInput, User as ApiUser } from "@/lib/types"
 import {
   completeSocialProfile,
+  extractTwoFactorToken,
   googleTokenLogin,
   login as loginRequest,
   register as registerRequest,
@@ -23,10 +24,30 @@ export type SignupResult =
   | { success: true; pendingReview: false; redirectTo: string; message?: string }
   | { success: false; message?: string }
 
+export type LoginResult =
+  | { success: true; redirectTo: string; message?: string }
+  | {
+      success: false
+      redirectTo: ""
+      message?: string
+      requiresTwoFactor: true
+      twoFactorToken: string
+      role: UserRole
+    }
+  | { success: false; redirectTo: ""; message?: string; requiresTwoFactor?: false }
+
 type SocialSetupRole = "buyer" | "manufacturer"
 
 export type GoogleLoginResult =
   | { success: true; redirectTo: string; message?: string }
+  | {
+      success: false
+      redirectTo: ""
+      message?: string
+      requiresTwoFactor: true
+      twoFactorToken: string
+      role: UserRole
+    }
   | {
       success: false
       redirectTo: ""
@@ -70,7 +91,7 @@ interface AuthContextType {
   token: string | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (email: string, password: string, role?: UserRole) => Promise<{ success: boolean; redirectTo: string }>
+  login: (email: string, password: string, role?: UserRole) => Promise<LoginResult>
   loginWithGoogle: (googleIdToken: string, role?: UserRole) => Promise<GoogleLoginResult>
   completeGoogleProfile: (input: CompleteGoogleProfileInput) => Promise<CompleteGoogleProfileResult>
   signup: (data: SignupData) => Promise<SignupResult>
@@ -189,26 +210,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string,
     role: UserRole = "buyer"
-  ): Promise<{ success: boolean; redirectTo: string }> => {
+  ): Promise<LoginResult> => {
     setIsLoading(true)
 
     try {
       const loginPayload: LoginInput = { email, password, role }
       const response = await loginRequest(loginPayload)
 
-      if (!response.success || !response.data?.access_token || !response.data?.user) {
-        return { success: false, redirectTo: "" }
+      if (response.success && response.data?.access_token && response.data?.user) {
+        setToken(response.data.access_token)
+        setUser(response.data.user)
+
+        return {
+          success: true,
+          redirectTo: getDashboardPathByRole(response.data.user.role),
+          message: response.message || undefined,
+        }
       }
 
-      setToken(response.data.access_token)
-      setUser(response.data.user)
+      const twoFactorToken = extractTwoFactorToken(response)
+      if (twoFactorToken) {
+        return {
+          success: false,
+          redirectTo: "",
+          requiresTwoFactor: true,
+          twoFactorToken,
+          role,
+          message: response.message || "Enter your authentication code to continue.",
+        }
+      }
 
       return {
-        success: true,
-        redirectTo: getDashboardPathByRole(response.data.user.role),
+        success: false,
+        redirectTo: "",
+        message: response.message || "Login failed. Please check your credentials.",
       }
-    } catch {
-      return { success: false, redirectTo: "" }
+    } catch (err) {
+      return {
+        success: false,
+        redirectTo: "",
+        message: getApiErrorMessage(err),
+      }
     } finally {
       setIsLoading(false)
     }
@@ -302,6 +344,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return {
           success: true,
           redirectTo: getDashboardPathByRole(response.data.user.role),
+        }
+      }
+
+      const twoFactorToken = extractTwoFactorToken(response)
+      if (twoFactorToken) {
+        return {
+          success: false,
+          redirectTo: "",
+          requiresTwoFactor: true,
+          twoFactorToken,
+          role,
+          message: response.message || "Enter your authentication code to continue.",
         }
       }
 

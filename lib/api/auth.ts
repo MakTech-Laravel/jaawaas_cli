@@ -1,9 +1,52 @@
+import axios from "axios";
 import { apiClient, publicApiClient } from "./client";
-import { LoginInput, LoginResponse } from "@/lib/types";
+import { AuthTokenPayload, LoginInput, LoginResponse } from "@/lib/types";
 
-export async function login(data: LoginInput): Promise<LoginResponse> {
-  const response = await apiClient.post<LoginResponse>("/login", data);
-  return response.data;
+export type LoginEnvelope = LoginResponse & {
+  two_factor_token?: string
+  twoFactorToken?: string
+  data: (AuthTokenPayload & { two_factor_token?: string; twoFactorToken?: string }) | null
+}
+
+export function extractTwoFactorToken(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") {
+    return null
+  }
+
+  const source = payload as Record<string, unknown>
+  const directToken =
+    source.two_factor_token ?? source.twoFactorToken ?? source.two_factor_challenge_token ?? source.challenge_token
+
+  if (typeof directToken === "string" && directToken.trim()) {
+    return directToken.trim()
+  }
+
+  const nestedData = source.data
+  if (!nestedData || typeof nestedData !== "object") {
+    return null
+  }
+
+  const nested = nestedData as Record<string, unknown>
+  const nestedToken =
+    nested.two_factor_token ?? nested.twoFactorToken ?? nested.two_factor_challenge_token ?? nested.challenge_token
+
+  if (typeof nestedToken === "string" && nestedToken.trim()) {
+    return nestedToken.trim()
+  }
+
+  return null
+}
+
+export async function login(data: LoginInput): Promise<LoginEnvelope> {
+  try {
+    const response = await apiClient.post<LoginEnvelope>("/login", data)
+    return response.data
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data && typeof error.response.data === "object") {
+      return error.response.data as LoginEnvelope
+    }
+    throw error
+  }
 }
 
 /** Same envelope as login; `data` may be null when manufacturer registration is pending review. */
@@ -18,7 +61,33 @@ export async function register(formData: FormData): Promise<LoginResponse> {
   return response.data;
 }
 
-type SocialLoginEnvelope = LoginResponse & {
+export type TwoFactorChallengeInput = {
+  twoFactorToken: string
+  code?: string
+  recoveryCode?: string
+}
+
+export async function submitTwoFactorChallenge(input: TwoFactorChallengeInput): Promise<LoginEnvelope> {
+  if (!input.code?.trim() && !input.recoveryCode?.trim()) {
+    throw new Error("A verification code or recovery code is required.")
+  }
+
+  try {
+    const response = await publicApiClient.post<LoginEnvelope>("/two-factor-challenge", {
+      two_factor_token: input.twoFactorToken,
+      ...(input.code?.trim() ? { code: input.code.trim() } : {}),
+      ...(input.recoveryCode?.trim() ? { recovery_code: input.recoveryCode.trim() } : {}),
+    })
+    return response.data
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data && typeof error.response.data === "object") {
+      return error.response.data as LoginEnvelope
+    }
+    throw error
+  }
+}
+
+type SocialLoginEnvelope = LoginEnvelope & {
   setup_token?: string
 }
 

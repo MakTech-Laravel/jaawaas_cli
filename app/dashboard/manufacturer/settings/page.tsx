@@ -23,6 +23,7 @@ import {
   Save
 } from "lucide-react"
 import { AccountDangerZone } from "@/components/settings/account-danger-zone"
+import { TwoFactorSettings } from "@/components/settings/two-factor-settings"
 
 export default function ManufacturerSettingsPage() {
   const [notifications, setNotifications] = useState({
@@ -220,13 +221,7 @@ export default function ManufacturerSettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <p className="font-medium text-foreground">Two-Factor Authentication</p>
-                  <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
-                </div>
-                <Button variant="outline" size="sm">Enable</Button>
-              </div>
+              <TwoFactorSettings />
               <div className="flex items-center justify-between py-2 border-t border-border">
                 <div>
                   <p className="font-medium text-foreground">Login History</p>

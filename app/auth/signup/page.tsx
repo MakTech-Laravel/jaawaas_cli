@@ -164,7 +164,16 @@ export default function SignUpPage() {
         return
       }
 
-      if (result.needsProfileCompletion) {
+      if ("requiresTwoFactor" in result && result.requiresTwoFactor) {
+        const params = new URLSearchParams({
+          token: result.twoFactorToken,
+          role: result.role,
+        })
+        router.push(`/auth/two-factor?${params.toString()}`)
+        return
+      }
+
+      if ("needsProfileCompletion" in result && result.needsProfileCompletion) {
         const params = new URLSearchParams({
           setup_token: result.setupToken,
           role: result.role,
@@ -355,7 +364,7 @@ export default function SignUpPage() {
               <SelectTrigger id="country">
                 <SelectValue placeholder="Select your country" />
               </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
+              <SelectContent className="max-h-75">
                 {countries.map((country) => (
                   <SelectItem key={country.code} value={country.code}>
                     {country.name}
