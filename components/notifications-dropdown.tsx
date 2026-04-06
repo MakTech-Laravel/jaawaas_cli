@@ -277,9 +277,9 @@ export function NotificationsDropdown({ className }: NotificationsDropdownProps)
           variant="ghost"
           size="icon"
           className={cn(
-            "relative h-9 w-9 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
-            className
-          )}
+              "relative h-9 w-9 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 hover:bg-transparent hover:text-current",
+              className
+            )}
         >
           <Bell
             className={cn(
