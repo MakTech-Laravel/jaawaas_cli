@@ -11,8 +11,57 @@ import { submitTwoFactorChallenge } from "@/lib/api/auth"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import { useAuth } from "@/lib/auth-context"
 import { getDashboardPathByRole, type UserRole } from "@/lib/roles/dashboard-route"
+import type { User as ApiUser } from "@/lib/types"
 
 type VerificationMethod = "app" | "recovery"
+
+function asObject(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") {
+    return null
+  }
+
+  return value as Record<string, unknown>
+}
+
+function isApiUser(value: unknown): value is ApiUser {
+  const source = asObject(value)
+  if (!source) {
+    return false
+  }
+
+  return (
+    typeof source.id === "number" &&
+    typeof source.first_name === "string" &&
+    typeof source.last_name === "string" &&
+    typeof source.email === "string" &&
+    typeof source.role === "string" &&
+    typeof source.agreed_to_terms === "boolean" &&
+    typeof source.created_at === "string" &&
+    (typeof source.updated_at === "string" || source.updated_at === null)
+  )
+}
+
+function extractChallengeSession(
+  payload: unknown
+): { accessToken: string; user: ApiUser } | null {
+  const source = asObject(payload)
+  if (!source) {
+    return null
+  }
+
+  const accessTokenCandidate = source.access_token ?? source.token
+  const userCandidate = source.user
+
+  if (typeof accessTokenCandidate !== "string" || !accessTokenCandidate.trim()) {
+    return null
+  }
+
+  if (!isApiUser(userCandidate)) {
+    return null
+  }
+
+  return { accessToken: accessTokenCandidate.trim(), user: userCandidate }
+}
 
 function normalizeRole(role: string | null): UserRole {
   if (role === "manufacturer" || role === "admin") {
@@ -76,10 +125,16 @@ function TwoFactorChallengeContent() {
         ...(method === "app" ? { code } : { recoveryCode: backupCode }),
       })
 
-      if (response.success && response.data?.access_token && response.data.user) {
-        setToken(response.data.access_token)
-        setUser(response.data.user)
-        router.push(getDashboardPathByRole(response.data.user.role || role))
+      const session = extractChallengeSession(response.data)
+      if (response.success && session) {
+        const userRole =
+          typeof session.user.role === "string" && session.user.role.trim()
+            ? session.user.role
+            : role
+
+        setToken(session.accessToken)
+        setUser(session.user)
+        router.push(getDashboardPathByRole(userRole))
         return
       }
 

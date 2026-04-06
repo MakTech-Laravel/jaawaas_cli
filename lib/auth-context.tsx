@@ -6,6 +6,7 @@ import {
   completeSocialProfile,
   extractTwoFactorToken,
   googleTokenLogin,
+  isTwoFactorRequiredResponse,
   login as loginRequest,
   register as registerRequest,
   type SocialCompleteProfileInput,
@@ -237,6 +238,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           twoFactorToken,
           role,
           message: response.message || "Enter your authentication code to continue.",
+        }
+      }
+
+      if (isTwoFactorRequiredResponse(response)) {
+        return {
+          success: false,
+          redirectTo: "",
+          message:
+            response.message ||
+            "Two-factor authentication is required, but a challenge token was not returned.",
         }
       }
 

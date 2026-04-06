@@ -29,6 +29,12 @@ type ActionState = "enable" | "verify" | "disable" | "load-codes" | "regenerate"
 
 type SetupStep = "password" | "verify"
 
+const DEFAULT_SETUP_MESSAGE =
+  "Scan this QR code with your authenticator app and enter the 6-digit code."
+
+const DEFAULT_RECOVERY_MESSAGE =
+  "Keep these backup codes in a safe place. Each code can be used once."
+
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object") {
     return null
@@ -58,6 +64,28 @@ function isQrLikeValue(value: string): boolean {
     lower.startsWith("http://") ||
     lower.startsWith("https://")
   )
+}
+
+function extractMessage(payload: unknown): string | null {
+  const source = asObject(payload)
+  if (!source) {
+    return null
+  }
+
+  if (typeof source.message === "string" && source.message.trim()) {
+    return source.message.trim()
+  }
+
+  const nested = asObject(source.data)
+  if (!nested) {
+    return null
+  }
+
+  if (typeof nested.message === "string" && nested.message.trim()) {
+    return nested.message.trim()
+  }
+
+  return null
 }
 
 function extractRecoveryCodes(payload: unknown): string[] {
@@ -106,6 +134,7 @@ function extractQrCodeValue(payload: unknown): string | null {
 
   const direct =
     source.svg ??
+    source.qr_code_svg ??
     source.qr_code ??
     source.qrCode ??
     source.image ??
@@ -144,6 +173,7 @@ function extractQrCodeValue(payload: unknown): string | null {
 
   const nestedValue =
     nested.svg ??
+    nested.qr_code_svg ??
     nested.qr_code ??
     nested.qrCode ??
     nested.image ??
@@ -252,12 +282,14 @@ export function TwoFactorSettings() {
   const [verificationCode, setVerificationCode] = useState("")
   const [qrCodeValue, setQrCodeValue] = useState<string | null>(null)
   const [manualKey, setManualKey] = useState<string | null>(null)
+  const [setupStatusMessage, setSetupStatusMessage] = useState(DEFAULT_SETUP_MESSAGE)
 
   const [disableOpen, setDisableOpen] = useState(false)
   const [disablePassword, setDisablePassword] = useState("")
 
   const [recoveryOpen, setRecoveryOpen] = useState(false)
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([])
+  const [recoveryStatusMessage, setRecoveryStatusMessage] = useState(DEFAULT_RECOVERY_MESSAGE)
 
   const [regenerateOpen, setRegenerateOpen] = useState(false)
   const [regeneratePassword, setRegeneratePassword] = useState("")
@@ -272,6 +304,7 @@ export function TwoFactorSettings() {
     setVerificationCode("")
     setQrCodeValue(null)
     setManualKey(null)
+    setSetupStatusMessage(DEFAULT_SETUP_MESSAGE)
   }
 
   const loadTwoFactorState = async () => {
@@ -318,22 +351,42 @@ export function TwoFactorSettings() {
 
     setActionState("enable")
     try {
-      await enableTwoFactor(setupPassword.trim())
-
-      const qrResponse = await getTwoFactorQrCode()
-      const normalizedQrResponse = normalizeQrPayload(qrResponse)
-      const qrResponseObject = asObject(normalizedQrResponse)
-      if (qrResponseObject?.success === false) {
-        const serverMessage = qrResponseObject.message
+      const enableResponse = await enableTwoFactor(setupPassword.trim())
+      const normalizedEnableResponse = normalizeQrPayload(enableResponse)
+      const enableResponseObject = asObject(normalizedEnableResponse)
+      if (enableResponseObject?.success === false) {
+        const serverMessage = enableResponseObject.message
         throw new Error(
           typeof serverMessage === "string" && serverMessage.trim()
             ? serverMessage
-            : "Could not fetch the QR code."
+            : "Could not start two-factor setup."
         )
       }
 
-      const qrValue = extractQrCodeValue(normalizedQrResponse)
-      const key = extractManualKey(normalizedQrResponse)
+      let qrValue = extractQrCodeValue(normalizedEnableResponse)
+      let key = extractManualKey(normalizedEnableResponse)
+      let setupMessage = extractMessage(normalizedEnableResponse)
+
+      if (!qrValue && !key) {
+        const qrResponse = await getTwoFactorQrCode()
+        const normalizedQrResponse = normalizeQrPayload(qrResponse)
+        const qrResponseObject = asObject(normalizedQrResponse)
+        if (qrResponseObject?.success === false) {
+          const serverMessage = qrResponseObject.message
+          throw new Error(
+            typeof serverMessage === "string" && serverMessage.trim()
+              ? serverMessage
+              : "Could not fetch the QR code."
+          )
+        }
+
+        qrValue = extractQrCodeValue(normalizedQrResponse)
+        key = extractManualKey(normalizedQrResponse)
+
+        if (!setupMessage) {
+          setupMessage = extractMessage(normalizedQrResponse)
+        }
+      }
 
       if (!qrValue && !key) {
         throw new Error("The server did not return a QR code or manual key. Please try again.")
@@ -341,6 +394,7 @@ export function TwoFactorSettings() {
 
       setQrCodeValue(qrValue)
       setManualKey(key)
+      setSetupStatusMessage(setupMessage || DEFAULT_SETUP_MESSAGE)
       setSetupStep("verify")
     } catch (err) {
       toast({
@@ -369,6 +423,7 @@ export function TwoFactorSettings() {
     setActionState("verify")
     try {
       const confirmResponse = await confirmTwoFactor(code)
+      const confirmMessage = extractMessage(confirmResponse)
       let codes = extractRecoveryCodes(confirmResponse)
 
       if (codes.length === 0) {
@@ -377,6 +432,7 @@ export function TwoFactorSettings() {
       }
 
       setRecoveryCodes(codes)
+      setRecoveryStatusMessage(confirmMessage || DEFAULT_RECOVERY_MESSAGE)
       setIsEnabled(true)
       setSetupOpen(false)
       resetSetupDialog()
@@ -384,7 +440,7 @@ export function TwoFactorSettings() {
 
       toast({
         title: "Two-factor enabled",
-        description: "Save your recovery codes in a secure place.",
+        description: confirmMessage || "Save your recovery codes in a secure place.",
       })
     } catch (err) {
       toast({
@@ -437,6 +493,7 @@ export function TwoFactorSettings() {
       const response = await getTwoFactorRecoveryCodes()
       const codes = extractRecoveryCodes(response)
       setRecoveryCodes(codes)
+      setRecoveryStatusMessage(DEFAULT_RECOVERY_MESSAGE)
       setRecoveryOpen(true)
     } catch (err) {
       toast({
@@ -471,6 +528,7 @@ export function TwoFactorSettings() {
       }
 
       setRecoveryCodes(codes)
+      setRecoveryStatusMessage(DEFAULT_RECOVERY_MESSAGE)
       setRegenerateOpen(false)
       setRegeneratePassword("")
       setRecoveryOpen(true)
@@ -600,9 +658,7 @@ export function TwoFactorSettings() {
             <form onSubmit={handleConfirmSetup}>
               <DialogHeader>
                 <DialogTitle>Scan and verify</DialogTitle>
-                <DialogDescription>
-                  Scan this QR code with your authenticator app and enter the 6-digit code.
-                </DialogDescription>
+                <DialogDescription>{setupStatusMessage}</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 {qrCodeValue && isSvgMarkup(qrCodeValue) && (
@@ -700,9 +756,7 @@ export function TwoFactorSettings() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Recovery codes</DialogTitle>
-            <DialogDescription>
-              Keep these backup codes in a safe place. Each code can be used once.
-            </DialogDescription>
+            <DialogDescription>{recoveryStatusMessage}</DialogDescription>
           </DialogHeader>
 
           <div className="max-h-64 overflow-y-auto rounded-lg border border-border bg-muted/40 p-3">

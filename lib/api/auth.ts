@@ -2,18 +2,35 @@ import axios from "axios";
 import { apiClient, publicApiClient } from "./client";
 import { AuthTokenPayload, LoginInput, LoginResponse } from "@/lib/types";
 
+export type LoginTwoFactorChallengeData = {
+  two_factor?: boolean
+  twoFactor?: boolean
+  two_factor_token?: string
+  twoFactorToken?: string
+  two_factor_challenge_token?: string
+  challenge_token?: string
+}
+
 export type LoginEnvelope = LoginResponse & {
   two_factor_token?: string
   twoFactorToken?: string
-  data: (AuthTokenPayload & { two_factor_token?: string; twoFactorToken?: string }) | null
+  data: (AuthTokenPayload & LoginTwoFactorChallengeData) | LoginTwoFactorChallengeData | null
 }
 
-export function extractTwoFactorToken(payload: unknown): string | null {
-  if (!payload || typeof payload !== "object") {
+function asObject(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") {
     return null
   }
 
-  const source = payload as Record<string, unknown>
+  return value as Record<string, unknown>
+}
+
+export function extractTwoFactorToken(payload: unknown): string | null {
+  const source = asObject(payload)
+  if (!source) {
+    return null
+  }
+
   const directToken =
     source.two_factor_token ?? source.twoFactorToken ?? source.two_factor_challenge_token ?? source.challenge_token
 
@@ -21,12 +38,11 @@ export function extractTwoFactorToken(payload: unknown): string | null {
     return directToken.trim()
   }
 
-  const nestedData = source.data
-  if (!nestedData || typeof nestedData !== "object") {
+  const nested = asObject(source.data)
+  if (!nested) {
     return null
   }
 
-  const nested = nestedData as Record<string, unknown>
   const nestedToken =
     nested.two_factor_token ?? nested.twoFactorToken ?? nested.two_factor_challenge_token ?? nested.challenge_token
 
@@ -35,6 +51,24 @@ export function extractTwoFactorToken(payload: unknown): string | null {
   }
 
   return null
+}
+
+export function isTwoFactorRequiredResponse(payload: unknown): boolean {
+  if (extractTwoFactorToken(payload)) {
+    return true
+  }
+
+  const source = asObject(payload)
+  if (!source) {
+    return false
+  }
+
+  const nested = asObject(source.data)
+  if (!nested) {
+    return false
+  }
+
+  return nested.two_factor === true || nested.twoFactor === true
 }
 
 export async function login(data: LoginInput): Promise<LoginEnvelope> {
