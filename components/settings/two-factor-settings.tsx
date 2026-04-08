@@ -23,7 +23,7 @@ import {
   getTwoFactorRecoveryCodes,
   regenerateTwoFactorRecoveryCodes,
 } from "@/lib/api/two-factor"
-import { Loader2 } from "lucide-react"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 
 type ActionState = "enable" | "verify" | "disable" | "load-codes" | "regenerate" | null
 
@@ -279,6 +279,7 @@ export function TwoFactorSettings() {
   const [setupOpen, setSetupOpen] = useState(false)
   const [setupStep, setSetupStep] = useState<SetupStep>("password")
   const [setupPassword, setSetupPassword] = useState("")
+  const [showSetupPassword, setShowSetupPassword] = useState(false)
   const [verificationCode, setVerificationCode] = useState("")
   const [qrCodeValue, setQrCodeValue] = useState<string | null>(null)
   const [manualKey, setManualKey] = useState<string | null>(null)
@@ -301,6 +302,7 @@ export function TwoFactorSettings() {
   const resetSetupDialog = () => {
     setSetupStep("password")
     setSetupPassword("")
+    setShowSetupPassword(false)
     setVerificationCode("")
     setQrCodeValue(null)
     setManualKey(null)
@@ -631,15 +633,26 @@ export function TwoFactorSettings() {
               </DialogHeader>
               <div className="py-4">
                 <Label htmlFor="two-factor-enable-password">Password</Label>
-                <Input
-                  id="two-factor-enable-password"
-                  type="password"
-                  autoComplete="current-password"
-                  className="mt-2"
-                  value={setupPassword}
-                  onChange={(e) => setSetupPassword(e.target.value)}
-                  disabled={isBusy}
-                />
+                <div className="relative mt-2">
+                  <Input
+                    id="two-factor-enable-password"
+                    type={showSetupPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    className="pr-10"
+                    value={setupPassword}
+                    onChange={(e) => setSetupPassword(e.target.value)}
+                    disabled={isBusy}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSetupPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label={showSetupPassword ? "Hide password" : "Show password"}
+                    disabled={isBusy}
+                  >
+                    {showSetupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={isBusy}>

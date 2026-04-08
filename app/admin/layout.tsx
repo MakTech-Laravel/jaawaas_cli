@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
+import { NotificationsDropdown } from "@/components/notifications-dropdown"
 import { 
   LayoutDashboard, 
   Users,
@@ -124,7 +125,7 @@ export default function AdminLayout({
             </button>
           </div>
 
-          <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-4">
+          <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto hide-scrollbar overflow-x-hidden overscroll-contain px-3 py-4">
             {navigation.map((item) => {
               const isActive = pathname === item.href
               return (
@@ -201,10 +202,7 @@ export default function AdminLayout({
             */}
           </div>
           <div className="flex items-center gap-3">
-            <button className="relative rounded-lg p-2 hover:bg-muted">
-              <Bell className="h-5 w-5 text-foreground" />
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive" />
-            </button>
+            <NotificationsDropdown />
             <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
               View Site
             </Link>

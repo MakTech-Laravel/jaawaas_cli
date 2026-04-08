@@ -1,7 +1,10 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Cpu, Cog, Shirt, Home, Heart, Car, UtensilsCrossed, FlaskConical, Package, Lightbulb, Wrench, HardHat, Sofa, Stethoscope, Wheat, Box, FileText, Factory, ShoppingBag, Globe } from "lucide-react"
 import { industries as industriesData } from "@/lib/data/industries"
+import { useTranslation } from "@/lib/i18n"
 
 // Only show featured industries on the homepage (limit to 8)
 const featuredIndustries = industriesData.filter(i => i.featured).slice(0, 8)
@@ -65,6 +68,12 @@ const iconColors: Record<string, string> = {
 }
 
 export function IndustriesSection() {
+  const { t } = useTranslation()
+
+  if (!t || !t.landing?.industries) {
+    return null
+  }
+  
   return (
     <section className="py-8 sm:py-12 lg:py-24 bg-muted/50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -72,13 +81,13 @@ export function IndustriesSection() {
         <div className="flex flex-col items-center text-center mb-12 lg:mb-16">
           <span className="inline-flex items-center gap-2 rounded-full bg-secondary/10 px-4 py-2 text-sm font-medium text-secondary mb-4">
             <Package className="h-4 w-4" />
-            Popular Industries
+            {t.landing.featured.industriesTitle}
           </span>
           <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl lg:text-5xl">
-            Find Suppliers by Industry
+            {t.landing.featured.industriesTitle}
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Discover reviewed manufacturers across major industrial sectors. Each category features vetted suppliers ready to fulfill your requirements.
+            {t.landing.featured.industriesSubtitle}
           </p>
         </div>
 
