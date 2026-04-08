@@ -1,26 +1,35 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Shield, FileCheck, Eye, CheckCircle, ArrowRight } from "lucide-react"
-
-const trustFeatures = [
-  {
-    icon: FileCheck,
-    title: "Document Review",
-    description: "Business licenses, certifications, and export documentation are reviewed by our screening team based on submitted information.",
-  },
-  {
-    icon: Eye,
-    title: "Profile Review",
-    description: "Every manufacturer profile is manually reviewed before approval to assess accuracy based on provided information.",
-  },
-  {
-    icon: CheckCircle,
-    title: "Ongoing Monitoring",
-    description: "We continuously monitor supplier performance and buyer feedback to maintain quality standards.",
-  },
-]
+import { useTranslation } from "@/lib/i18n"
 
 export function TrustSection() {
+  const { t } = useTranslation()
+
+  if (!t || !t.landing?.trust) {
+    return null
+  }
+
+  const trustFeatures = [
+    {
+      icon: FileCheck,
+      title: t.landing.trust.t1Title,
+      description: t.landing.trust.t1Desc,
+    },
+    {
+      icon: Eye,
+      title: t.landing.trust.t2Title,
+      description: t.landing.trust.t2Desc,
+    },
+    {
+      icon: CheckCircle,
+      title: t.landing.trust.t3Title,
+      description: t.landing.trust.t3Desc,
+    },
+  ]
+
   return (
     <section className="py-8 sm:py-12 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -32,10 +41,10 @@ export function TrustSection() {
               <span>Trust & Review</span>
             </div>
             <h2 className="mt-6 font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl lg:text-4xl">
-              Every Supplier is Reviewed Before You See Them
+              {t.landing.trust.title}
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-              Unlike open marketplaces, SourceNest requires admin approval for every manufacturer. This means you only see suppliers that have been reviewed based on submitted information and documents.
+              {t.landing.trust.subtitle}
             </p>
 
             <div className="mt-10 space-y-6">

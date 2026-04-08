@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/accordion"
 import { ArrowRight } from "lucide-react"
 import { getFaqCategories } from "@/lib/api/faqs"
+import { useTranslation } from "@/lib/i18n"
 
 type FaqEntry = {
   id: string
@@ -21,6 +22,7 @@ type FaqEntry = {
 }
 
 export function FaqSection() {
+  const { t } = useTranslation()
   const [apiFaqs, setApiFaqs] = useState<FaqEntry[]>([])
 
   useEffect(() => {
@@ -84,7 +86,7 @@ export function FaqSection() {
         <div className="mx-auto max-w-3xl">
           <div className="text-center">
             <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
-              Frequently Asked Questions
+              {t.landing.faq.title}
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
               Everything you need to know about using SourceNest
