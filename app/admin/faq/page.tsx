@@ -206,7 +206,7 @@ export default function AdminFaqPage() {
 
     setIsSaving(true)
     try {
-      const response = editingCategory
+      const response = editingCategory 
         ? await updateAdminFaqCategory(editingCategory.id, {
             name: trimmedTitle,
             slug: editingCategory.slug,
