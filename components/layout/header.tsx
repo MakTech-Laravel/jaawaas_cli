@@ -127,7 +127,7 @@ const resourceItems: HeaderNavItemDef[] = [
   {
     title: "Review",
     href: "/verification",
-    description: "Learn how we reviewed and approve suppliers",
+    description: "Learn how we review and approve suppliers",
     icon: ShieldCheck,
   },
   {
