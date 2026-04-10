@@ -229,7 +229,7 @@ export function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <Image
-            src="/images/logo.avif"
+            src="/images/logo.png"
             alt="SourceNest"
             width={120}
             height={120}

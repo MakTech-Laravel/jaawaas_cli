@@ -78,11 +78,11 @@ export function Footer() {
           <div className="md:col-span-2 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2">
               <Image
-                src="/images/logo.avif"
+                src="/images/logo.png"
                 alt="SourceNest"
-                width={48}
-                height={48}
-                className="rounded-lg object-contain h-10 w-10 sm:h-12 sm:w-12"
+                width={120}
+                height={120}
+                className="rounded-lg object-contain h-27.5 w-27.5 md:h-37.5 md:w-37.5"
               />
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-primary-foreground/80">

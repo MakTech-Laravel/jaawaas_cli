@@ -13,6 +13,7 @@ import {
   Upload,
   CheckCircle,
   Globe,
+  Shield,
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n"
 
@@ -181,9 +182,13 @@ export function HowItWorksSection() {
                 </div>
               ))}
             </div>
-            <div className="mt-12 rounded-xl bg-secondary/10 p-6 text-center">
-              <p className="text-secondary font-medium">
-                {t.landing.howItWorks.mfgApproval}
+            <div className="mx-auto mt-12 max-w-2xl rounded-xl bg-secondary/10 p-6 text-center">
+              <Shield className="mx-auto h-8 w-8 text-secondary" />
+              <p className="mt-4 font-medium text-secondary">
+                Important: No payment is required upfront. Your account will be reviewed first, and you will only be charged after approval.
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Once approved, complete your payment to activate your account and unlock full access to the platform.
               </p>
             </div>
           </div>
