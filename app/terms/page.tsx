@@ -44,7 +44,7 @@ export default function TermsPage() {
             
             <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">6. Contact Information</h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              Questions about the Terms of Service should be sent to us at legal@sourcenest.com.
+              Questions about the Terms of Service should be sent to us at info@sourcenest.tech.
             </p>
           </div>
         </div>

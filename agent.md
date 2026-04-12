@@ -1,0 +1,2 @@
+- dont delete anything until i say so..
+- each time start working ask me for permission
