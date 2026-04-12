@@ -39,7 +39,7 @@ export default function CookiesPage() {
             
             <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">5. Contact Us</h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              If you have any questions about our Cookie Policy, please contact us at privacy@sourcenest.com.
+              If you have any questions about our Cookie Policy, please contact us at info@sourcenest.tech.
             </p>
           </div>
         </div>

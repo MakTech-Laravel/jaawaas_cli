@@ -198,7 +198,7 @@ export const defaultLegalPages: LegalPage[] = [
       {
         id: "contact",
         title: "5. Contact Us",
-        content: "If you have any questions about this Privacy Policy, please contact us at privacy@sourcenest.com.",
+        content: "If you have any questions about this Privacy Policy, please contact us at info@sourcenest.tech.",
         order: 5
       }
     ]
@@ -243,7 +243,7 @@ export const defaultLegalPages: LegalPage[] = [
       {
         id: "contact",
         title: "6. Contact Information",
-        content: "Questions about the Terms of Service should be sent to us at legal@sourcenest.com.",
+        content: "Questions about the Terms of Service should be sent to us at info@sourcenest.tech.",
         order: 6
       }
     ]
@@ -282,7 +282,7 @@ export const defaultLegalPages: LegalPage[] = [
       {
         id: "contact",
         title: "5. Contact Us",
-        content: "If you have any questions about our Cookie Policy, please contact us at privacy@sourcenest.com.",
+        content: "If you have any questions about our Cookie Policy, please contact us at info@sourcenest.tech.",
         order: 5
       }
     ]
