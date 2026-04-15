@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -220,7 +221,9 @@ export default function BuyerSettingsPage() {
               <div className="border-t border-border pt-4">
                 <p className="font-medium text-foreground">{t.settings.loginHistory}</p>
                 <p className="text-sm text-muted-foreground">{t.settings.loginHistoryDesc}</p>
-                <Button variant="outline" size="sm" className="mt-2">{t.common.view}</Button>
+                <Button variant="outline" size="sm" className="mt-2" asChild>
+                  <Link href="/dashboard/buyer/settings/login-history">{t.common.view}</Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
