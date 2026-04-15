@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -221,7 +222,9 @@ export default function ManufacturerSettingsPage() {
                   <p className="font-medium text-foreground">{t.settings.loginHistory}</p>
                   <p className="text-sm text-muted-foreground">{t.settings.loginHistoryDesc}</p>
                 </div>
-                <Button variant="outline" size="sm">{t.common.view}</Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/dashboard/manufacturer/settings/login-history">{t.common.view}</Link>
+                </Button>
               </div>
               <div className="flex items-center justify-between py-2 border-t border-border">
                 <div>

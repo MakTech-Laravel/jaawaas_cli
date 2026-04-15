@@ -101,7 +101,7 @@ export default function AdminReportsPage() {
           <div key={report.id} className="rounded-xl border border-border bg-card p-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-amber-100">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100">
                   <Flag className="h-6 w-6 text-amber-600" />
                 </div>
                 <div>
@@ -129,7 +129,7 @@ export default function AdminReportsPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 <Badge className={statusColors[report.status]} variant="secondary">
                   {report.status}
                 </Badge>
