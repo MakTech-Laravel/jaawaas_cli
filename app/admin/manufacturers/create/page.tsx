@@ -28,6 +28,9 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { countries as allCountries } from "@/lib/data/countries"
 import { industries } from "@/lib/data/industries"
+import { apiClient } from "@/lib/api/client"
+import { useToast } from "@/hooks/use-toast"
+import { getApiErrorMessage } from "@/lib/api/errors"
 import { 
   Factory,
   Mail,
@@ -94,6 +97,7 @@ export default function AdminCreateManufacturerPage() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [createdCredentials, setCreatedCredentials] = useState({ email: "", password: "" })
   const [isSaving, setIsSaving] = useState(false)
+  const { toast } = useToast()
   
   // Account Info
   const [accountForm, setAccountForm] = useState({
@@ -112,7 +116,8 @@ export default function AdminCreateManufacturerPage() {
     employeeCount: "",
     annualRevenue: "",
     description: "",
-    website: ""
+    website: "",
+    businessLicense: ""
   })
   
   // Location
@@ -194,28 +199,79 @@ export default function AdminCreateManufacturerPage() {
   const handleSubmit = async () => {
     // Validate required fields
     if (!accountForm.email || !accountForm.password || !companyForm.companyName || !locationForm.country) {
-      alert("Please fill in all required fields: Email, Password, Company Name, and Country")
+      toast({ title: "Missing required fields", description: "Please provide Email, Password, Company Name and Country", variant: "destructive" })
       return
     }
 
     setIsSaving(true)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // Store credentials for display
-    setCreatedCredentials({
+
+    // map selected industry names to ids (numbers) if needed
+    const industries_id = selectedIndustries.map(s => {
+      // allow storing either name or id
+      const foundByName = industries.find(i => i.name === s)
+      if (foundByName) return Number(foundByName.id)
+      const asNumber = Number(s)
+      return Number.isFinite(asNumber) ? asNumber : null
+    }).filter(Boolean)
+
+    const payload: Record<string, any> = {
       email: accountForm.email,
-      password: accountForm.password
-    })
-    
-    setIsSaving(false)
-    setShowSuccessDialog(true)
+      password: accountForm.password,
+      first_name: accountForm.firstName || undefined,
+      last_name: accountForm.lastName || undefined,
+      send_email: !!accountForm.sendCredentials,
+
+      company_name: companyForm.companyName || undefined,
+      company_type: companyForm.businessType || undefined,
+      company_established: companyForm.yearEstablished || undefined,
+      company_size: companyForm.employeeCount || undefined,
+      revenue: companyForm.annualRevenue || undefined,
+
+      country: locationForm.country || undefined,
+      city: locationForm.city || undefined,
+      street_address: locationForm.address || undefined,
+      phone: locationForm.phone || undefined,
+      zip_code: locationForm.postalCode || undefined,
+      industries_id: industries_id,
+      capabilities: selectedCapabilities,
+      certifications: selectedCertifications,
+      export_markets: exportMarkets,
+
+      bussiness_license: companyForm.businessLicense || undefined,
+      company_website: companyForm.website || undefined,
+      notes: companyForm.description || undefined,
+    }
+
+    try {
+      // Try conventional REST endpoint first, fallback to legacy create path
+      const endpoints = ["/admin/manufacturers", "/admin/manufacturer/create"]
+      let res: any = null
+      for (const ep of endpoints) {
+        try {
+          res = await apiClient.post(ep, payload)
+          if (res && (res.status === 200 || res.status === 201 || res.data)) break
+        } catch (err: any) {
+          // 404 -> try next endpoint
+          if (err?.response?.status === 404) continue
+          throw err
+        }
+      }
+
+      if (!res) throw new Error("Create failed: no response from server")
+
+      setCreatedCredentials({ email: accountForm.email, password: accountForm.password })
+      setIsSaving(false)
+      setShowSuccessDialog(true)
+
+    } catch (err) {
+      setIsSaving(false)
+      toast({ title: "Create failed", description: getApiErrorMessage(err) || String(err), variant: "destructive" })
+    }
   }
 
   const resetForm = () => {
     setAccountForm({ email: "", password: "", firstName: "", lastName: "", sendCredentials: true })
-    setCompanyForm({ companyName: "", businessType: "", yearEstablished: "", employeeCount: "", annualRevenue: "", description: "", website: "" })
+    setCompanyForm({ companyName: "", businessType: "", yearEstablished: "", employeeCount: "", annualRevenue: "", description: "", website: "", businessLicense: "" })
     setLocationForm({ country: "", city: "", address: "", postalCode: "", phone: "" })
     setSelectedIndustries([])
     setSelectedCapabilities([])
@@ -455,6 +511,16 @@ export default function AdminCreateManufacturerPage() {
                     placeholder="https://www.company.com"
                   />
                 </div>
+              </div>
+
+              <div>
+                <Label>Business / License No.</Label>
+                <Input
+                  value={companyForm.businessLicense}
+                  onChange={(e) => setCompanyForm({ ...companyForm, businessLicense: e.target.value })}
+                  className="mt-2"
+                  placeholder="e.g., BL-2024-987654"
+                />
               </div>
             </CardContent>
           </Card>
@@ -709,9 +775,9 @@ export default function AdminCreateManufacturerPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               resetForm()
-              router.push("/admin/suppliers")
+              router.push("/admin/manufacturers")
             }}>
-              View Suppliers
+              View Manufacturers
             </Button>
             <Button onClick={resetForm}>
               Create Another
