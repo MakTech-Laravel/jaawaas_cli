@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -23,7 +23,20 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { industries as industriesData } from "@/lib/data/industries"
+import {
+  createAdminCategory,
+  createAdminSubcategory,
+  deleteAdminCategory,
+  deleteAdminSubcategory,
+  getAdminCategories,
+  getAdminSubcategories,
+  moveAdminSubcategoryPosition,
+  toggleAdminCategoryFeatured,
+  updateAdminCategory,
+  updateAdminSubcategory,
+  type BackendCategory,
+  type BackendSubcategory,
+} from "@/lib/api/categories"
 import { 
   Search,
   Plus,
@@ -68,22 +81,9 @@ interface Industry {
 }
 
 export default function AdminIndustriesPage() {
-  // Transform data to include proper IDs
-  const [industries, setIndustries] = useState<Industry[]>(
-    industriesData.map(ind => ({
-      ...ind,
-      featured: ind.featured || false,
-      categories: ind.categories.map((cat, catIdx) => ({
-        id: `${ind.id}-cat-${catIdx}`,
-        name: cat.name,
-        slug: cat.slug,
-        subcategories: cat.subcategories.map((sub, subIdx) => ({
-          id: `${ind.id}-cat-${catIdx}-sub-${subIdx}`,
-          name: sub
-        }))
-      }))
-    }))
-  )
+  const [industries, setIndustries] = useState<Industry[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedIndustries, setExpandedIndustries] = useState<Set<string>>(new Set())
@@ -107,6 +107,80 @@ export default function AdminIndustriesPage() {
   const [newIndustry, setNewIndustry] = useState({ name: "", description: "", featured: false })
   const [newCategory, setNewCategory] = useState({ name: "" })
   const [newSubcategory, setNewSubcategory] = useState({ name: "" })
+
+  const slugify = (value: string) => value.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
+
+  const mapServerData = (categories: BackendCategory[], subcategories: BackendSubcategory[]): Industry[] => {
+    const groupedSubcategories = new Map<string, BackendSubcategory[]>()
+
+    for (const sub of subcategories) {
+      const parentId = sub.industry_id ?? sub.category_id
+      if (parentId === undefined || parentId === null) continue
+      const key = String(parentId)
+      if (!groupedSubcategories.has(key)) {
+        groupedSubcategories.set(key, [])
+      }
+      groupedSubcategories.get(key)?.push(sub)
+    }
+
+    return categories.map((category) => {
+      const categoryId = String(category.id)
+      const nested = category.sub_categories?.length
+        ? category.sub_categories
+        : category.subcategories?.length
+          ? category.subcategories
+          : groupedSubcategories.get(categoryId) || []
+
+      return {
+        id: categoryId,
+        name: category.name,
+        slug: category.slug || slugify(category.name),
+        description: category.description || "",
+        supplierCount: category.supplier_count || 0,
+        productCount: category.product_count || 0,
+        featured: Boolean(category.featured),
+        categories: nested.map((sub) => ({
+          id: String(sub.id),
+          name: sub.name,
+          slug: sub.slug || slugify(sub.name),
+          subcategories: [],
+        })),
+      }
+    })
+  }
+
+  const loadFromBackend = async () => {
+    setIsLoading(true)
+    setErrorMessage(null)
+
+    const [categoriesResult, subcategoriesResult] = await Promise.all([
+      getAdminCategories(),
+      getAdminSubcategories(),
+    ])
+
+    if (!categoriesResult.success) {
+      setIndustries([])
+      setErrorMessage(categoriesResult.message || "Failed to load categories.")
+      setIsLoading(false)
+      return
+    }
+
+    const mapped = mapServerData(
+      categoriesResult.data,
+      subcategoriesResult.success ? subcategoriesResult.data : []
+    )
+    setIndustries(mapped)
+
+    if (!subcategoriesResult.success) {
+      setErrorMessage(subcategoriesResult.message || "Subcategories failed to load.")
+    }
+
+    setIsLoading(false)
+  }
+
+  useEffect(() => {
+    void loadFromBackend()
+  }, [])
 
   // Filter industries
   const filteredIndustries = industries.filter(ind => 
@@ -140,38 +214,66 @@ export default function AdminIndustriesPage() {
 
   // Industry CRUD
   const handleAddIndustry = () => {
-    const id = `ind-${Date.now()}`
-    const slug = newIndustry.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-    setIndustries(prev => [...prev, {
-      id,
-      name: newIndustry.name,
-      slug,
-      description: newIndustry.description,
-      supplierCount: 0,
-      productCount: 0,
-      featured: newIndustry.featured,
-      categories: []
-    }])
-    setNewIndustry({ name: "", description: "", featured: false })
-    setShowAddIndustryDialog(false)
+    void (async () => {
+      const slug = slugify(newIndustry.name)
+      const result = await createAdminCategory({
+        name: newIndustry.name,
+        slug,
+        description: newIndustry.description,
+        featured: newIndustry.featured,
+      })
+
+      if (!result.success) {
+        setErrorMessage(result.message || "Failed to create category.")
+        return
+      }
+
+      setNewIndustry({ name: "", description: "", featured: false })
+      setShowAddIndustryDialog(false)
+      await loadFromBackend()
+    })()
   }
 
   const handleEditIndustry = () => {
     if (!currentIndustry) return
-    setIndustries(prev => prev.map(ind => 
-      ind.id === currentIndustry.id ? currentIndustry : ind
-    ))
-    setShowEditIndustryDialog(false)
+    void (async () => {
+      const result = await updateAdminCategory(String(currentIndustry.id), {
+        name: currentIndustry.name,
+        slug: currentIndustry.slug || slugify(currentIndustry.name),
+        description: currentIndustry.description,
+        featured: currentIndustry.featured,
+      })
+
+      if (!result.success) {
+        setErrorMessage(result.message || "Failed to update category.")
+        return
+      }
+
+      setShowEditIndustryDialog(false)
+      await loadFromBackend()
+    })()
   }
 
   const deleteIndustry = (id: string) => {
-    setIndustries(prev => prev.filter(ind => ind.id !== id))
+    void (async () => {
+      const result = await deleteAdminCategory(String(id))
+      if (!result.success) {
+        setErrorMessage(result.message || "Failed to delete category.")
+        return
+      }
+      await loadFromBackend()
+    })()
   }
 
   const toggleFeatured = (id: string) => {
-    setIndustries(prev => prev.map(ind => 
-      ind.id === id ? { ...ind, featured: !ind.featured } : ind
-    ))
+    void (async () => {
+      const result = await toggleAdminCategoryFeatured(String(id))
+      if (!result.success) {
+        setErrorMessage(result.message || "Failed to toggle main category state.")
+        return
+      }
+      await loadFromBackend()
+    })()
   }
 
   // Category CRUD
@@ -183,21 +285,23 @@ export default function AdminIndustriesPage() {
 
   const handleAddCategory = () => {
     if (!currentIndustry) return
-    const catId = `${currentIndustry.id}-cat-${Date.now()}`
-    const slug = newCategory.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-    const newCat: Category = {
-      id: catId,
-      name: newCategory.name,
-      slug,
-      subcategories: []
-    }
-    setIndustries(prev => prev.map(ind => 
-      ind.id === currentIndustry.id 
-        ? { ...ind, categories: [...ind.categories, newCat] }
-        : ind
-    ))
-    setNewCategory({ name: "" })
-    setShowAddCategoryDialog(false)
+    void (async () => {
+      const slug = slugify(newCategory.name)
+      const result = await createAdminSubcategory({
+        name: newCategory.name,
+        slug,
+        categoryId: String(currentIndustry.id),
+      })
+
+      if (!result.success) {
+        setErrorMessage(result.message || "Failed to create subcategory.")
+        return
+      }
+
+      setNewCategory({ name: "" })
+      setShowAddCategoryDialog(false)
+      await loadFromBackend()
+    })()
   }
 
   const openEditCategory = (industry: Industry, category: Category) => {
@@ -208,164 +312,102 @@ export default function AdminIndustriesPage() {
 
   const handleEditCategory = () => {
     if (!currentIndustry || !currentCategory) return
-    setIndustries(prev => prev.map(ind => 
-      ind.id === currentIndustry.id 
-        ? { 
-            ...ind, 
-            categories: ind.categories.map(cat => 
-              cat.id === currentCategory.id ? currentCategory : cat
-            )
-          }
-        : ind
-    ))
-    setShowEditCategoryDialog(false)
+    void (async () => {
+      const result = await updateAdminSubcategory(String(currentCategory.id), {
+        name: currentCategory.name,
+        slug: currentCategory.slug || slugify(currentCategory.name),
+        categoryId: String(currentIndustry.id),
+      })
+
+      if (!result.success) {
+        setErrorMessage(result.message || "Failed to update subcategory.")
+        return
+      }
+
+      setShowEditCategoryDialog(false)
+      await loadFromBackend()
+    })()
   }
 
   const deleteCategory = (industryId: string, categoryId: string) => {
-    setIndustries(prev => prev.map(ind => 
-      ind.id === industryId 
-        ? { ...ind, categories: ind.categories.filter(cat => cat.id !== categoryId) }
-        : ind
-    ))
+    void (async () => {
+      const result = await deleteAdminSubcategory(String(categoryId))
+      if (!result.success) {
+        setErrorMessage(result.message || "Failed to delete subcategory.")
+        return
+      }
+      await loadFromBackend()
+    })()
   }
 
   const moveCategoryUp = (industryId: string, categoryId: string) => {
-    setIndustries(prev => prev.map(ind => {
-      if (ind.id !== industryId) return ind
-      const idx = ind.categories.findIndex(c => c.id === categoryId)
-      if (idx <= 0) return ind
-      const newCats = [...ind.categories]
-      const temp = newCats[idx]
-      newCats[idx] = newCats[idx - 1]
-      newCats[idx - 1] = temp
-      return { ...ind, categories: newCats }
-    }))
+    void (async () => {
+      const parent = industries.find((ind) => ind.id === industryId)
+      if (!parent) return
+      const idx = parent.categories.findIndex((c) => c.id === categoryId)
+      if (idx <= 0) return
+
+      const result = await moveAdminSubcategoryPosition(String(categoryId), idx, idx - 1)
+      if (!result.success) {
+        setErrorMessage(result.message || "Failed to move subcategory.")
+        return
+      }
+
+      await loadFromBackend()
+    })()
   }
 
   const moveCategoryDown = (industryId: string, categoryId: string) => {
-    setIndustries(prev => prev.map(ind => {
-      if (ind.id !== industryId) return ind
-      const idx = ind.categories.findIndex(c => c.id === categoryId)
-      if (idx < 0 || idx >= ind.categories.length - 1) return ind
-      const newCats = [...ind.categories]
-      const temp = newCats[idx]
-      newCats[idx] = newCats[idx + 1]
-      newCats[idx + 1] = temp
-      return { ...ind, categories: newCats }
-    }))
+    void (async () => {
+      const parent = industries.find((ind) => ind.id === industryId)
+      if (!parent) return
+      const idx = parent.categories.findIndex((c) => c.id === categoryId)
+      if (idx < 0 || idx >= parent.categories.length - 1) return
+
+      const result = await moveAdminSubcategoryPosition(String(categoryId), idx, idx + 1)
+      if (!result.success) {
+        setErrorMessage(result.message || "Failed to move subcategory.")
+        return
+      }
+
+      await loadFromBackend()
+    })()
   }
 
   // Subcategory CRUD
   const openAddSubcategory = (industry: Industry, category: Category) => {
     setCurrentIndustry(industry)
     setCurrentCategory(category)
-    setNewSubcategory({ name: "" })
-    setShowAddSubcategoryDialog(true)
+    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
   }
 
   const handleAddSubcategory = () => {
-    if (!currentIndustry || !currentCategory) return
-    const subId = `${currentCategory.id}-sub-${Date.now()}`
-    const newSub: Subcategory = {
-      id: subId,
-      name: newSubcategory.name
-    }
-    setIndustries(prev => prev.map(ind => 
-      ind.id === currentIndustry.id 
-        ? { 
-            ...ind, 
-            categories: ind.categories.map(cat => 
-              cat.id === currentCategory.id 
-                ? { ...cat, subcategories: [...cat.subcategories, newSub] }
-                : cat
-            )
-          }
-        : ind
-    ))
-    setNewSubcategory({ name: "" })
     setShowAddSubcategoryDialog(false)
+    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
   }
 
   const openEditSubcategory = (industry: Industry, category: Category, subcategory: Subcategory) => {
     setCurrentIndustry(industry)
     setCurrentCategory(category)
     setCurrentSubcategory({ ...subcategory })
-    setShowEditSubcategoryDialog(true)
+    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
   }
 
   const handleEditSubcategory = () => {
-    if (!currentIndustry || !currentCategory || !currentSubcategory) return
-    setIndustries(prev => prev.map(ind => 
-      ind.id === currentIndustry.id 
-        ? { 
-            ...ind, 
-            categories: ind.categories.map(cat => 
-              cat.id === currentCategory.id 
-                ? { 
-                    ...cat, 
-                    subcategories: cat.subcategories.map(sub => 
-                      sub.id === currentSubcategory.id ? currentSubcategory : sub
-                    )
-                  }
-                : cat
-            )
-          }
-        : ind
-    ))
     setShowEditSubcategoryDialog(false)
+    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
   }
 
   const deleteSubcategory = (industryId: string, categoryId: string, subcategoryId: string) => {
-    setIndustries(prev => prev.map(ind => 
-      ind.id === industryId 
-        ? { 
-            ...ind, 
-            categories: ind.categories.map(cat => 
-              cat.id === categoryId 
-                ? { ...cat, subcategories: cat.subcategories.filter(sub => sub.id !== subcategoryId) }
-                : cat
-            )
-          }
-        : ind
-    ))
+    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
   }
 
   const moveSubcategoryUp = (industryId: string, categoryId: string, subcategoryId: string) => {
-    setIndustries(prev => prev.map(ind => {
-      if (ind.id !== industryId) return ind
-      return {
-        ...ind,
-        categories: ind.categories.map(cat => {
-          if (cat.id !== categoryId) return cat
-          const idx = cat.subcategories.findIndex(s => s.id === subcategoryId)
-          if (idx <= 0) return cat
-          const newSubs = [...cat.subcategories]
-          const temp = newSubs[idx]
-          newSubs[idx] = newSubs[idx - 1]
-          newSubs[idx - 1] = temp
-          return { ...cat, subcategories: newSubs }
-        })
-      }
-    }))
+    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
   }
 
   const moveSubcategoryDown = (industryId: string, categoryId: string, subcategoryId: string) => {
-    setIndustries(prev => prev.map(ind => {
-      if (ind.id !== industryId) return ind
-      return {
-        ...ind,
-        categories: ind.categories.map(cat => {
-          if (cat.id !== categoryId) return cat
-          const idx = cat.subcategories.findIndex(s => s.id === subcategoryId)
-          if (idx < 0 || idx >= cat.subcategories.length - 1) return cat
-          const newSubs = [...cat.subcategories]
-          const temp = newSubs[idx]
-          newSubs[idx] = newSubs[idx + 1]
-          newSubs[idx + 1] = temp
-          return { ...cat, subcategories: newSubs }
-        })
-      }
-    }))
+    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
   }
 
   // Open manage categories dialog
@@ -376,18 +418,17 @@ export default function AdminIndustriesPage() {
 
   // Stats
   const featuredCount = industries.filter(ind => ind.featured).length
-  const totalCategories = industries.reduce((sum, ind) => sum + ind.categories.length, 0)
-  const totalSubcategories = industries.reduce((sum, ind) => 
-    sum + ind.categories.reduce((catSum, cat) => catSum + cat.subcategories.length, 0), 0
-  )
+  const totalCategories = industries.length
+  const totalSubcategories = industries.reduce((sum, ind) => sum + ind.categories.length, 0)
+  const hasCorrectMainCategoryCount = featuredCount === 8
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-medium text-foreground">Industries</h1>
+          <h1 className="font-serif text-2xl font-medium text-foreground">Industries & Categories</h1>
           <p className="mt-1 text-muted-foreground">
-            Manage industries, categories, and subcategories
+            This page controls main categories, categories, and subcategories.
           </p>
         </div>
         <Button onClick={() => setShowAddIndustryDialog(true)}>
@@ -395,6 +436,27 @@ export default function AdminIndustriesPage() {
           Add Industry
         </Button>
       </div>
+
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Homepage and category pages should use exactly 8 main categories.
+        </p>
+        <Badge className={hasCorrectMainCategoryCount ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>
+          Main Categories: {featuredCount}/8
+        </Badge>
+      </div>
+
+      {errorMessage && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          {errorMessage}
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+          Loading categories from backend...
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4">
@@ -405,7 +467,7 @@ export default function AdminIndustriesPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{industries.length}</p>
-              <p className="text-sm text-muted-foreground">Industries</p>
+              <p className="text-sm text-muted-foreground">Main Categories</p>
             </div>
           </div>
         </div>
@@ -416,7 +478,7 @@ export default function AdminIndustriesPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{totalCategories}</p>
-              <p className="text-sm text-muted-foreground">Categories</p>
+              <p className="text-sm text-muted-foreground">Category Records</p>
             </div>
           </div>
         </div>
@@ -438,7 +500,7 @@ export default function AdminIndustriesPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{featuredCount}</p>
-              <p className="text-sm text-muted-foreground">Featured</p>
+              <p className="text-sm text-muted-foreground">Main Categories</p>
             </div>
           </div>
         </div>
@@ -462,7 +524,7 @@ export default function AdminIndustriesPage() {
             <div className="col-span-5">Name</div>
             <div className="col-span-2">Categories</div>
             <div className="col-span-2">Suppliers</div>
-            <div className="col-span-2">Status</div>
+            <div className="col-span-2">Homepage</div>
             <div className="col-span-1"></div>
           </div>
         </div>
@@ -499,7 +561,7 @@ export default function AdminIndustriesPage() {
                 </div>
                 <div className="col-span-2">
                   {industry.featured && (
-                    <Badge className="bg-amber-100 text-amber-700">Featured</Badge>
+                    <Badge className="bg-amber-100 text-amber-700">Main Category</Badge>
                   )}
                 </div>
                 <div className="col-span-1 flex justify-end">
@@ -526,7 +588,7 @@ export default function AdminIndustriesPage() {
                         Edit Industry
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => toggleFeatured(industry.id)}>
-                        {industry.featured ? "Remove from Featured" : "Add to Featured"}
+                        {industry.featured ? "Remove from Main Categories" : "Add to Main Categories"}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         className="text-destructive"
@@ -595,20 +657,16 @@ export default function AdminIndustriesPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openAddSubcategory(industry, category)}>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add Subcategory
-                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openEditCategory(industry, category)}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit Category
+                                Edit Subcategory
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 className="text-destructive"
                                 onClick={() => deleteCategory(industry.id, category.id)}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Category
+                                Delete Subcategory
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -743,7 +801,7 @@ export default function AdminIndustriesPage() {
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label>Featured Industry</Label>
+              <Label>Use as Main Category</Label>
               <Switch 
                 checked={newIndustry.featured}
                 onCheckedChange={(checked) => setNewIndustry({ ...newIndustry, featured: checked })}
@@ -785,7 +843,7 @@ export default function AdminIndustriesPage() {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label>Featured Industry</Label>
+                <Label>Use as Main Category</Label>
                 <Switch 
                   checked={currentIndustry.featured}
                   onCheckedChange={(checked) => setCurrentIndustry({ ...currentIndustry, featured: checked })}
@@ -935,7 +993,7 @@ export default function AdminIndustriesPage() {
                 </Button>
               </div>
               
-              <ScrollArea className="h-[400px] rounded-lg border border-border">
+              <ScrollArea className="h-100 rounded-lg border border-border">
                 {industries.find(i => i.id === currentIndustry.id)?.categories.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <FolderOpen className="h-12 w-12 text-muted-foreground/50 mb-4" />
