@@ -46,8 +46,7 @@ const sidebarItems = [
   {
     title: "My RFQs",
     href: "/dashboard/buyer/rfqs",
-    icon: FileText,
-    badge: "3"
+    icon: FileText
   },
   {
     title: "Saved Suppliers",
