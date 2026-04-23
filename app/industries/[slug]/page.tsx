@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { Header } from "@/components/layout/header"
@@ -14,6 +14,7 @@ import { industries, getIndustryBySlug } from "@/lib/data/industries"
 import { suppliers } from "@/lib/data/suppliers"
 import { products } from "@/lib/data/products"
 import { countries as countryData } from "@/lib/data/countries"
+import { getPublicCategories, type BackendCategory } from "@/lib/api/categories"
 import { 
   ArrowRight, 
   Cpu, 
@@ -88,7 +89,62 @@ export default function IndustryPage() {
   const params = useParams()
   const router = useRouter()
   const slug = params.slug as string
-  const industry = getIndustryBySlug(slug)
+  const [publicCategories, setPublicCategories] = useState<BackendCategory[]>([])
+  const [publicCategoriesLoaded, setPublicCategoriesLoaded] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+
+    const loadPublicCategories = async () => {
+      const response = await getPublicCategories()
+      if (!mounted) return
+      if (response.success) {
+        setPublicCategories(response.data)
+      }
+      setPublicCategoriesLoaded(true)
+    }
+
+    void loadPublicCategories()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const backendCurrentCategory = useMemo(
+    () => publicCategories.find((category) => category.slug === slug),
+    [publicCategories, slug]
+  )
+
+  const industry = useMemo(() => {
+    if (backendCurrentCategory) {
+      const backendSubcategories = backendCurrentCategory.sub_categories?.length
+        ? backendCurrentCategory.sub_categories
+        : backendCurrentCategory.subcategories || []
+
+      return {
+        id: String(backendCurrentCategory.id),
+        name: backendCurrentCategory.name,
+        slug: backendCurrentCategory.slug || slug,
+        description: backendCurrentCategory.description || "",
+        icon: "Package",
+        supplierCount: backendCurrentCategory.supplier_count || 0,
+        productCount: backendCurrentCategory.product_count || 0,
+        categories: [
+          {
+            id: `${backendCurrentCategory.id}-subs`,
+            name: "Subcategories",
+            slug: "subcategories",
+            description: "",
+            productCount: 0,
+            subcategories: backendSubcategories.map((sub) => sub.name),
+          },
+        ],
+      }
+    }
+
+    return getIndustryBySlug(slug)
+  }, [backendCurrentCategory, slug])
 
   // Filter states
   const [selectedCountry, setSelectedCountry] = useState<string>("")
@@ -152,6 +208,25 @@ export default function IndustryPage() {
   }
 
   const hasActiveFilters = selectedCountry || selectedMoq || selectedCerts.length > 0 || searchQuery
+  const mainCategories = useMemo(() => {
+    if (publicCategoriesLoaded && publicCategories.length > 0) {
+      const featured = publicCategories.filter((category) => Boolean(category.featured))
+      const source = featured.length > 0 ? featured : publicCategories
+      return source.slice(0, 8).map((category) => ({
+        id: String(category.id),
+        slug: category.slug || "",
+        name: category.name,
+        icon: "Package",
+      }))
+    }
+
+    return industries.filter((ind) => ind.featured).slice(0, 8).map((ind) => ({
+      id: String(ind.id),
+      slug: ind.slug,
+      name: ind.name,
+      icon: ind.icon,
+    }))
+  }, [publicCategories, publicCategoriesLoaded])
 
   if (!industry) {
     return (
@@ -390,44 +465,58 @@ export default function IndustryPage() {
 
               {/* Categories Grid */}
               <div className="lg:col-span-3">
-                <div className="mb-8">
+                <div className="mb-10">
                   <h2 className="font-serif text-2xl font-medium text-foreground sm:text-3xl">
-                    Browse Categories
+                    Main Categories
                   </h2>
                   <p className="mt-2 text-muted-foreground">
-                    Explore specialized categories within {industry.name}
+                    Browse the same 8 main categories in a simplified view.
                   </p>
                 </div>
 
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {mainCategories.map((mainCategory) => (
+                    <Link
+                      key={mainCategory.id}
+                      href={`/industries/${mainCategory.slug}`}
+                      className={`group rounded-lg border bg-card p-4 transition-colors hover:bg-muted/40 ${
+                        mainCategory.slug === industry.slug
+                          ? "border-foreground/40"
+                          : "border-border"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-md border border-border text-muted-foreground [&>svg]:h-5 [&>svg]:w-5">
+                          {iconMap[mainCategory.icon] || <Factory className="h-5 w-5" />}
+                        </div>
+                        <span className="text-sm font-medium text-foreground">{mainCategory.name}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                <div className="mb-8">
+                  <h2 className="font-serif text-2xl font-medium text-foreground sm:text-3xl">
+                    Subcategories
+                  </h2>
+                  <p className="mt-2 text-muted-foreground">
+                    Text-only subcategory listing for {industry.name}.
+                  </p>
+                </div>
+
+                <div className="overflow-hidden rounded-xl border border-border bg-card">
                   {industry.categories.map((category) => (
                     <Link
                       key={category.id}
                       href={`/products?category=${category.slug}`}
-                      className="group rounded-xl border border-border bg-card p-6 transition-all hover:border-secondary hover:shadow-md"
+                      className="block border-b border-border p-5 transition-colors last:border-b-0 hover:bg-muted/40"
                     >
-                      <h3 className="font-semibold text-foreground group-hover:text-secondary">
+                      <h3 className="text-sm font-semibold text-foreground">
                         {category.name}
                       </h3>
-                      <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-                        {category.description}
-                      </p>
-                      <div className="mt-4 flex items-center gap-2 text-sm">
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{category.productCount.toLocaleString()} products</span>
-                      </div>
                       {category.subcategories && (
-                        <div className="mt-4 flex flex-wrap gap-1">
-                          {category.subcategories.slice(0, 3).map((sub) => (
-                            <span key={sub} className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                              {sub}
-                            </span>
-                          ))}
-                          {category.subcategories.length > 3 && (
-                            <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                              +{category.subcategories.length - 3}
-                            </span>
-                          )}
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {category.subcategories.join(", ")}
                         </div>
                       )}
                     </Link>
@@ -475,7 +564,7 @@ export default function IndustryPage() {
                           {supplier.name}
                         </h3>
                         {supplier.reviewed && (
-                          <CheckCircle className="h-4 w-4 flex-shrink-0 text-secondary" />
+                          <CheckCircle className="h-4 w-4 shrink-0 text-secondary" />
                         )}
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">
@@ -556,7 +645,9 @@ export default function IndustryPage() {
                     </p>
                     <div className="mt-3 flex items-center justify-between">
                       <span className="font-semibold text-secondary">
-                        ${product.price.min.toFixed(2)} - ${product.price.max.toFixed(2)}
+                        {product.price
+                          ? `$${product.price.min.toFixed(2)} - $${product.price.max.toFixed(2)}`
+                          : "Price on request"}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         MOQ: {product.moq}
