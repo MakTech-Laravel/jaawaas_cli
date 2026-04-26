@@ -46,28 +46,33 @@ const sidebarItems = [
   {
     title: "My RFQs",
     href: "/dashboard/buyer/rfqs",
-    icon: FileText
+    icon: FileText,
+    exact: true
   },
   {
     title: "Saved Suppliers",
     href: "/dashboard/buyer/saved",
-    icon: Heart
+    icon: Heart,
+    exact: true
   },
   {
     title: "Messages",
     href: "/dashboard/buyer/messages",
     icon: MessageSquare,
-    badge: "5"
+    badge: "5",
+    exact: true
   },
   {
     title: "Recent Activity",
     href: "/dashboard/buyer/activity",
-    icon: Activity
+    icon: Activity,
+    exact: true
   },
   {
     title: "Settings",
     href: "/dashboard/buyer/settings",
-    icon: Settings
+    icon: Settings,
+    exact: true
   }
 ]
 

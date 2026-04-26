@@ -147,7 +147,7 @@ export default function ManufacturerDashboardLayout({
 
           <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-4">
             {navigation.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href)
+              const isActive = pathname === item.href
               const navItem = item as typeof item & { highlight?: boolean }
               return (
                 <Link
