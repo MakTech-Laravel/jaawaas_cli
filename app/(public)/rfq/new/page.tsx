@@ -8,6 +8,7 @@ import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 import { 
   Select,
   SelectContent,
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/select"
 import { getProduct, type Product } from "@/lib/api/products"
 import { createRFQ } from "@/lib/api/rfqs"
+import { suppliers } from "@/lib/data/suppliers"
 import { countries } from "@/lib/data/countries"
 import { useToast } from "@/hooks/use-toast"
 import { 
@@ -24,7 +26,11 @@ import {
   Package,
   FileText,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Factory,
+  CheckCircle,
+  Star,
+  X
 } from "lucide-react"
 
 function NewRFQForm() {
@@ -39,6 +45,10 @@ function NewRFQForm() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   
+  const [selectedSupplier, setSelectedSupplier] = useState<typeof suppliers[0] | null>(null)
+  const [manufacturerSearch, setManufacturerSearch] = useState("")
+  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false)
+  
   const [formData, setFormData] = useState({
     quantity: "",
     quantity_unit: "pieces",
@@ -51,6 +61,12 @@ function NewRFQForm() {
     packaging_details: "",
     additional_requirements: "",
   })
+
+  // Filter suppliers based on search
+  const filteredSuppliers = suppliers.filter(s =>
+    s.name.toLowerCase().includes(manufacturerSearch.toLowerCase()) ||
+    s.industry.toLowerCase().includes(manufacturerSearch.toLowerCase())
+  ).slice(0, 8)
 
   // Fetch product if product_id provided
   useEffect(() => {
@@ -192,6 +208,105 @@ function NewRFQForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Manufacturer Search */}
+        <div className="rounded-xl border border-border bg-card p-6">
+          <label className="text-sm font-medium text-foreground">
+            Search Manufacturer / Industry
+          </label>
+          
+          {selectedSupplier ? (
+            <div className="mt-3 flex items-center justify-between rounded-lg border border-border bg-muted/50 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                  <Factory className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-foreground">{selectedSupplier.name}</span>
+                    {selectedSupplier.reviewed && (
+                      <CheckCircle className="h-4 w-4 text-secondary" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>{selectedSupplier.location.city}, {selectedSupplier.location.country}</span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                      {selectedSupplier.rating}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSupplier(null)
+                  setManufacturerSearch("")
+                }}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3 relative">
+              <Input
+                type="text"
+                placeholder="Search by manufacturer name or industry..."
+                value={manufacturerSearch}
+                onChange={(e) => {
+                  setManufacturerSearch(e.target.value)
+                  setShowSupplierDropdown(true)
+                }}
+                onFocus={() => setShowSupplierDropdown(true)}
+                className="w-full"
+              />
+              
+              {showSupplierDropdown && manufacturerSearch && (
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border bg-card shadow-lg z-10">
+                  {filteredSuppliers.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No manufacturers found
+                    </div>
+                  ) : (
+                    filteredSuppliers.map((supplier) => (
+                      <button
+                        key={supplier.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedSupplier(supplier)
+                          setShowSupplierDropdown(false)
+                          setManufacturerSearch("")
+                        }}
+                        className="flex w-full items-center gap-3 border-b border-border p-3 text-left last:border-b-0 hover:bg-muted/50"
+                      >
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                          <Factory className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-foreground">{supplier.name}</span>
+                            {supplier.reviewed && (
+                              <CheckCircle className="h-3 w-3 text-secondary" />
+                            )}
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {supplier.industry} • {supplier.location.country}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-sm">
+                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                          <span>{supplier.rating}</span>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Selected Product */}
         {product && (
           <div className="rounded-xl border border-border bg-card p-6">
