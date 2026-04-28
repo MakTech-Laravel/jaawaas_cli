@@ -21,7 +21,8 @@ export interface LocaleConfig {
 
 export const LOCALES: readonly LocaleConfig[] = [
   { code: "en", nativeName: "English",    englishName: "English",  flag: "🇺🇸", dir: "ltr" },
-  { code: "es", nativeName: "Español",    englishName: "Spanish",  flag: "🇪🇸", dir: "ltr" },
+  // NOTE: the "es" slot has been repurposed to display Chinese translations per request
+  { code: "es", nativeName: "中文",        englishName: "Chinese",  flag: "🇨🇳", dir: "ltr" },
   { code: "ar", nativeName: "العربية",    englishName: "Arabic",   flag: "🇸🇦", dir: "rtl" },
   { code: "he", nativeName: "עברית",      englishName: "Hebrew",   flag: "🇮🇱", dir: "rtl" },
 ] as const;

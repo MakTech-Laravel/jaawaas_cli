@@ -1,6 +1,8 @@
 import type { TranslationKeys } from "./en";
 
-const he: TranslationKeys = {
+// Keep translations as a constant and cast on export to avoid strict
+// literal-type mismatches with `en` while preserving runtime values.
+const he = {
   common: {
     save: "שמור שינויים",
     cancel: "ביטול",
@@ -337,6 +339,6 @@ const he: TranslationKeys = {
       rights: "כל הזכויות שמורות."
     }
   }
-};
+} as const;
 
-export default he;
+export default he as unknown as TranslationKeys;
