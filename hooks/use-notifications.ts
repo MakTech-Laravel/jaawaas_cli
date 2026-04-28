@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useAuth } from "@/lib/auth-context"
+import { getEcho } from "@/lib/echo"
 import { 
   getNotifications, 
   markNotificationAsRead, 
   markAllNotificationsAsRead,
   deleteNotification,
   Notification,
+  NotificationType,
 } from "@/lib/api/notifications"
 
 export interface UseNotificationsOptions {
@@ -21,12 +23,52 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     limit = 20 
   } = options
 
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuth()
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const normalizeRealtimeNotification = useCallback((payload: unknown): Notification | null => {
+    if (!payload || typeof payload !== "object") {
+      return null
+    }
+
+    const data = payload as Record<string, unknown>
+    const typeRaw = typeof data.type === "string" ? data.type.trim().toLowerCase() : "system"
+    const type: NotificationType =
+      typeRaw === "message" ||
+      typeRaw === "inquiry" ||
+      typeRaw === "quote" ||
+      typeRaw === "supplier" ||
+      typeRaw === "order"
+        ? typeRaw
+        : "system"
+
+    const id = typeof data.id === "string" && data.id.trim() ? data.id : `realtime-${Date.now()}`
+    const title =
+      typeof data.title === "string" && data.title.trim() ? data.title : "Notification"
+    const description =
+      typeof data.description === "string" && data.description.trim()
+        ? data.description
+        : "You have a new update."
+    const actionUrl =
+      typeof data.actionUrl === "string" && data.actionUrl.trim() ? data.actionUrl : undefined
+    const avatar = typeof data.avatar === "string" && data.avatar.trim() ? data.avatar : undefined
+    const createdAt = new Date().toISOString()
+
+    return {
+      id,
+      type,
+      title,
+      description,
+      read: false,
+      createdAt,
+      actionUrl,
+      avatar,
+    }
+  }, [])
 
   /**
    * Fetch all notifications
@@ -85,6 +127,38 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
       }
     }
   }, [fetchNotifications, autoRefresh, refreshInterval, isAuthLoading, isAuthenticated])
+
+  // Real-time notifications from Laravel Echo private user channel.
+  useEffect(() => {
+    if (isAuthLoading || !isAuthenticated || !user?.id) {
+      return
+    }
+
+    const echo = getEcho()
+    if (!echo) {
+      return
+    }
+
+    const channelName = `App.Models.User.${user.id}`
+    const channel = echo.private(channelName)
+
+    channel.notification((incoming: unknown) => {
+      const normalized = normalizeRealtimeNotification(incoming)
+      if (!normalized) return
+
+      setNotifications((prev) => {
+        if (prev.some((item) => item.id === normalized.id)) {
+          return prev
+        }
+        return [normalized, ...prev]
+      })
+      setUnreadCount((prevUnread) => prevUnread + 1)
+    })
+
+    return () => {
+      echo.leave(channelName)
+    }
+  }, [isAuthLoading, isAuthenticated, normalizeRealtimeNotification, user?.id])
 
   /**
    * Mark single notification as read

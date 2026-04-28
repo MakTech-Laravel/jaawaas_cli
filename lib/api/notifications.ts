@@ -1,15 +1,16 @@
 import { apiClient } from "./client"
 
+export type NotificationType = "message" | "inquiry" | "quote" | "supplier" | "order" | "system"
+
 export interface Notification {
   id: string
-  type: "message" | "inquiry" | "quote" | "supplier" | "order" | "system"
+  type: NotificationType
   title: string
   description: string
   read: boolean
+  createdAt: string
   actionUrl?: string
   avatar?: string
-  timestamp: string
-  createdAt: string
 }
 
 export interface NotificationsResponse {
@@ -17,7 +18,6 @@ export interface NotificationsResponse {
   data: {
     notifications: Notification[]
     unreadCount: number
-    total: number
   }
   message?: string
 }
@@ -26,8 +26,6 @@ export interface MarkAsReadResponse {
   success: boolean
   message?: string
 }
-
-type NotificationType = Notification["type"]
 
 function toNonEmptyString(value: unknown): string | undefined {
   if (typeof value !== "string") {
@@ -117,7 +115,6 @@ function normalizeNotification(item: unknown, index: number): Notification {
     read,
     actionUrl,
     avatar,
-    timestamp: createdAt,
     createdAt,
   }
 }
@@ -148,15 +145,12 @@ function normalizeNotificationsResponse(payload: unknown): NotificationsResponse
     unreadFromPayload,
     notifications.filter((notification) => !notification.read).length
   )
-  const total = toNumber(data.total ?? data.count, notifications.length)
-
   return {
     success: typeof root.success === "boolean" ? root.success : true,
     message: toNonEmptyString(root.message),
     data: {
       notifications,
       unreadCount,
-      total,
     },
   }
 }
@@ -166,13 +160,20 @@ function normalizeNotificationsResponse(payload: unknown): NotificationsResponse
  * Note: Currently returns empty notifications - not connected to backend yet
  */
 export async function getNotifications(limit = 20, offset = 0): Promise<NotificationsResponse> {
-  // Return empty notifications response without calling backend
-  return {
-    success: true,
-    data: {
-      notifications: [],
-      unreadCount: 0,
-      total: 0
+  try {
+    const response = await apiClient.get("/me/notifications", {
+      params: { limit, offset },
+    })
+    return normalizeNotificationsResponse(response.data)
+  } catch (error: any) {
+    console.error("Failed to fetch notifications:", error)
+    return {
+      success: false,
+      data: {
+        notifications: [],
+        unreadCount: 0,
+      },
+      message: error?.response?.data?.message || "Failed to fetch notifications",
     }
   }
 }
@@ -182,7 +183,7 @@ export async function getNotifications(limit = 20, offset = 0): Promise<Notifica
  */
 export async function markNotificationAsRead(notificationId: string): Promise<MarkAsReadResponse> {
   try {
-    const response = await apiClient.post(`/me/notifications/${notificationId}/read`)
+    const response = await apiClient.patch(`/me/notifications/${notificationId}/read`)
     return response.data
   } catch (error: any) {
     console.error("Failed to mark notification as read:", error)
