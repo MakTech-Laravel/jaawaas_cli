@@ -139,6 +139,18 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+publicApiClient.interceptors.request.use((config) => {
+  if (typeof window === "undefined") {
+    return config;
+  }
+
+  // Ensure Laravel returns JSON for public requests
+  config.headers["Accept"] = "application/json";
+  config.headers["Accept-Language"] = readPreferredLanguage();
+
+  return config;
+});
+
 // ---------------------------------------------------------------------------
 // Response interceptor — handle 401 Unauthenticated globally.
 //

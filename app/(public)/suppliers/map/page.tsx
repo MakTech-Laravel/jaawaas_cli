@@ -79,6 +79,7 @@ const featuredCountries = [
 export default function GlobalSupplierMapPage() {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [showAllCountries, setShowAllCountries] = useState(false)
 
   const filteredCountries = searchQuery 
     ? countries.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -162,7 +163,10 @@ export default function GlobalSupplierMapPage() {
                   className={`h-full cursor-pointer transition-all hover:shadow-lg ${
                     selectedRegion === region.name ? "ring-2 ring-secondary" : ""
                   }`}
-                  onClick={() => setSelectedRegion(selectedRegion === region.name ? null : region.name)}
+                  onClick={() => {
+                    setSelectedRegion(selectedRegion === region.name ? null : region.name)
+                    setShowAllCountries(false)
+                  }}
                 >
                   <CardHeader className="pb-2">
                     <div className="flex items-center gap-3">
@@ -204,7 +208,7 @@ export default function GlobalSupplierMapPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                      {filteredCountries.slice(0, 20).map((country) => (
+                      {filteredCountries.slice(0, showAllCountries ? undefined : 20).map((country) => (
                         <Link
                           key={country.code}
                           href={`/suppliers?country=${country.code}`}
@@ -224,9 +228,9 @@ export default function GlobalSupplierMapPage() {
                         </Link>
                       ))}
                     </div>
-                    {filteredCountries.length > 20 && (
+                    {filteredCountries.length > 20 && !showAllCountries && (
                       <div className="mt-4 text-center">
-                        <Button variant="outline">
+                        <Button variant="outline" onClick={() => setShowAllCountries(true)}>
                           View All {filteredCountries.length} Countries
                         </Button>
                       </div>

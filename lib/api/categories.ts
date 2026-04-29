@@ -110,9 +110,9 @@ function normalizeCategory(raw: unknown): BackendCategory | null {
     icon: typeof value.icon === "string" ? value.icon : undefined,
     icon_url: typeof value.icon_url === "string" ? value.icon_url : undefined,
     featured:
-      typeof value.featured === "boolean" || typeof value.featured === "number"
-        ? value.featured
-        : undefined,
+      value.featured === true || value.featured === 1 || value.featured === "1"
+        ? 1
+        : 0,
     supplier_count: typeof value.supplier_count === "number" ? value.supplier_count : undefined,
     product_count: typeof value.product_count === "number" ? value.product_count : undefined,
     subcategories,

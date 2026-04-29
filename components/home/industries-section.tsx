@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, Cpu, Cog, Shirt, Home, Heart, Car, UtensilsCrossed, FlaskConical, Package, Lightbulb, Wrench, HardHat, Sofa, Stethoscope, Wheat, Box, FileText, Factory, ShoppingBag, Globe } from "lucide-react"
 import { useTranslation } from "@/lib/i18n"
 import { getPublicCategories, BackendCategory } from "@/lib/api/categories"
+import { industries as industriesData } from "@/lib/data/industries"
 
 // Map industry icons
 const industryIcons: Record<string, React.ReactNode> = {
@@ -37,11 +38,38 @@ export function IndustriesSection() {
   useEffect(() => {
     async function loadCategories() {
       const res = await getPublicCategories()
+      
+      let featured: any[] = []
       if (res.success && res.data) {
-        // Only show featured categories (up to 8)
-        const featured = res.data.filter((c) => Boolean(c.featured)).slice(0, 8)
-        setCategories(featured)
+        // Only show featured categories
+        featured = res.data.filter((c) => Boolean(c.featured))
       }
+
+      // If we have less than 8 featured categories from backend, pad with static ones
+      if (featured.length < 8) {
+        const remaining = 8 - featured.length
+        const staticFeatured = industriesData.filter(i => i.featured)
+        // Find static ones that are not already in the backend list (by slug or name)
+        const additional = staticFeatured.filter(
+          s => !featured.some(f => f.slug?.toLowerCase() === s.slug.toLowerCase() || f.name.toLowerCase() === s.name.toLowerCase())
+        ).slice(0, remaining)
+        
+        // Convert static format to match backend format
+        const additionalFormatted = additional.map(a => ({
+          id: a.slug,
+          name: a.name,
+          slug: a.slug,
+          description: a.description,
+          featured: 1,
+          color: undefined,
+          icon_url: undefined,
+          supplier_count: a.supplierCount
+        }))
+        
+        featured = [...featured, ...additionalFormatted]
+      }
+
+      setCategories(featured.slice(0, 8))
     }
     loadCategories()
   }, [])
@@ -81,10 +109,14 @@ export function IndustriesSection() {
             const defaultGradient = `linear-gradient(to bottom right, ${hexToRgba(industryColor, 0.1)}, ${hexToRgba(industryColor, 0.05)})`;
             const hoverGradient = `linear-gradient(to bottom right, ${hexToRgba(industryColor, 0.2)}, ${hexToRgba(industryColor, 0.1)})`;
             
+            // Fix image URL by stripping /api/vX from the base URL if present
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+            const baseUrl = apiUrl.replace(/\/api\/v[0-9]+$/, "");
+
             const iconUrl = industry.icon_url 
               ? (industry.icon_url.startsWith("http") 
                   ? industry.icon_url 
-                  : `${process.env.NEXT_PUBLIC_API_URL || ""}${industry.icon_url}`)
+                  : `${baseUrl}${industry.icon_url.startsWith('/') ? '' : '/'}${industry.icon_url}`)
               : null;
 
             return (
