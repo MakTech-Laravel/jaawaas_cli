@@ -8,6 +8,8 @@ export interface BackendCategory {
   description?: string
   color?: string
   featured?: boolean | number
+  icon?: string
+  icon_url?: string
   supplier_count?: number
   product_count?: number
   subcategories?: BackendSubcategory[]
@@ -105,6 +107,8 @@ function normalizeCategory(raw: unknown): BackendCategory | null {
     slug: typeof value.slug === "string" ? value.slug : undefined,
     description: typeof value.description === "string" ? value.description : undefined,
     color: typeof value.color === "string" ? value.color : undefined,
+    icon: typeof value.icon === "string" ? value.icon : undefined,
+    icon_url: typeof value.icon_url === "string" ? value.icon_url : undefined,
     featured:
       typeof value.featured === "boolean" || typeof value.featured === "number"
         ? value.featured
@@ -165,9 +169,10 @@ export async function createAdminCategory(input: {
     const form = new FormData()
     form.append("name", input.name)
     form.append("slug", input.slug)
-    if (input.description) form.append("description", input.description)
+    if (input.description !== undefined) form.append("description", input.description)
     if (input.color) form.append("color", input.color)
     form.append("featured", input.featured ? "1" : "0")
+    if (input.icon) form.append("icon", input.icon)
 
     await apiClient.post("/admin/categories/create", form)
     return { success: true, data: null }
@@ -182,35 +187,30 @@ export async function createAdminCategory(input: {
 
 export async function updateAdminCategory(
   categoryId: string,
-  input: { name: string; slug: string; description?: string; color?: string; featured?: boolean }
+  input: { 
+    name: string; 
+    slug: string; 
+    description?: string; 
+    color?: string; 
+    featured?: boolean;
+    icon?: File
+  }
 ): Promise<ApiResult<null>> {
   try {
     const form = new FormData()
     form.append("name", input.name)
     form.append("slug", input.slug)
-    if (input.description) form.append("description", input.description)
+    if (input.description !== undefined) form.append("description", input.description)
     if (input.color) form.append("color", input.color)
-    form.append("featured", input.featured ? "1" : "0")
+    if (input.featured !== undefined) form.append("featured", input.featured ? "1" : "0")
+    if (input.icon) form.append("icon", input.icon)
 
     await apiClient.put(`/admin/categories/${categoryId}`, form)
     return { success: true, data: null }
   } catch (error) {
     return {
       success: false,
-      message: getApiErrorMessage(error, "Failed to update category."),
-      data: null,
-    }
-  }
-}
-
-export async function deleteAdminCategory(categoryId: string): Promise<ApiResult<null>> {
-  try {
-    await apiClient.delete(`/admin/categories/${categoryId}`)
-    return { success: true, data: null }
-  } catch (error) {
-    return {
-      success: false,
-      message: getApiErrorMessage(error, "Failed to delete category."),
+      message: error instanceof Error ? error.message : "Failed to update category",
       data: null,
     }
   }
@@ -224,26 +224,132 @@ export async function moveAdminCategoryPosition(
   try {
     await apiClient.put(`/admin/categories/${categoryId}/position`, {
       current_position: currentPosition,
-      new_position: newPosition,
+      new_position: newPosition
     })
     return { success: true, data: null }
   } catch (error) {
     return {
       success: false,
-      message: getApiErrorMessage(error, "Failed to move category."),
+      message: error instanceof Error ? error.message : "Failed to update category position",
       data: null,
     }
   }
 }
 
-export async function toggleAdminCategoryFeatured(categoryId: string): Promise<ApiResult<null>> {
+export async function toggleAdminCategoryFeatured(
+  categoryId: string
+): Promise<ApiResult<null>> {
   try {
     await apiClient.patch(`/admin/categories/${categoryId}/featured`)
     return { success: true, data: null }
   } catch (error) {
     return {
       success: false,
-      message: getApiErrorMessage(error, "Failed to toggle category status."),
+      message: error instanceof Error ? error.message : "Failed to toggle featured status",
+      data: null,
+    }
+  }
+}
+
+// ------------------------------------------------------------------
+// Subcategories
+// ------------------------------------------------------------------
+
+export async function createAdminSubcategory(
+  input: { 
+    name: string; 
+    slug: string; 
+    industry_id: string | number;
+    icon?: File
+  }
+): Promise<ApiResult<null>> {
+  try {
+    const form = new FormData()
+    form.append("name", input.name)
+    form.append("slug", input.slug)
+    form.append("industry_id", String(input.industry_id))
+    if (input.icon) form.append("icon", input.icon)
+
+    await apiClient.post("/admin/subcategories/create", form)
+    return { success: true, data: null }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to create subcategory",
+      data: null,
+    }
+  }
+}
+
+export async function updateAdminSubcategory(
+  subcategoryId: string,
+  input: { 
+    name: string; 
+    slug: string; 
+    industry_id: string | number;
+    icon?: File
+  }
+): Promise<ApiResult<null>> {
+  try {
+    const form = new FormData()
+    form.append("name", input.name)
+    form.append("slug", input.slug)
+    form.append("industry_id", String(input.industry_id))
+    if (input.icon) form.append("icon", input.icon)
+
+    await apiClient.put(`/admin/subcategories/${subcategoryId}`, form)
+    return { success: true, data: null }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to update subcategory",
+      data: null,
+    }
+  }
+}
+
+export async function deleteAdminSubcategory(id: string): Promise<ApiResult<null>> {
+  try {
+    await apiClient.delete(`/admin/subcategories/${id}`)
+    return { success: true, data: null }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to delete subcategory",
+      data: null,
+    }
+  }
+}
+
+export async function moveAdminSubcategoryPosition(
+  subcategoryId: string,
+  currentPosition: number,
+  newPosition: number
+): Promise<ApiResult<null>> {
+  try {
+    await apiClient.put(`/admin/subcategories/${subcategoryId}/position`, {
+      current_position: currentPosition,
+      new_position: newPosition
+    })
+    return { success: true, data: null }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to update subcategory position",
+      data: null,
+    }
+  }
+}
+
+
+export async function deleteAdminCategory(categoryId: string): Promise<ApiResult<null>> {
+  try {
+    await apiClient.delete(`/admin/categories/${categoryId}`)
+    return { success: true, data: null }
+  } catch (error) {
+    return {
+      success: false,
+      message: getApiErrorMessage(error, "Failed to delete category."),
       data: null,
     }
   }
@@ -262,79 +368,3 @@ export async function getAdminSubcategories(): Promise<ApiResult<BackendSubcateg
   }
 }
 
-export async function createAdminSubcategory(input: {
-  name: string
-  slug: string
-  categoryId: string
-}): Promise<ApiResult<null>> {
-  try {
-    const form = new FormData()
-    form.append("name", input.name)
-    form.append("slug", input.slug)
-    // Backend collection uses industry_id for parent category reference.
-    form.append("industry_id", input.categoryId)
-
-    await apiClient.post("/admin/subcategories/create", form)
-    return { success: true, data: null }
-  } catch (error) {
-    return {
-      success: false,
-      message: getApiErrorMessage(error, "Failed to create subcategory."),
-      data: null,
-    }
-  }
-}
-
-export async function updateAdminSubcategory(
-  subcategoryId: string,
-  input: { name: string; slug: string; categoryId: string }
-): Promise<ApiResult<null>> {
-  try {
-    const form = new FormData()
-    form.append("name", input.name)
-    form.append("slug", input.slug)
-    form.append("industry_id", input.categoryId)
-
-    await apiClient.put(`/admin/subcategories/${subcategoryId}`, form)
-    return { success: true, data: null }
-  } catch (error) {
-    return {
-      success: false,
-      message: getApiErrorMessage(error, "Failed to update subcategory."),
-      data: null,
-    }
-  }
-}
-
-export async function deleteAdminSubcategory(subcategoryId: string): Promise<ApiResult<null>> {
-  try {
-    await apiClient.delete(`/admin/subcategories/${subcategoryId}`)
-    return { success: true, data: null }
-  } catch (error) {
-    return {
-      success: false,
-      message: getApiErrorMessage(error, "Failed to delete subcategory."),
-      data: null,
-    }
-  }
-}
-
-export async function moveAdminSubcategoryPosition(
-  subcategoryId: string,
-  currentPosition: number,
-  newPosition: number
-): Promise<ApiResult<null>> {
-  try {
-    await apiClient.put(`/admin/subcategories/${subcategoryId}/position`, {
-      current_position: currentPosition,
-      new_position: newPosition,
-    })
-    return { success: true, data: null }
-  } catch (error) {
-    return {
-      success: false,
-      message: getApiErrorMessage(error, "Failed to move subcategory."),
-      data: null,
-    }
-  }
-}

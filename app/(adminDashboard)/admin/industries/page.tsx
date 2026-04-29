@@ -74,6 +74,9 @@ interface Industry {
   name: string
   slug: string
   description: string
+  icon?: string
+  icon_url?: string
+  color?: string
   supplierCount: number
   productCount: number
   featured: boolean
@@ -104,7 +107,21 @@ export default function AdminIndustriesPage() {
   const [currentSubcategory, setCurrentSubcategory] = useState<Subcategory | null>(null)
   
   // Form states
-  const [newIndustry, setNewIndustry] = useState({ name: "", description: "", featured: false })
+  const [newIndustry, setNewIndustry] = useState<{
+    name: string;
+    description: string;
+    featured: boolean;
+    slug: string;
+    color: string;
+    icon: File | null;
+  }>({ 
+    name: "", 
+    description: "", 
+    featured: false,
+    slug: "",
+    color: "#ffffff",
+    icon: null
+  })
   const [newCategory, setNewCategory] = useState({ name: "" })
   const [newSubcategory, setNewSubcategory] = useState({ name: "" })
 
@@ -133,9 +150,16 @@ export default function AdminIndustriesPage() {
 
       return {
         id: categoryId,
-        name: category.name,
-        slug: category.slug || slugify(category.name),
+        name: category.name || "Unnamed Industry",
+        slug: category.slug || slugify(category.name || ""),
         description: category.description || "",
+        icon: category.icon,
+        icon_url: category.icon_url 
+          ? (category.icon_url.startsWith("http") 
+              ? category.icon_url 
+              : `${process.env.NEXT_PUBLIC_API_URL || ""}${category.icon_url}`)
+          : undefined,
+        color: category.color,
         supplierCount: category.supplier_count || 0,
         productCount: category.product_count || 0,
         featured: Boolean(category.featured),
@@ -184,7 +208,7 @@ export default function AdminIndustriesPage() {
 
   // Filter industries
   const filteredIndustries = industries.filter(ind => 
-    ind.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (ind.name || "").toLowerCase().includes((searchQuery || "").toLowerCase())
   )
 
   // Toggle expand
@@ -215,12 +239,13 @@ export default function AdminIndustriesPage() {
   // Industry CRUD
   const handleAddIndustry = () => {
     void (async () => {
-      const slug = slugify(newIndustry.name)
       const result = await createAdminCategory({
         name: newIndustry.name,
-        slug,
+        slug: newIndustry.slug || slugify(newIndustry.name),
         description: newIndustry.description,
         featured: newIndustry.featured,
+        color: newIndustry.color,
+        icon: newIndustry.icon || undefined
       })
 
       if (!result.success) {
@@ -228,7 +253,14 @@ export default function AdminIndustriesPage() {
         return
       }
 
-      setNewIndustry({ name: "", description: "", featured: false })
+      setNewIndustry({ 
+        name: "", 
+        description: "", 
+        featured: false, 
+        slug: "", 
+        color: "#ffffff", 
+        icon: null 
+      })
       setShowAddIndustryDialog(false)
       await loadFromBackend()
     })()
@@ -242,6 +274,9 @@ export default function AdminIndustriesPage() {
         slug: currentIndustry.slug || slugify(currentIndustry.name),
         description: currentIndustry.description,
         featured: currentIndustry.featured,
+        color: currentIndustry.color,
+        // @ts-ignore - added icon property to the local state for editing
+        icon: currentIndustry.iconFile || undefined
       })
 
       if (!result.success) {
@@ -545,12 +580,16 @@ export default function AdminIndustriesPage() {
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     )}
                   </button>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10">
-                    <Layers className="h-4 w-4 text-secondary" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted overflow-hidden" style={{ backgroundColor: industry.color || undefined }}>
+                    {industry.icon_url ? (
+                      <img src={industry.icon_url} alt={industry.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <Layers className="h-5 w-5 text-muted-foreground" />
+                    )}
                   </div>
-                  <div>
-                    <p className="font-medium text-foreground">{industry.name}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{industry.description}</p>
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground truncate">{industry.name}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1">{industry.description || "No description"}</p>
                   </div>
                 </div>
                 <div className="col-span-2 text-sm text-muted-foreground">
@@ -782,15 +821,65 @@ export default function AdminIndustriesPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label>Industry Name</Label>
-              <Input 
-                placeholder="e.g., Renewable Energy"
-                value={newIndustry.name}
-                onChange={(e) => setNewIndustry({ ...newIndustry, name: e.target.value })}
-                className="mt-2"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Industry Name</Label>
+                <Input 
+                  placeholder="e.g., Mining"
+                  value={newIndustry.name}
+                  onChange={(e) => {
+                    const name = e.target.value
+                    setNewIndustry({ 
+                      ...newIndustry, 
+                      name, 
+                      slug: slugify(name) 
+                    })
+                  }}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label>Slug</Label>
+                <Input 
+                  placeholder="e.g., mining"
+                  value={newIndustry.slug}
+                  onChange={(e) => setNewIndustry({ ...newIndustry, slug: e.target.value })}
+                  className="mt-2"
+                />
+              </div>
             </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Theme Color</Label>
+                <div className="mt-2 flex items-center gap-2">
+                  <Input 
+                    type="color"
+                    value={newIndustry.color}
+                    onChange={(e) => setNewIndustry({ ...newIndustry, color: e.target.value })}
+                    className="h-10 w-12 p-1"
+                  />
+                  <Input 
+                    value={newIndustry.color}
+                    onChange={(e) => setNewIndustry({ ...newIndustry, color: e.target.value })}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Icon Image</Label>
+                <Input 
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null
+                    setNewIndustry({ ...newIndustry, icon: file })
+                  }}
+                  className="mt-2"
+                />
+              </div>
+            </div>
+
             <div>
               <Label>Description</Label>
               <Textarea 
@@ -800,12 +889,39 @@ export default function AdminIndustriesPage() {
                 className="mt-2"
               />
             </div>
-            <div className="flex items-center justify-between">
-              <Label>Use as Main Category</Label>
+
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div>
+                <Label className="text-base">Featured</Label>
+                <p className="text-xs text-muted-foreground">Show this industry on the homepage</p>
+              </div>
               <Switch 
                 checked={newIndustry.featured}
                 onCheckedChange={(checked) => setNewIndustry({ ...newIndustry, featured: checked })}
               />
+            </div>
+
+            {/* Preview Section */}
+            <div className="rounded-xl bg-muted/30 p-4">
+              <Label className="mb-3 block text-xs uppercase tracking-wider text-muted-foreground">Card Preview</Label>
+              <div 
+                className="group relative h-32 w-full overflow-hidden rounded-xl border border-border bg-card p-4 transition-all"
+                style={{ borderLeftColor: newIndustry.color, borderLeftWidth: "4px" }}
+              >
+                <div className="flex gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-muted shadow-sm" style={{ backgroundColor: newIndustry.color + "20" }}>
+                    {newIndustry.icon ? (
+                      <img src={URL.createObjectURL(newIndustry.icon)} className="h-8 w-8 object-contain" />
+                    ) : (
+                      <Package className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-foreground truncate">{newIndustry.name || "Industry Name"}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{newIndustry.description || "Description will appear here..."}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -826,14 +942,60 @@ export default function AdminIndustriesPage() {
           </DialogHeader>
           {currentIndustry && (
             <div className="space-y-4">
-              <div>
-                <Label>Industry Name</Label>
-                <Input 
-                  value={currentIndustry.name}
-                  onChange={(e) => setCurrentIndustry({ ...currentIndustry, name: e.target.value })}
-                  className="mt-2"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Industry Name</Label>
+                  <Input 
+                    value={currentIndustry.name}
+                    onChange={(e) => setCurrentIndustry({ ...currentIndustry, name: e.target.value })}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label>Slug</Label>
+                  <Input 
+                    value={currentIndustry.slug}
+                    onChange={(e) => setCurrentIndustry({ ...currentIndustry, slug: e.target.value })}
+                    className="mt-2"
+                  />
+                </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Theme Color</Label>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Input 
+                      type="color"
+                      value={currentIndustry.color || "#ffffff"}
+                      onChange={(e) => setCurrentIndustry({ ...currentIndustry, color: e.target.value })}
+                      className="h-10 w-12 p-1"
+                    />
+                    <Input 
+                      value={currentIndustry.color || "#ffffff"}
+                      onChange={(e) => setCurrentIndustry({ ...currentIndustry, color: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Update Icon</Label>
+                  <Input 
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null
+                      // @ts-ignore
+                      setCurrentIndustry({ ...currentIndustry, iconFile: file })
+                    }}
+                    className="mt-2"
+                  />
+                  {currentIndustry.icon_url && !((currentIndustry as any).iconFile) && (
+                    <p className="mt-1 text-[10px] text-muted-foreground">Current: {currentIndustry.icon_url}</p>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <Label>Description</Label>
                 <Textarea 
@@ -842,12 +1004,42 @@ export default function AdminIndustriesPage() {
                   className="mt-2"
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <Label>Use as Main Category</Label>
+              <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                <div>
+                  <Label className="text-base">Featured</Label>
+                  <p className="text-xs text-muted-foreground">Show this industry on the homepage</p>
+                </div>
                 <Switch 
                   checked={currentIndustry.featured}
                   onCheckedChange={(checked) => setCurrentIndustry({ ...currentIndustry, featured: checked })}
                 />
+              </div>
+
+              {/* Preview Section */}
+              <div className="rounded-xl bg-muted/30 p-4">
+                <Label className="mb-3 block text-xs uppercase tracking-wider text-muted-foreground">Card Preview</Label>
+                <div 
+                  className="group relative h-32 w-full overflow-hidden rounded-xl border border-border bg-card p-4 transition-all"
+                  style={{ borderLeftColor: currentIndustry.color, borderLeftWidth: "4px" }}
+                >
+                  <div className="flex gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-muted shadow-sm" style={{ backgroundColor: (currentIndustry.color || "#000000") + "20" }}>
+                      {/* @ts-ignore */}
+                      {currentIndustry.iconFile ? (
+                        /* @ts-ignore */
+                        <img src={URL.createObjectURL(currentIndustry.iconFile)} className="h-8 w-8 object-contain" />
+                      ) : currentIndustry.icon_url ? (
+                        <img src={currentIndustry.icon_url} className="h-8 w-8 object-contain" />
+                      ) : (
+                        <Package className="h-6 w-6 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-foreground truncate">{currentIndustry.name}</h3>
+                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{currentIndustry.description || "No description"}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
