@@ -140,12 +140,12 @@ export function IndustriesSection() {
 
         {/* View All Button */}
         <div className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <Button size="lg" className="gap-2 px-8" asChild>
+          {/* <Button size="lg" className="gap-2 px-8" asChild>
             <Link href="/industries">
               View All {industriesData.length} Industries
               <ArrowRight className="h-4 w-4" />
             </Link>
-          </Button>
+          </Button> */}
           <Button size="lg" variant="outline" className="gap-2" asChild>
             <Link href="/suppliers/map">
               <Globe className="h-4 w-4" />

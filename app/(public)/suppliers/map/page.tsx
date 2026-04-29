@@ -210,7 +210,12 @@ export default function GlobalSupplierMapPage() {
                           href={`/suppliers?country=${country.code}`}
                           className="w-full flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted"
                         >
-                          <span className="text-lg">{country.code === "US" ? "🇺🇸" : country.code === "CN" ? "🇨🇳" : country.code === "IN" ? "🇮🇳" : country.code === "DE" ? "🇩🇪" : "🏳️"}</span>
+                          <img 
+                            src={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
+                            width="20"
+                            alt={country.name}
+                            className="h-5 w-7 rounded-sm object-cover shadow-sm" 
+                          />
                           <div className="flex-1">
                             <p className="font-medium text-sm">{country.name}</p>
                             <p className="text-xs text-muted-foreground">{country.subregion || country.region}</p>
@@ -263,7 +268,12 @@ export default function GlobalSupplierMapPage() {
                   <Card className="h-full rounded-2xl transition-all hover:shadow-lg hover:-translate-y-1">
                     <CardContent className="md:pt-3">
                       <div className="flex items-center gap-3 mb-4">
-                        <span className="text-3xl">{country.flag}</span>
+                        <img 
+                          src={`https://flagcdn.com/w80/${country.code.toLowerCase()}.png`}
+                          width="32"
+                          alt={country.name}
+                          className="h-8 w-11 rounded-sm object-cover shadow-sm" 
+                        />
                         <div>
                           <h3 className="font-semibold">{country.name}</h3>
                           <p className="text-sm text-muted-foreground">{country.suppliers.toLocaleString()} suppliers</p>
