@@ -178,7 +178,7 @@ export default function AdminIndustriesPage() {
     setErrorMessage(null)
 
     const [categoriesResult, subcategoriesResult] = await Promise.all([
-      getAdminCategories(),
+      getAdminCategories({ perPage: 50 }),
       getAdminSubcategories(),
     ])
 

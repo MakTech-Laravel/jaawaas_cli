@@ -132,9 +132,14 @@ function normalizeSubcategories(payload: unknown): BackendSubcategory[] {
     .filter((item): item is BackendSubcategory => item !== null)
 }
 
-export async function getAdminCategories(): Promise<ApiResult<BackendCategory[]>> {
+export async function getAdminCategories(params?: { perPage?: number; page?: number }): Promise<ApiResult<BackendCategory[]>> {
   try {
-    const response = await apiClient.get("/admin/categories")
+    const response = await apiClient.get("/admin/categories", {
+      params: {
+        ...(typeof params?.perPage === "number" ? { per_page: params.perPage } : {}),
+        ...(typeof params?.page === "number" ? { page: params.page } : {}),
+      },
+    })
     return { success: true, data: normalizeCategories(response.data) }
   } catch (error) {
     return {
@@ -145,9 +150,14 @@ export async function getAdminCategories(): Promise<ApiResult<BackendCategory[]>
   }
 }
 
-export async function getPublicCategories(): Promise<ApiResult<BackendCategory[]>> {
+export async function getPublicCategories(params?: { perPage?: number; page?: number }): Promise<ApiResult<BackendCategory[]>> {
   try {
-    const response = await publicApiClient.get("/categories")
+    const response = await publicApiClient.get("/categories", {
+      params: {
+        ...(typeof params?.perPage === "number" ? { per_page: params.perPage } : {}),
+        ...(typeof params?.page === "number" ? { page: params.page } : {}),
+      },
+    })
     return { success: true, data: normalizeCategories(response.data) }
   } catch (error) {
     return {

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, Cpu, Cog, Shirt, Home, Heart, Car, UtensilsCrossed, FlaskConical, Package, Lightbulb, Wrench, HardHat, Sofa, Stethoscope, Wheat, Box, FileText, Factory, ShoppingBag, Globe } from "lucide-react"
 import { useTranslation } from "@/lib/i18n"
 import { getPublicCategories, BackendCategory } from "@/lib/api/categories"
-import { industries as industriesData } from "@/lib/data/industries"
 
 // Map industry icons
 const industryIcons: Record<string, React.ReactNode> = {
@@ -37,38 +36,13 @@ export function IndustriesSection() {
 
   useEffect(() => {
     async function loadCategories() {
-      const res = await getPublicCategories()
-      
-      let featured: any[] = []
-      if (res.success && res.data) {
-        // Only show featured categories
-        featured = res.data.filter((c) => Boolean(c.featured))
+      const res = await getPublicCategories({ perPage: 50 })
+      if (!res.success || !res.data) {
+        setCategories([])
+        return
       }
 
-      // If we have less than 8 featured categories from backend, pad with static ones
-      if (featured.length < 8) {
-        const remaining = 8 - featured.length
-        const staticFeatured = industriesData.filter(i => i.featured)
-        // Find static ones that are not already in the backend list (by slug or name)
-        const additional = staticFeatured.filter(
-          s => !featured.some(f => f.slug?.toLowerCase() === s.slug.toLowerCase() || f.name.toLowerCase() === s.name.toLowerCase())
-        ).slice(0, remaining)
-        
-        // Convert static format to match backend format
-        const additionalFormatted = additional.map(a => ({
-          id: a.slug,
-          name: a.name,
-          slug: a.slug,
-          description: a.description,
-          featured: 1,
-          color: undefined,
-          icon_url: undefined,
-          supplier_count: a.supplierCount
-        }))
-        
-        featured = [...featured, ...additionalFormatted]
-      }
-
+      const featured = res.data.filter((c) => Number(c.featured) === 1)
       setCategories(featured.slice(0, 8))
     }
     loadCategories()
@@ -98,16 +72,7 @@ export function IndustriesSection() {
         {/* Industry Cards Grid - Larger cards in 2 rows */}
         <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {categories.map((industry) => {
-            const industryColor = industry.color || "#0052cc"; // Fallback blue
-            // Compute a very transparent background based on the hex color for gradient
-            const hexToRgba = (hex: string, alpha: number) => {
-              const r = parseInt(hex.slice(1, 3), 16) || 0;
-              const g = parseInt(hex.slice(3, 5), 16) || 0;
-              const b = parseInt(hex.slice(5, 7), 16) || 0;
-              return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-            };
-            const defaultGradient = `linear-gradient(to bottom right, ${hexToRgba(industryColor, 0.1)}, ${hexToRgba(industryColor, 0.05)})`;
-            const hoverGradient = `linear-gradient(to bottom right, ${hexToRgba(industryColor, 0.2)}, ${hexToRgba(industryColor, 0.1)})`;
+            const industryColor = industry.color || "#f8fafc"
             
             // Fix image URL by stripping /api/vX from the base URL if present
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
@@ -124,15 +89,8 @@ export function IndustriesSection() {
                 key={industry.slug || industry.id}
                 href={`/industries/${industry.slug || industry.id}`}
                 className="group relative overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:border-secondary/50 hover:shadow-2xl hover:-translate-y-2"
+                style={{ backgroundColor: industryColor }}
               >
-                {/* Background Gradient (Inline styles for custom color logic) */}
-                <div 
-                  className="absolute inset-0 transition-all duration-300" 
-                  style={{ background: defaultGradient }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = hoverGradient; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = defaultGradient; }}
-                />
-                
                 {/* Content */}
                 <div className="relative p-6 lg:p-8">
                   {/* Icon */}
