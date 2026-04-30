@@ -389,19 +389,12 @@ export default function AdminFaqPage() {
 
     const category = categories[index]
     const newIndex = index - 1
-    const targetCategory = categories[newIndex]
-    const currentPosition = category.sort
-    const newPosition = targetCategory?.sort
+    const currentPosition = Number.isFinite(category.sort) ? category.sort : index
+    const newPosition = currentPosition - 1
 
     setCategories((prev) => arrayMove(prev, index, newIndex))
     setIsReordering(true)
     try {
-      if (!Number.isFinite(currentPosition) || !Number.isFinite(newPosition)) {
-        showErrorAlert("Invalid category positions for reordering")
-        await loadCategories(true)
-        return
-      }
-
       const response = await moveAdminFaqCategoryPosition(category.id, currentPosition, newPosition)
       if (!response.success) {
         showErrorAlert(response.message || "Failed to reorder category")
@@ -421,19 +414,12 @@ export default function AdminFaqPage() {
 
     const category = categories[index]
     const newIndex = index + 1
-    const targetCategory = categories[newIndex]
-    const currentPosition = category.sort
-    const newPosition = targetCategory?.sort
+    const currentPosition = Number.isFinite(category.sort) ? category.sort : index
+    const newPosition = currentPosition + 1
 
     setCategories((prev) => arrayMove(prev, index, newIndex))
     setIsReordering(true)
     try {
-      if (!Number.isFinite(currentPosition) || !Number.isFinite(newPosition)) {
-        showErrorAlert("Invalid category positions for reordering")
-        await loadCategories(true)
-        return
-      }
-
       const response = await moveAdminFaqCategoryPosition(category.id, currentPosition, newPosition)
       if (!response.success) {
         showErrorAlert(response.message || "Failed to reorder category")
@@ -456,6 +442,8 @@ export default function AdminFaqPage() {
 
     const faq = category.faqs[faqIndex]
     const newIndex = faqIndex - 1
+    const currentPosition = Number.isFinite(faq.sort) ? faq.sort : faqIndex
+    const newPosition = currentPosition - 1
 
     setCategories((prev) =>
       prev.map((c) => {
@@ -468,11 +456,11 @@ export default function AdminFaqPage() {
 
     setIsReordering(true)
     try {
-      const response = await moveAdminFaqPosition(faq.id, faqIndex + 1, newIndex + 1, categoryId)
+      const response = await moveAdminFaqPosition(faq.id, currentPosition, newPosition, categoryId)
       if (!response.success) {
         showErrorAlert(response.message || "Failed to reorder FAQ")
-        await loadCategories(true)
       }
+      await loadCategories(true)
     } finally {
       setIsReordering(false)
     }
@@ -489,6 +477,8 @@ export default function AdminFaqPage() {
 
     const faq = category.faqs[faqIndex]
     const newIndex = faqIndex + 1
+    const currentPosition = Number.isFinite(faq.sort) ? faq.sort : faqIndex
+    const newPosition = currentPosition + 1
 
     setCategories((prev) =>
       prev.map((c) => {
@@ -501,11 +491,11 @@ export default function AdminFaqPage() {
 
     setIsReordering(true)
     try {
-      const response = await moveAdminFaqPosition(faq.id, faqIndex + 1, newIndex + 1, categoryId)
+      const response = await moveAdminFaqPosition(faq.id, currentPosition, newPosition, categoryId)
       if (!response.success) {
         showErrorAlert(response.message || "Failed to reorder FAQ")
-        await loadCategories(true)
       }
+      await loadCategories(true)
     } finally {
       setIsReordering(false)
     }
@@ -521,18 +511,12 @@ export default function AdminFaqPage() {
     if (oldIndex !== -1 && newIndex !== -1) {
       const activeCategory = categories[oldIndex]
       const targetCategory = categories[newIndex]
-      const currentPosition = activeCategory?.sort
-      const newPosition = targetCategory?.sort
+      const currentPosition = Number.isFinite(activeCategory?.sort) ? activeCategory.sort : oldIndex
+      const newPosition = Number.isFinite(targetCategory?.sort) ? targetCategory.sort : newIndex
 
       setCategories((items) => arrayMove(items, oldIndex, newIndex))
       setIsReordering(true)
       try {
-        if (!Number.isFinite(currentPosition) || !Number.isFinite(newPosition)) {
-          showErrorAlert("Invalid category positions for reordering")
-          await loadCategories(true)
-          return
-        }
-
         const response = await moveAdminFaqCategoryPosition(String(active.id), currentPosition, newPosition)
         if (!response.success) {
           showErrorAlert(response.message || "Failed to reorder category")
@@ -555,6 +539,11 @@ export default function AdminFaqPage() {
     const newIndex = category.faqs.findIndex((f) => f.id === over.id)
 
     if (oldIndex !== -1 && newIndex !== -1) {
+      const activeFaq = category.faqs[oldIndex]
+      const targetFaq = category.faqs[newIndex]
+      const currentPosition = Number.isFinite(activeFaq?.sort) ? activeFaq.sort : oldIndex
+      const newPosition = Number.isFinite(targetFaq?.sort) ? targetFaq.sort : newIndex
+
       setCategories((prev) =>
         prev.map((c) => {
           if (c.id === categoryId) {
@@ -569,12 +558,11 @@ export default function AdminFaqPage() {
 
       setIsReordering(true)
       try {
-        // Use 1-based positions (index + 1) as many backends treat 'position' as 1-indexed
-        const response = await moveAdminFaqPosition(String(active.id), oldIndex + 1, newIndex + 1, categoryId)
+        const response = await moveAdminFaqPosition(String(active.id), currentPosition, newPosition, categoryId)
         if (!response.success) {
           showErrorAlert(response.message || "Failed to reorder FAQ")
-          await loadCategories(true)
         }
+        await loadCategories(true)
       } finally {
         setIsReordering(false)
       }
