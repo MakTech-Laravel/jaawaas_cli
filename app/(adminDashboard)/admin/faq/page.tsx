@@ -99,6 +99,10 @@ interface FAQCategory {
   faqs: FAQ[]
 }
 
+function toPosition(value: unknown, fallback: number): number {
+  return Number.isFinite(value) ? Number(value) : fallback
+}
+
 interface DeleteTarget {
   type: "category" | "faq"
   id: string
@@ -389,8 +393,9 @@ export default function AdminFaqPage() {
 
     const category = categories[index]
     const newIndex = index - 1
-    const currentPosition = Number.isFinite(category.sort) ? category.sort : index
-    const newPosition = currentPosition - 1
+    const targetCategory = categories[newIndex]
+    const currentPosition = toPosition(category.sort, index)
+    const newPosition = toPosition(targetCategory?.sort, newIndex)
 
     setCategories((prev) => arrayMove(prev, index, newIndex))
     setIsReordering(true)
@@ -414,8 +419,9 @@ export default function AdminFaqPage() {
 
     const category = categories[index]
     const newIndex = index + 1
-    const currentPosition = Number.isFinite(category.sort) ? category.sort : index
-    const newPosition = currentPosition + 1
+    const targetCategory = categories[newIndex]
+    const currentPosition = toPosition(category.sort, index)
+    const newPosition = toPosition(targetCategory?.sort, newIndex)
 
     setCategories((prev) => arrayMove(prev, index, newIndex))
     setIsReordering(true)
@@ -442,8 +448,10 @@ export default function AdminFaqPage() {
 
     const faq = category.faqs[faqIndex]
     const newIndex = faqIndex - 1
-    const currentPosition = Number.isFinite(faq.sort) ? faq.sort : faqIndex
-    const newPosition = currentPosition - 1
+    const targetFaq = category.faqs[newIndex]
+    const currentPosition = toPosition(faq.sort, faqIndex)
+    const newPosition = toPosition(targetFaq?.sort, newIndex)
+    const faqCategoryId = toPosition(categoryId, Number(categoryId))
 
     setCategories((prev) =>
       prev.map((c) => {
@@ -456,7 +464,7 @@ export default function AdminFaqPage() {
 
     setIsReordering(true)
     try {
-      const response = await moveAdminFaqPosition(faq.id, currentPosition, newPosition, categoryId)
+      const response = await moveAdminFaqPosition(faq.id, currentPosition, newPosition, faqCategoryId)
       if (!response.success) {
         showErrorAlert(response.message || "Failed to reorder FAQ")
       }
@@ -477,8 +485,10 @@ export default function AdminFaqPage() {
 
     const faq = category.faqs[faqIndex]
     const newIndex = faqIndex + 1
-    const currentPosition = Number.isFinite(faq.sort) ? faq.sort : faqIndex
-    const newPosition = currentPosition + 1
+    const targetFaq = category.faqs[newIndex]
+    const currentPosition = toPosition(faq.sort, faqIndex)
+    const newPosition = toPosition(targetFaq?.sort, newIndex)
+    const faqCategoryId = toPosition(categoryId, Number(categoryId))
 
     setCategories((prev) =>
       prev.map((c) => {
@@ -491,7 +501,7 @@ export default function AdminFaqPage() {
 
     setIsReordering(true)
     try {
-      const response = await moveAdminFaqPosition(faq.id, currentPosition, newPosition, categoryId)
+      const response = await moveAdminFaqPosition(faq.id, currentPosition, newPosition, faqCategoryId)
       if (!response.success) {
         showErrorAlert(response.message || "Failed to reorder FAQ")
       }
@@ -541,8 +551,9 @@ export default function AdminFaqPage() {
     if (oldIndex !== -1 && newIndex !== -1) {
       const activeFaq = category.faqs[oldIndex]
       const targetFaq = category.faqs[newIndex]
-      const currentPosition = Number.isFinite(activeFaq?.sort) ? activeFaq.sort : oldIndex
-      const newPosition = Number.isFinite(targetFaq?.sort) ? targetFaq.sort : newIndex
+      const currentPosition = toPosition(activeFaq?.sort, oldIndex)
+      const newPosition = toPosition(targetFaq?.sort, newIndex)
+      const faqCategoryId = toPosition(categoryId, Number(categoryId))
 
       setCategories((prev) =>
         prev.map((c) => {
@@ -558,7 +569,7 @@ export default function AdminFaqPage() {
 
       setIsReordering(true)
       try {
-        const response = await moveAdminFaqPosition(String(active.id), currentPosition, newPosition, categoryId)
+        const response = await moveAdminFaqPosition(String(active.id), currentPosition, newPosition, faqCategoryId)
         if (!response.success) {
           showErrorAlert(response.message || "Failed to reorder FAQ")
         }
