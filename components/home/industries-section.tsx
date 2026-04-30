@@ -105,26 +105,36 @@ export function IndustriesSection() {
                   </div>
 
                   {/* Industry Name */}
-                  <h3 className="mt-5 text-xl font-semibold text-foreground group-hover:text-secondary transition-colors">
+                  <h3 
+                    className="mt-5 text-xl font-semibold transition-colors"
+                    style={{ color: industry.title_color || undefined }}
+                  >
                     {industry.name}
                   </h3>
 
                   {/* Description */}
-                  <p className="mt-2 text-sm text-muted-foreground line-clamp-2" title={industry.description}>
+                  <p 
+                    className="mt-2 text-sm line-clamp-2" 
+                    title={industry.description}
+                    style={{ color: industry.description_color || undefined }}
+                  >
                     {industry.description || "Explore suppliers and products in this industry sector."}
                   </p>
 
                   {/* Stats */}
-                  <div className="mt-5 flex items-center gap-4 text-sm">
+                  <div className="mt-5 flex items-center gap-4 text-sm" style={{ color: industry.supplier_count_color || undefined }}>
                     <div className="flex items-center gap-1">
-                      <Factory className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-semibold text-foreground">{industry.supplier_count?.toLocaleString() || 0}</span>
-                      <span className="text-muted-foreground">suppliers</span>
+                      <Factory className="h-4 w-4" />
+                      <span className="font-semibold">{industry.supplier_count?.toLocaleString() || 0}</span>
+                      <span>suppliers</span>
                     </div>
                   </div>
 
                   {/* Arrow */}
-                  <div className="mt-5 flex items-center text-sm font-medium text-secondary transition-colors">
+                  <div 
+                    className="mt-5 flex items-center text-sm font-medium transition-colors"
+                    style={{ color: industry.btn_color || undefined }}
+                  >
                     <span>Explore</span>
                     <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-2" />
                   </div>

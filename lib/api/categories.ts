@@ -7,6 +7,12 @@ export interface BackendCategory {
   slug?: string
   description?: string
   color?: string
+  title_color?: string
+  desc_color?: string
+  description_color?: string
+  btn_color?: string
+  supplier_color?: string
+  supplier_count_color?: string
   featured?: boolean | number
   icon?: string
   icon_url?: string
@@ -107,6 +113,22 @@ function normalizeCategory(raw: unknown): BackendCategory | null {
     slug: typeof value.slug === "string" ? value.slug : undefined,
     description: typeof value.description === "string" ? value.description : undefined,
     color: typeof value.color === "string" ? value.color : undefined,
+    title_color: typeof value.title_color === "string" ? value.title_color : undefined,
+    desc_color: typeof value.desc_color === "string" ? value.desc_color : undefined,
+    description_color:
+      typeof value.description_color === "string"
+        ? value.description_color
+        : typeof value.desc_color === "string"
+          ? value.desc_color
+          : undefined,
+    btn_color: typeof value.btn_color === "string" ? value.btn_color : undefined,
+    supplier_color: typeof value.supplier_color === "string" ? value.supplier_color : undefined,
+    supplier_count_color:
+      typeof value.supplier_count_color === "string"
+        ? value.supplier_count_color
+        : typeof value.supplier_color === "string"
+          ? value.supplier_color
+          : undefined,
     icon: typeof value.icon === "string" ? value.icon : undefined,
     icon_url: typeof value.icon_url === "string" ? value.icon_url : undefined,
     featured:
@@ -173,7 +195,14 @@ export async function createAdminCategory(input: {
   slug: string
   description?: string
   color?: string
+  title_color?: string
+  desc_color?: string
+  description_color?: string
+  btn_color?: string
+  supplier_color?: string
+  supplier_count_color?: string
   featured?: boolean
+  icon?: File
 }): Promise<ApiResult<null>> {
   try {
     const form = new FormData()
@@ -181,6 +210,12 @@ export async function createAdminCategory(input: {
     form.append("slug", input.slug)
     if (input.description !== undefined) form.append("description", input.description)
     if (input.color) form.append("color", input.color)
+    if (input.title_color) form.append("title_color", input.title_color)
+    const descColor = input.desc_color || input.description_color
+    const supplierColor = input.supplier_color || input.supplier_count_color
+    if (descColor) form.append("desc_color", descColor)
+    if (input.btn_color) form.append("btn_color", input.btn_color)
+    if (supplierColor) form.append("supplier_color", supplierColor)
     form.append("featured", input.featured ? "1" : "0")
     if (input.icon) form.append("icon", input.icon)
 
@@ -202,6 +237,12 @@ export async function updateAdminCategory(
     slug: string; 
     description?: string; 
     color?: string; 
+    title_color?: string;
+    desc_color?: string;
+    description_color?: string;
+    btn_color?: string;
+    supplier_color?: string;
+    supplier_count_color?: string;
     featured?: boolean;
     icon?: File
   }
@@ -212,6 +253,12 @@ export async function updateAdminCategory(
     form.append("slug", input.slug)
     if (input.description !== undefined) form.append("description", input.description)
     if (input.color) form.append("color", input.color)
+    if (input.title_color) form.append("title_color", input.title_color)
+    const descColor = input.desc_color || input.description_color
+    const supplierColor = input.supplier_color || input.supplier_count_color
+    if (descColor) form.append("desc_color", descColor)
+    if (input.btn_color) form.append("btn_color", input.btn_color)
+    if (supplierColor) form.append("supplier_color", supplierColor)
     if (input.featured !== undefined) form.append("featured", input.featured ? "1" : "0")
     if (input.icon) form.append("icon", input.icon)
 

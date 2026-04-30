@@ -77,6 +77,10 @@ interface Industry {
   icon?: string
   icon_url?: string
   color?: string
+  title_color?: string
+  description_color?: string
+  btn_color?: string
+  supplier_count_color?: string
   supplierCount: number
   productCount: number
   featured: boolean
@@ -113,6 +117,10 @@ export default function AdminIndustriesPage() {
     featured: boolean;
     slug: string;
     color: string;
+    title_color: string;
+    description_color: string;
+    btn_color: string;
+    supplier_count_color: string;
     icon: File | null;
   }>({ 
     name: "", 
@@ -120,6 +128,10 @@ export default function AdminIndustriesPage() {
     featured: false,
     slug: "",
     color: "#ffffff",
+    title_color: "#000000",
+    description_color: "#64748b",
+    btn_color: "#3b82f6",
+    supplier_count_color: "#64748b",
     icon: null
   })
   const [newCategory, setNewCategory] = useState({ name: "" })
@@ -160,6 +172,10 @@ export default function AdminIndustriesPage() {
               : `${process.env.NEXT_PUBLIC_API_URL || ""}${category.icon_url}`)
           : undefined,
         color: category.color,
+        title_color: category.title_color,
+        description_color: category.description_color,
+        btn_color: category.btn_color,
+        supplier_count_color: category.supplier_count_color,
         supplierCount: category.supplier_count || 0,
         productCount: category.product_count || 0,
         featured: Boolean(category.featured),
@@ -245,6 +261,10 @@ export default function AdminIndustriesPage() {
         description: newIndustry.description,
         featured: newIndustry.featured,
         color: newIndustry.color,
+        title_color: newIndustry.title_color,
+        description_color: newIndustry.description_color,
+        btn_color: newIndustry.btn_color,
+        supplier_count_color: newIndustry.supplier_count_color,
         icon: newIndustry.icon || undefined
       })
 
@@ -259,6 +279,10 @@ export default function AdminIndustriesPage() {
         featured: false, 
         slug: "", 
         color: "#ffffff", 
+        title_color: "#000000",
+        description_color: "#64748b",
+        btn_color: "#3b82f6",
+        supplier_count_color: "#64748b",
         icon: null 
       })
       setShowAddIndustryDialog(false)
@@ -275,6 +299,10 @@ export default function AdminIndustriesPage() {
         description: currentIndustry.description,
         featured: currentIndustry.featured,
         color: currentIndustry.color,
+        title_color: currentIndustry.title_color,
+        description_color: currentIndustry.description_color,
+        btn_color: currentIndustry.btn_color,
+        supplier_count_color: currentIndustry.supplier_count_color,
         // @ts-ignore - added icon property to the local state for editing
         icon: currentIndustry.iconFile || undefined
       })
@@ -813,118 +841,224 @@ export default function AdminIndustriesPage() {
 
       {/* Add Industry Dialog */}
       <Dialog open={showAddIndustryDialog} onOpenChange={setShowAddIndustryDialog}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl">
+          <DialogHeader className="p-6 pb-0">
             <DialogTitle>Add New Industry</DialogTitle>
             <DialogDescription>
               Create a new industry category for the platform
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Industry Name</Label>
-                <Input 
-                  placeholder="e.g., Mining"
-                  value={newIndustry.name}
-                  onChange={(e) => {
-                    const name = e.target.value
-                    setNewIndustry({ 
-                      ...newIndustry, 
-                      name, 
-                      slug: slugify(name) 
-                    })
-                  }}
-                  className="mt-2"
-                />
-              </div>
-              <div>
-                <Label>Slug</Label>
-                <Input 
-                  placeholder="e.g., mining"
-                  value={newIndustry.slug}
-                  onChange={(e) => setNewIndustry({ ...newIndustry, slug: e.target.value })}
-                  className="mt-2"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Theme Color</Label>
-                <div className="mt-2 flex items-center gap-2">
+          
+          <div className="flex-1 px-6 py-4 overflow-y-auto custom-scrollbar">
+            <div className="space-y-6 pb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Industry Name</Label>
                   <Input 
-                    type="color"
-                    value={newIndustry.color}
-                    onChange={(e) => setNewIndustry({ ...newIndustry, color: e.target.value })}
-                    className="h-10 w-12 p-1"
+                    placeholder="e.g., Mining"
+                    value={newIndustry.name}
+                    onChange={(e) => {
+                      const name = e.target.value
+                      setNewIndustry({ 
+                        ...newIndustry, 
+                        name, 
+                        slug: slugify(name) 
+                      })
+                    }}
+                    className="mt-2"
                   />
+                </div>
+                <div>
+                  <Label>Slug</Label>
                   <Input 
-                    value={newIndustry.color}
-                    onChange={(e) => setNewIndustry({ ...newIndustry, color: e.target.value })}
-                    className="flex-1"
+                    placeholder="e.g., mining"
+                    value={newIndustry.slug}
+                    onChange={(e) => setNewIndustry({ ...newIndustry, slug: e.target.value })}
+                    className="mt-2"
                   />
                 </div>
               </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Theme Color (Background)</Label>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Input 
+                      type="color"
+                      value={newIndustry.color}
+                      onChange={(e) => setNewIndustry({ ...newIndustry, color: e.target.value })}
+                      className="h-10 w-12 p-1 cursor-pointer"
+                    />
+                    <Input 
+                      value={newIndustry.color}
+                      onChange={(e) => setNewIndustry({ ...newIndustry, color: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Icon Image</Label>
+                  <Input 
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null
+                      setNewIndustry({ ...newIndustry, icon: file })
+                    }}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-xs">Title Color</Label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Input 
+                      type="color"
+                      value={newIndustry.title_color}
+                      onChange={(e) => setNewIndustry({ ...newIndustry, title_color: e.target.value })}
+                      className="h-8 w-8 p-0 border-none cursor-pointer rounded-full overflow-hidden"
+                    />
+                    <Input 
+                      value={newIndustry.title_color}
+                      onChange={(e) => setNewIndustry({ ...newIndustry, title_color: e.target.value })}
+                      className="h-8 text-xs px-2"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Desc. Color</Label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Input 
+                      type="color"
+                      value={newIndustry.description_color}
+                      onChange={(e) => setNewIndustry({ ...newIndustry, description_color: e.target.value })}
+                      className="h-8 w-8 p-0 border-none cursor-pointer rounded-full overflow-hidden"
+                    />
+                    <Input 
+                      value={newIndustry.description_color}
+                      onChange={(e) => setNewIndustry({ ...newIndustry, description_color: e.target.value })}
+                      className="h-8 text-xs px-2"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Btn Color</Label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Input 
+                      type="color"
+                      value={newIndustry.btn_color}
+                      onChange={(e) => setNewIndustry({ ...newIndustry, btn_color: e.target.value })}
+                      className="h-8 w-8 p-0 border-none cursor-pointer rounded-full overflow-hidden"
+                    />
+                    <Input 
+                      value={newIndustry.btn_color}
+                      onChange={(e) => setNewIndustry({ ...newIndustry, btn_color: e.target.value })}
+                      className="h-8 text-xs px-2"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Supplier Color</Label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Input 
+                      type="color"
+                      value={newIndustry.supplier_count_color}
+                      onChange={(e) => setNewIndustry({ ...newIndustry, supplier_count_color: e.target.value })}
+                      className="h-8 w-8 p-0 border-none cursor-pointer rounded-full overflow-hidden"
+                    />
+                    <Input 
+                      value={newIndustry.supplier_count_color}
+                      onChange={(e) => setNewIndustry({ ...newIndustry, supplier_count_color: e.target.value })}
+                      className="h-8 text-xs px-2"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div>
-                <Label>Icon Image</Label>
-                <Input 
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null
-                    setNewIndustry({ ...newIndustry, icon: file })
-                  }}
-                  className="mt-2"
+                <Label>Description</Label>
+                <Textarea 
+                  placeholder="Describe what this industry covers..."
+                  value={newIndustry.description}
+                  onChange={(e) => setNewIndustry({ ...newIndustry, description: e.target.value })}
+                  className="mt-2 h-20"
                 />
               </div>
-            </div>
 
-            <div>
-              <Label>Description</Label>
-              <Textarea 
-                placeholder="Describe what this industry covers..."
-                value={newIndustry.description}
-                onChange={(e) => setNewIndustry({ ...newIndustry, description: e.target.value })}
-                className="mt-2"
-              />
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg border border-border p-3">
-              <div>
-                <Label className="text-base">Featured</Label>
-                <p className="text-xs text-muted-foreground">Show this industry on the homepage</p>
+              <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                <div>
+                  <Label className="text-base">Featured</Label>
+                  <p className="text-xs text-muted-foreground">Show this industry on the homepage</p>
+                </div>
+                <Switch 
+                  checked={newIndustry.featured}
+                  onCheckedChange={(checked) => setNewIndustry({ ...newIndustry, featured: checked })}
+                />
               </div>
-              <Switch 
-                checked={newIndustry.featured}
-                onCheckedChange={(checked) => setNewIndustry({ ...newIndustry, featured: checked })}
-              />
-            </div>
 
-            {/* Preview Section */}
-            <div className="rounded-xl bg-muted/30 p-4">
-              <Label className="mb-3 block text-xs uppercase tracking-wider text-muted-foreground">Card Preview</Label>
-              <div 
-                className="group relative h-32 w-full overflow-hidden rounded-xl border border-border bg-card p-4 transition-all"
-                style={{ borderLeftColor: newIndustry.color, borderLeftWidth: "4px" }}
-              >
-                <div className="flex gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-muted shadow-sm" style={{ backgroundColor: newIndustry.color + "20" }}>
-                    {newIndustry.icon ? (
-                      <img src={URL.createObjectURL(newIndustry.icon)} className="h-8 w-8 object-contain" />
-                    ) : (
-                      <Package className="h-6 w-6 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">{newIndustry.name || "Industry Name"}</h3>
-                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{newIndustry.description || "Description will appear here..."}</p>
+              {/* Preview Section */}
+              <div className="rounded-xl bg-muted/30 p-4 border border-border">
+                <Label className="mb-3 block text-xs uppercase tracking-wider text-muted-foreground font-semibold">Card Preview</Label>
+                <div className="flex justify-center">
+                  <div 
+                    className="group relative overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 w-full max-w-[320px]"
+                    style={{ backgroundColor: newIndustry.color }}
+                  >
+                    <div className="relative p-6">
+                      {/* Icon */}
+                      <div 
+                        className="flex h-16 w-16 items-center justify-center rounded-2xl bg-card shadow-md"
+                      >
+                        {newIndustry.icon ? (
+                          <img src={URL.createObjectURL(newIndustry.icon)} className="h-8 w-8 object-contain" />
+                        ) : (
+                          <Package className="h-8 w-8 text-muted-foreground" />
+                        )}
+                      </div>
+
+                      {/* Industry Name */}
+                      <h3 
+                        className="mt-5 text-xl font-semibold transition-colors truncate"
+                        style={{ color: newIndustry.title_color }}
+                      >
+                        {newIndustry.name || "Industry Name"}
+                      </h3>
+
+                      {/* Description */}
+                      <p 
+                        className="mt-2 text-sm line-clamp-2"
+                        style={{ color: newIndustry.description_color }}
+                      >
+                        {newIndustry.description || "Explore suppliers and products in this industry sector."}
+                      </p>
+
+                      {/* Stats */}
+                      <div className="mt-5 flex items-center gap-4 text-sm" style={{ color: newIndustry.supplier_count_color }}>
+                        <div className="flex items-center gap-1">
+                          <Factory className="h-4 w-4" />
+                          <span className="font-semibold">0</span>
+                          <span>suppliers</span>
+                        </div>
+                      </div>
+
+                      {/* Arrow */}
+                      <div 
+                        className="mt-5 flex items-center text-sm font-medium"
+                        style={{ color: newIndustry.btn_color }}
+                      >
+                        <span>Explore</span>
+                        <ChevronRight className="ml-2 h-4 w-4" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <DialogFooter>
+
+          <DialogFooter className="p-6 pt-2 border-t border-border bg-muted/10">
             <Button variant="outline" onClick={() => setShowAddIndustryDialog(false)}>Cancel</Button>
             <Button onClick={handleAddIndustry} disabled={!newIndustry.name}>Add Industry</Button>
           </DialogFooter>
@@ -933,117 +1067,224 @@ export default function AdminIndustriesPage() {
 
       {/* Edit Industry Dialog */}
       <Dialog open={showEditIndustryDialog} onOpenChange={setShowEditIndustryDialog}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl">
+          <DialogHeader className="p-6 pb-0">
             <DialogTitle>Edit Industry</DialogTitle>
             <DialogDescription>
               Update industry details
             </DialogDescription>
           </DialogHeader>
+          
           {currentIndustry && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Industry Name</Label>
-                  <Input 
-                    value={currentIndustry.name}
-                    onChange={(e) => setCurrentIndustry({ ...currentIndustry, name: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label>Slug</Label>
-                  <Input 
-                    value={currentIndustry.slug}
-                    onChange={(e) => setCurrentIndustry({ ...currentIndustry, slug: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Theme Color</Label>
-                  <div className="mt-2 flex items-center gap-2">
+            <div className="flex-1 px-6 py-4 overflow-y-auto custom-scrollbar">
+              <div className="space-y-6 pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Industry Name</Label>
                     <Input 
-                      type="color"
-                      value={currentIndustry.color || "#ffffff"}
-                      onChange={(e) => setCurrentIndustry({ ...currentIndustry, color: e.target.value })}
-                      className="h-10 w-12 p-1"
+                      value={currentIndustry.name}
+                      onChange={(e) => setCurrentIndustry({ ...currentIndustry, name: e.target.value })}
+                      className="mt-2"
                     />
+                  </div>
+                  <div>
+                    <Label>Slug</Label>
                     <Input 
-                      value={currentIndustry.color || "#ffffff"}
-                      onChange={(e) => setCurrentIndustry({ ...currentIndustry, color: e.target.value })}
-                      className="flex-1"
+                      value={currentIndustry.slug}
+                      onChange={(e) => setCurrentIndustry({ ...currentIndustry, slug: e.target.value })}
+                      className="mt-2"
                     />
                   </div>
                 </div>
-                <div>
-                  <Label>Update Icon</Label>
-                  <Input 
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null
-                      // @ts-ignore
-                      setCurrentIndustry({ ...currentIndustry, iconFile: file })
-                    }}
-                    className="mt-2"
-                  />
-                  {currentIndustry.icon_url && !((currentIndustry as any).iconFile) && (
-                    <p className="mt-1 text-[10px] text-muted-foreground">Current: {currentIndustry.icon_url}</p>
-                  )}
-                </div>
-              </div>
 
-              <div>
-                <Label>Description</Label>
-                <Textarea 
-                  value={currentIndustry.description}
-                  onChange={(e) => setCurrentIndustry({ ...currentIndustry, description: e.target.value })}
-                  className="mt-2"
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <div>
-                  <Label className="text-base">Featured</Label>
-                  <p className="text-xs text-muted-foreground">Show this industry on the homepage</p>
-                </div>
-                <Switch 
-                  checked={currentIndustry.featured}
-                  onCheckedChange={(checked) => setCurrentIndustry({ ...currentIndustry, featured: checked })}
-                />
-              </div>
-
-              {/* Preview Section */}
-              <div className="rounded-xl bg-muted/30 p-4">
-                <Label className="mb-3 block text-xs uppercase tracking-wider text-muted-foreground">Card Preview</Label>
-                <div 
-                  className="group relative h-32 w-full overflow-hidden rounded-xl border border-border bg-card p-4 transition-all"
-                  style={{ borderLeftColor: currentIndustry.color, borderLeftWidth: "4px" }}
-                >
-                  <div className="flex gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-muted shadow-sm" style={{ backgroundColor: (currentIndustry.color || "#000000") + "20" }}>
-                      {/* @ts-ignore */}
-                      {currentIndustry.iconFile ? (
-                        /* @ts-ignore */
-                        <img src={URL.createObjectURL(currentIndustry.iconFile)} className="h-8 w-8 object-contain" />
-                      ) : currentIndustry.icon_url ? (
-                        <img src={currentIndustry.icon_url} className="h-8 w-8 object-contain" />
-                      ) : (
-                        <Package className="h-6 w-6 text-muted-foreground" />
-                      )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Theme Color (Background)</Label>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Input 
+                        type="color"
+                        value={currentIndustry.color || "#ffffff"}
+                        onChange={(e) => setCurrentIndustry({ ...currentIndustry, color: e.target.value })}
+                        className="h-10 w-12 p-1 cursor-pointer"
+                      />
+                      <Input 
+                        value={currentIndustry.color || "#ffffff"}
+                        onChange={(e) => setCurrentIndustry({ ...currentIndustry, color: e.target.value })}
+                        className="flex-1"
+                      />
                     </div>
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-foreground truncate">{currentIndustry.name}</h3>
-                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{currentIndustry.description || "No description"}</p>
+                  </div>
+                  <div>
+                    <Label>Update Icon</Label>
+                    <Input 
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null
+                        // @ts-ignore
+                        setCurrentIndustry({ ...currentIndustry, iconFile: file })
+                      }}
+                      className="mt-2"
+                    />
+                    {currentIndustry.icon_url && !((currentIndustry as any).iconFile) && (
+                      <p className="mt-1 text-[10px] text-muted-foreground truncate">Current: {currentIndustry.icon_url}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-xs">Title Color</Label>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Input 
+                        type="color"
+                        value={currentIndustry.title_color || "#000000"}
+                        onChange={(e) => setCurrentIndustry({ ...currentIndustry, title_color: e.target.value })}
+                        className="h-8 w-8 p-0 border-none cursor-pointer rounded-full overflow-hidden"
+                      />
+                      <Input 
+                        value={currentIndustry.title_color || "#000000"}
+                        onChange={(e) => setCurrentIndustry({ ...currentIndustry, title_color: e.target.value })}
+                        className="h-8 text-xs px-2"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Desc. Color</Label>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Input 
+                        type="color"
+                        value={currentIndustry.description_color || "#64748b"}
+                        onChange={(e) => setCurrentIndustry({ ...currentIndustry, description_color: e.target.value })}
+                        className="h-8 w-8 p-0 border-none cursor-pointer rounded-full overflow-hidden"
+                      />
+                      <Input 
+                        value={currentIndustry.description_color || "#64748b"}
+                        onChange={(e) => setCurrentIndustry({ ...currentIndustry, description_color: e.target.value })}
+                        className="h-8 text-xs px-2"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Btn Color</Label>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Input 
+                        type="color"
+                        value={currentIndustry.btn_color || "#3b82f6"}
+                        onChange={(e) => setCurrentIndustry({ ...currentIndustry, btn_color: e.target.value })}
+                        className="h-8 w-8 p-0 border-none cursor-pointer rounded-full overflow-hidden"
+                      />
+                      <Input 
+                        value={currentIndustry.btn_color || "#3b82f6"}
+                        onChange={(e) => setCurrentIndustry({ ...currentIndustry, btn_color: e.target.value })}
+                        className="h-8 text-xs px-2"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Supplier Color</Label>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Input 
+                        type="color"
+                        value={currentIndustry.supplier_count_color || "#64748b"}
+                        onChange={(e) => setCurrentIndustry({ ...currentIndustry, supplier_count_color: e.target.value })}
+                        className="h-8 w-8 p-0 border-none cursor-pointer rounded-full overflow-hidden"
+                      />
+                      <Input 
+                        value={currentIndustry.supplier_count_color || "#64748b"}
+                        onChange={(e) => setCurrentIndustry({ ...currentIndustry, supplier_count_color: e.target.value })}
+                        className="h-8 text-xs px-2"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Description</Label>
+                  <Textarea 
+                    value={currentIndustry.description}
+                    onChange={(e) => setCurrentIndustry({ ...currentIndustry, description: e.target.value })}
+                    className="mt-2 h-20"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                  <div>
+                    <Label className="text-base">Featured</Label>
+                    <p className="text-xs text-muted-foreground">Show this industry on the homepage</p>
+                  </div>
+                  <Switch 
+                    checked={currentIndustry.featured}
+                    onCheckedChange={(checked) => setCurrentIndustry({ ...currentIndustry, featured: checked })}
+                  />
+                </div>
+
+                {/* Preview Section */}
+                <div className="rounded-xl bg-muted/30 p-4 border border-border">
+                  <Label className="mb-3 block text-xs uppercase tracking-wider text-muted-foreground font-semibold">Card Preview</Label>
+                  <div className="flex justify-center">
+                    <div 
+                      className="group relative overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 w-full max-w-[320px]"
+                      style={{ backgroundColor: currentIndustry.color || "#ffffff" }}
+                    >
+                      <div className="relative p-6">
+                        {/* Icon */}
+                        <div 
+                          className="flex h-16 w-16 items-center justify-center rounded-2xl bg-card shadow-md"
+                        >
+                          {/* @ts-ignore */}
+                          {currentIndustry.iconFile ? (
+                            /* @ts-ignore */
+                            <img src={URL.createObjectURL(currentIndustry.iconFile)} className="h-8 w-8 object-contain" />
+                          ) : currentIndustry.icon_url ? (
+                            <img src={currentIndustry.icon_url} className="h-8 w-8 object-contain" />
+                          ) : (
+                            <Package className="h-8 w-8 text-muted-foreground" />
+                          )}
+                        </div>
+
+                        {/* Industry Name */}
+                        <h3 
+                          className="mt-5 text-xl font-semibold transition-colors truncate"
+                          style={{ color: currentIndustry.title_color || "#000000" }}
+                        >
+                          {currentIndustry.name}
+                        </h3>
+
+                        {/* Description */}
+                        <p 
+                          className="mt-2 text-sm line-clamp-2"
+                          style={{ color: currentIndustry.description_color || "#64748b" }}
+                        >
+                          {currentIndustry.description || "Explore suppliers and products in this industry sector."}
+                        </p>
+
+                        {/* Stats */}
+                        <div className="mt-5 flex items-center gap-4 text-sm" style={{ color: currentIndustry.supplier_count_color || "#64748b" }}>
+                          <div className="flex items-center gap-1">
+                            <Factory className="h-4 w-4" />
+                            <span className="font-semibold">{currentIndustry.supplierCount.toLocaleString()}</span>
+                            <span>suppliers</span>
+                          </div>
+                        </div>
+
+                        {/* Arrow */}
+                        <div 
+                          className="mt-5 flex items-center text-sm font-medium"
+                          style={{ color: currentIndustry.btn_color || "#3b82f6" }}
+                        >
+                          <span>Explore</span>
+                          <ChevronRight className="ml-2 h-4 w-4" />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           )}
-          <DialogFooter>
+
+          <DialogFooter className="p-6 pt-2 border-t border-border bg-muted/10">
             <Button variant="outline" onClick={() => setShowEditIndustryDialog(false)}>Cancel</Button>
             <Button onClick={handleEditIndustry}>Save Changes</Button>
           </DialogFooter>
