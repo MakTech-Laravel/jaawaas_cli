@@ -23,6 +23,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import IconPicker from "@/components/icon-picker"
+import DynamicIcon from "@/components/dynamic-icon"
 import {
   createAdminCategory,
   createAdminSubcategory,
@@ -76,6 +78,7 @@ interface Industry {
   description: string
   icon?: string
   icon_url?: string
+  icon_color?: string
   color?: string
   title_color?: string
   description_color?: string
@@ -121,8 +124,9 @@ export default function AdminIndustriesPage() {
     description_color: string;
     btn_color: string;
     supplier_count_color: string;
-    icon: File | null;
-  }>({ 
+    icon: string;
+    icon_color: string;
+  }>({
     name: "", 
     description: "", 
     featured: false,
@@ -132,7 +136,8 @@ export default function AdminIndustriesPage() {
     description_color: "#64748b",
     btn_color: "#3b82f6",
     supplier_count_color: "#64748b",
-    icon: null
+    icon: "",
+    icon_color: "#000000"
   })
   const [newCategory, setNewCategory] = useState({ name: "" })
   const [newSubcategory, setNewSubcategory] = useState({ name: "" })
@@ -265,7 +270,8 @@ export default function AdminIndustriesPage() {
         description_color: newIndustry.description_color,
         btn_color: newIndustry.btn_color,
         supplier_count_color: newIndustry.supplier_count_color,
-        icon: newIndustry.icon || undefined
+        icon: newIndustry.icon || undefined,
+        icon_color: newIndustry.icon_color
       })
 
       if (!result.success) {
@@ -283,7 +289,8 @@ export default function AdminIndustriesPage() {
         description_color: "#64748b",
         btn_color: "#3b82f6",
         supplier_count_color: "#64748b",
-        icon: null 
+        icon: "",
+        icon_color: "#000000"
       })
       setShowAddIndustryDialog(false)
       await loadFromBackend()
@@ -303,8 +310,8 @@ export default function AdminIndustriesPage() {
         description_color: currentIndustry.description_color,
         btn_color: currentIndustry.btn_color,
         supplier_count_color: currentIndustry.supplier_count_color,
-        // @ts-ignore - added icon property to the local state for editing
-        icon: currentIndustry.iconFile || undefined
+        icon: currentIndustry.icon || undefined,
+        icon_color: currentIndustry.icon_color
       })
 
       if (!result.success) {
@@ -609,8 +616,8 @@ export default function AdminIndustriesPage() {
                     )}
                   </button>
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted overflow-hidden" style={{ backgroundColor: industry.color || undefined }}>
-                    {industry.icon_url ? (
-                      <img src={industry.icon_url} alt={industry.name} className="h-full w-full object-cover" />
+                    {industry.icon ? (
+                      <DynamicIcon name={industry.icon} size={20} />
                     ) : (
                       <Layers className="h-5 w-5 text-muted-foreground" />
                     )}
@@ -897,16 +904,27 @@ export default function AdminIndustriesPage() {
                   </div>
                 </div>
                 <div>
-                  <Label>Icon Image</Label>
-                  <Input 
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null
-                      setNewIndustry({ ...newIndustry, icon: file })
-                    }}
-                    className="mt-2"
+                  <Label>Icon</Label>
+                  <IconPicker
+                    selectedIcon={newIndustry.icon}
+                    onSelect={(name) => setNewIndustry({ ...newIndustry, icon: name })}
                   />
+                </div>
+                <div>
+                  <Label>Icon Color</Label>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Input 
+                      type="color"
+                      value={newIndustry.icon_color}
+                      onChange={(e) => setNewIndustry({ ...newIndustry, icon_color: e.target.value })}
+                      className="h-10 w-12 p-1 cursor-pointer"
+                    />
+                    <Input 
+                      value={newIndustry.icon_color}
+                      onChange={(e) => setNewIndustry({ ...newIndustry, icon_color: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1012,7 +1030,7 @@ export default function AdminIndustriesPage() {
                         className="flex h-16 w-16 items-center justify-center rounded-2xl bg-card shadow-md"
                       >
                         {newIndustry.icon ? (
-                          <img src={URL.createObjectURL(newIndustry.icon)} className="h-8 w-8 object-contain" />
+                          <DynamicIcon name={newIndustry.icon} size={32} color={newIndustry.icon_color} />
                         ) : (
                           <Package className="h-8 w-8 text-muted-foreground" />
                         )}
@@ -1115,20 +1133,27 @@ export default function AdminIndustriesPage() {
                     </div>
                   </div>
                   <div>
-                    <Label>Update Icon</Label>
-                    <Input 
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null
-                        // @ts-ignore
-                        setCurrentIndustry({ ...currentIndustry, iconFile: file })
-                      }}
-                      className="mt-2"
+                    <Label>Icon</Label>
+                    <IconPicker
+                      selectedIcon={currentIndustry.icon}
+                      onSelect={(name) => setCurrentIndustry({ ...currentIndustry, icon: name })}
                     />
-                    {currentIndustry.icon_url && !((currentIndustry as any).iconFile) && (
-                      <p className="mt-1 text-[10px] text-muted-foreground truncate">Current: {currentIndustry.icon_url}</p>
-                    )}
+                  </div>
+                  <div>
+                    <Label>Icon Color</Label>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Input 
+                        type="color"
+                        value={currentIndustry.icon_color || "#000000"}
+                        onChange={(e) => setCurrentIndustry({ ...currentIndustry, icon_color: e.target.value })}
+                        className="h-10 w-12 p-1 cursor-pointer"
+                      />
+                      <Input 
+                        value={currentIndustry.icon_color || "#000000"}
+                        onChange={(e) => setCurrentIndustry({ ...currentIndustry, icon_color: e.target.value })}
+                        className="flex-1"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1232,12 +1257,8 @@ export default function AdminIndustriesPage() {
                         <div 
                           className="flex h-16 w-16 items-center justify-center rounded-2xl bg-card shadow-md"
                         >
-                          {/* @ts-ignore */}
-                          {currentIndustry.iconFile ? (
-                            /* @ts-ignore */
-                            <img src={URL.createObjectURL(currentIndustry.iconFile)} className="h-8 w-8 object-contain" />
-                          ) : currentIndustry.icon_url ? (
-                            <img src={currentIndustry.icon_url} className="h-8 w-8 object-contain" />
+                          {currentIndustry.icon ? (
+                            <DynamicIcon name={currentIndustry.icon} size={32} color={currentIndustry.icon_color} />
                           ) : (
                             <Package className="h-8 w-8 text-muted-foreground" />
                           )}

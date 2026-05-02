@@ -16,6 +16,7 @@ export interface BackendCategory {
   featured?: boolean | number
   icon?: string
   icon_url?: string
+  icon_color?: string
   supplier_count?: number
   product_count?: number
   subcategories?: BackendSubcategory[]
@@ -202,7 +203,8 @@ export async function createAdminCategory(input: {
   supplier_color?: string
   supplier_count_color?: string
   featured?: boolean
-  icon?: File
+  icon?: string
+  icon_color?: string
 }): Promise<ApiResult<null>> {
   try {
     const form = new FormData()
@@ -218,6 +220,7 @@ export async function createAdminCategory(input: {
     if (supplierColor) form.append("supplier_color", supplierColor)
     form.append("featured", input.featured ? "1" : "0")
     if (input.icon) form.append("icon", input.icon)
+    if (input.icon_color) form.append("icon_color", input.icon_color)
 
     await apiClient.post("/admin/categories/create", form)
     return { success: true, data: null }
@@ -244,7 +247,8 @@ export async function updateAdminCategory(
     supplier_color?: string;
     supplier_count_color?: string;
     featured?: boolean;
-    icon?: File
+    icon?: string;
+    icon_color?: string;
   }
 ): Promise<ApiResult<null>> {
   try {
@@ -261,6 +265,7 @@ export async function updateAdminCategory(
     if (supplierColor) form.append("supplier_color", supplierColor)
     if (input.featured !== undefined) form.append("featured", input.featured ? "1" : "0")
     if (input.icon) form.append("icon", input.icon)
+    if (input.icon_color) form.append("icon_color", input.icon_color)
 
     await apiClient.put(`/admin/categories/${categoryId}`, form)
     return { success: true, data: null }
