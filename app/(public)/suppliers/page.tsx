@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { useTranslation } from "@/lib/i18n"
 import {
   Select,
   SelectContent,
@@ -62,6 +63,7 @@ const moqRanges = [
 const popularCountries = allCountries.filter(c => popularManufacturingCountries.includes(c.code))
 
 export default function SuppliersPage() {
+  const { t } = useTranslation()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedIndustry, setSelectedIndustry] = useState<string>("all")
   const [selectedCountry, setSelectedCountry] = useState<string>("all")
@@ -118,10 +120,10 @@ export default function SuppliersPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <h1 className="font-serif text-3xl font-medium tracking-tight text-primary-foreground sm:text-4xl lg:text-5xl">
-                Find Reviewed Suppliers
+                {t?.landing?.suppliers?.pageTitle || "Find Reviewed Suppliers"}
               </h1>
               <p className="mx-auto mt-4 max-w-2xl text-lg text-primary-foreground/80">
-                Browse {suppliers.length.toLocaleString()}+ reviewed manufacturers from around the world
+                {(t?.landing?.suppliers?.pageSubtitle || "{count}+ reviewed manufacturers from around the world").replace("{count}", suppliers.length.toLocaleString())}
               </p>
             </div>
 
@@ -132,7 +134,7 @@ export default function SuppliersPage() {
                   <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     type="text"
-                    placeholder="Search suppliers, products, or categories..."
+                    placeholder={t?.landing?.suppliers?.searchPlaceholder || "Search suppliers, products, or categories..."}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="h-12 bg-background pl-12 text-base"
@@ -159,13 +161,13 @@ export default function SuppliersPage() {
               <aside className={`w-full lg:w-64 lg:shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
                 <div className="sticky top-24 rounded-xl border border-border bg-card p-5">
                   <div className="flex items-center justify-between">
-                    <h2 className="font-semibold text-foreground">Filters</h2>
+                    <h2 className="font-semibold text-foreground">{t?.landing?.suppliers?.filters || "Filters"}</h2>
                     {hasActiveFilters && (
                       <button 
                         onClick={clearFilters}
                         className="text-sm text-secondary hover:underline"
                       >
-                        Clear all
+                        {t?.landing?.suppliers?.clearAll || "Clear all"}
                       </button>
                     )}
                   </div>
@@ -173,13 +175,13 @@ export default function SuppliersPage() {
                   <div className="mt-6 space-y-6">
                     {/* Industry Filter */}
                     <div>
-                      <label className="text-sm font-medium text-foreground">Industry</label>
+                      <label className="text-sm font-medium text-foreground">{t?.landing?.suppliers?.industryLabel || "Industry"}</label>
                       <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
                         <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="All Industries" />
+                          <SelectValue placeholder={t?.landing?.suppliers?.allIndustries || "All Industries"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All Industries</SelectItem>
+                          <SelectItem value="all">{t?.landing?.suppliers?.allIndustries || "All Industries"}</SelectItem>
                           {industries.map((industry) => (
                             <SelectItem key={industry.slug} value={industry.slug}>
                               {industry.name}
@@ -191,20 +193,20 @@ export default function SuppliersPage() {
 
                     {/* Country Filter */}
                     <div>
-                      <label className="text-sm font-medium text-foreground">Country</label>
+                      <label className="text-sm font-medium text-foreground">{t?.landing?.suppliers?.countryLabel || "Country"}</label>
                       <Select value={selectedCountry} onValueChange={setSelectedCountry}>
                         <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="All Countries" />
+                          <SelectValue placeholder={t?.landing?.suppliers?.allCountries || "All Countries"} />
                         </SelectTrigger>
                         <SelectContent className="max-h-72">
-                          <SelectItem value="all">All Countries</SelectItem>
-                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Popular</div>
+                          <SelectItem value="all">{t?.landing?.suppliers?.allCountries || "All Countries"}</SelectItem>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t?.landing?.suppliers?.popular || "Popular"}</div>
                           {popularCountries.map((country) => (
                             <SelectItem key={country.code} value={country.code}>
                               {country.name}
                             </SelectItem>
                           ))}
-                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">All Countries</div>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t?.landing?.suppliers?.allCountries || "All Countries"}</div>
                           {allCountries.filter(c => !popularManufacturingCountries.includes(c.code)).map((country) => (
                             <SelectItem key={country.code} value={country.code}>
                               {country.name}
@@ -216,13 +218,13 @@ export default function SuppliersPage() {
 
                     {/* Certification Filter */}
                     <div>
-                      <label className="text-sm font-medium text-foreground">Certification</label>
+                      <label className="text-sm font-medium text-foreground">{t?.landing?.suppliers?.certificationLabel || "Certification"}</label>
                       <Select value={selectedCertification} onValueChange={setSelectedCertification}>
                         <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Any Certification" />
+                          <SelectValue placeholder={t?.landing?.suppliers?.anyCertification || "Any Certification"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Any Certification</SelectItem>
+                          <SelectItem value="all">{t?.landing?.suppliers?.anyCertification || "Any Certification"}</SelectItem>
                           {certifications.map((cert) => (
                             <SelectItem key={cert.value} value={cert.value}>
                               {cert.label}
@@ -234,13 +236,13 @@ export default function SuppliersPage() {
 
                     {/* MOQ Filter */}
                     <div>
-                      <label className="text-sm font-medium text-foreground">Minimum Order</label>
+                      <label className="text-sm font-medium text-foreground">{t?.landing?.suppliers?.minimumOrderLabel || "Minimum Order"}</label>
                       <Select value={selectedMoq} onValueChange={setSelectedMoq}>
                         <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Any MOQ" />
+                          <SelectValue placeholder={t?.landing?.suppliers?.anyMOQ || "Any MOQ"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Any MOQ</SelectItem>
+                          <SelectItem value="all">{t?.landing?.suppliers?.anyMOQ || "Any MOQ"}</SelectItem>
                           {moqRanges.map((range) => (
                             <SelectItem key={range.value} value={range.value}>
                               {range.label}
@@ -252,13 +254,13 @@ export default function SuppliersPage() {
 
                     {/* Export Market Filter */}
                     <div>
-                      <label className="text-sm font-medium text-foreground">Export Market</label>
+                      <label className="text-sm font-medium text-foreground">{t?.landing?.suppliers?.exportMarketLabel || "Export Market"}</label>
                       <Select value={selectedExportMarket} onValueChange={setSelectedExportMarket}>
                         <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Any Region" />
+                          <SelectValue placeholder={t?.landing?.suppliers?.anyRegion || "Any Region"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Any Region</SelectItem>
+                          <SelectItem value="all">{t?.landing?.suppliers?.anyRegion || "Any Region"}</SelectItem>
                           {exportMarketRegions.map((region) => (
                             <SelectItem key={region} value={region.toLowerCase().replace(" ", "-")}>
                               {region}
@@ -276,7 +278,7 @@ export default function SuppliersPage() {
                         onCheckedChange={(checked) => setReviewedOnly(checked as boolean)}
                       />
                       <label htmlFor="reviewed" className="text-sm text-foreground cursor-pointer">
-                        Reviewed suppliers only
+                        {t?.landing?.suppliers?.reviewedSuppliersOnly || "Reviewed suppliers only"}
                       </label>
                     </div>
                   </div>
@@ -288,17 +290,17 @@ export default function SuppliersPage() {
                 {/* Results Header */}
                 <div className="mb-6 flex items-center justify-between">
                   <p className="text-muted-foreground">
-                    <span className="font-medium text-foreground">{filteredSuppliers.length}</span> suppliers found
+                    <span className="font-medium text-foreground">{filteredSuppliers.length}</span> {t?.landing?.suppliers?.suppliersFound || "suppliers found"}
                   </p>
                   <Select defaultValue="relevance">
                     <SelectTrigger className="w-44">
-                      <SelectValue placeholder="Sort by" />
+                      <SelectValue placeholder={t?.landing?.suppliers?.sortBy || "Sort by"} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="relevance">Relevance</SelectItem>
-                      <SelectItem value="rating">Highest Rating</SelectItem>
-                      <SelectItem value="response">Fastest Response</SelectItem>
-                      <SelectItem value="products">Most Products</SelectItem>
+                      <SelectItem value="relevance">{t?.landing?.suppliers?.relevance || "Relevance"}</SelectItem>
+                      <SelectItem value="rating">{t?.landing?.suppliers?.highestRating || "Highest Rating"}</SelectItem>
+                      <SelectItem value="response">{t?.landing?.suppliers?.fastestResponse || "Fastest Response"}</SelectItem>
+                      <SelectItem value="products">{t?.landing?.suppliers?.mostProducts || "Most Products"}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -306,10 +308,10 @@ export default function SuppliersPage() {
                 {/* Active Filters */}
                 {hasActiveFilters && (
                   <div className="mb-6 flex flex-wrap items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Active filters:</span>
+                    <span className="text-sm text-muted-foreground">{t?.landing?.suppliers?.activeFilters || "Active filters:"}</span>
                     {searchQuery && (
                       <Badge variant="secondary" className="gap-1">
-                        Search: {searchQuery}
+                        {t?.landing?.suppliers?.search || "Search:"} {searchQuery}
                         <button onClick={() => setSearchQuery("")}>
                           <X className="h-3 w-3" />
                         </button>
@@ -333,7 +335,7 @@ export default function SuppliersPage() {
                     )}
                     {reviewedOnly && (
                       <Badge variant="secondary" className="gap-1">
-                        Reviewed Only
+                        {t?.landing?.suppliers?.reviewedOnly || "Reviewed Only"}
                         <button onClick={() => setReviewedOnly(false)}>
                           <X className="h-3 w-3" />
                         </button>
@@ -367,7 +369,7 @@ export default function SuppliersPage() {
                                 {supplier.reviewed && (
                                   <Badge variant="secondary" className="text-xs">
                                     <CheckCircle className="mr-1 h-3 w-3" />
-                                    Reviewed
+                                    {t?.landing?.suppliers?.reviewedBadge || "Reviewed"}
                                   </Badge>
                                 )}
                               </div>
@@ -401,7 +403,7 @@ export default function SuppliersPage() {
                             </div>
                             <div className="flex items-center gap-1 text-muted-foreground">
                               <Package className="h-4 w-4" />
-                              {supplier.productCount.toLocaleString()} products
+                              {supplier.productCount.toLocaleString()} {t?.landing?.suppliers?.productsLabel || "products"}
                             </div>
                           </div>
 
@@ -416,7 +418,7 @@ export default function SuppliersPage() {
                             ))}
                             {supplier.mainProducts.length > 4 && (
                               <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                                +{supplier.mainProducts.length - 4} more
+                                +{supplier.mainProducts.length - 4} {t?.landing?.suppliers?.moreProducts?.split("{count}")[1] || "more"}
                               </span>
                             )}
                           </div>
@@ -430,16 +432,16 @@ export default function SuppliersPage() {
                 {filteredSuppliers.length === 0 && (
                   <div className="rounded-xl border border-dashed border-border py-16 text-center">
                     <Factory className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                    <h3 className="mt-4 font-semibold text-foreground">No suppliers found</h3>
+                    <h3 className="mt-4 font-semibold text-foreground">{t?.landing?.suppliers?.noSuppliersFound || "No suppliers found"}</h3>
                     <p className="mt-2 text-muted-foreground">
-                      Try adjusting your search or filter criteria
+                      {t?.landing?.suppliers?.adjustSearchFilters || "Try adjusting your search or filter criteria"}
                     </p>
                     <Button 
                       variant="outline" 
                       className="mt-4"
                       onClick={clearFilters}
                     >
-                      Clear all filters
+                      {t?.landing?.suppliers?.clearAllFilters || "Clear all filters"}
                     </Button>
                   </div>
                 )}

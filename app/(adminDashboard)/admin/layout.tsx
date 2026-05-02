@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
+import { useTranslation } from "@/lib/i18n"
 import { NotificationsDropdown } from "@/components/notifications-dropdown"
 import { 
   LayoutDashboard, 
@@ -38,30 +39,6 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 
-const navigation = [
-  { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { name: "Users", href: "/admin/users", icon: Users },
-  { name: "Create Manufacturer", href: "/admin/manufacturers/create", icon: UserPlus },
-  { name: "Mfg registrations", href: "/admin/manufacturer-registrations", icon: ClipboardList },
-  { name: "Suppliers", href: "/admin/suppliers", icon: Factory, badge: "12" },
-  { name: "Products", href: "/admin/products", icon: Package },
-  { name: "Industries", href: "/admin/industries", icon: Layers },
-  { name: "Quick Filters", href: "/admin/filters", icon: Filter },
-  { name: "Reviews", href: "/admin/reviews", icon: Star },
-  { name: "RFQs", href: "/admin/rfqs", icon: FileText },
-  { name: "Messages", href: "/admin/messages", icon: MessageSquare },
-  { name: "Reports", href: "/admin/reports", icon: Flag, badge: "3" },
-  { name: "Pricing", href: "/admin/pricing", icon: DollarSign },
-  { name: "Promotions", href: "/admin/promotions", icon: Sparkles },
-  { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard },
-  { name: "Insights", href: "/admin/insights", icon: Lightbulb },
-  { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-  { name: "Contact Page", href: "/admin/contact", icon: Mail },
-  { name: "FAQ Management", href: "/admin/faq", icon: HelpCircle },
-  { name: "Site Settings", href: "/admin/site-settings", icon: FileText },
-  { name: "Settings", href: "/admin/settings", icon: Settings },
-]
-
 export default function AdminLayout({
   children,
 }: {
@@ -70,7 +47,33 @@ export default function AdminLayout({
   const pathname = usePathname()
   const router = useRouter()
   const { user, isLoading, logout } = useAuth()
+  const { t } = useTranslation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Create navigation array with translated labels
+  const navigation = [
+    { name: t?.nav?.adminDashboard || "Dashboard", href: "/admin", icon: LayoutDashboard },
+    { name: t?.nav?.adminUsers || "Users", href: "/admin/users", icon: Users },
+    { name: t?.nav?.adminCreateManufacturer || "Create Manufacturer", href: "/admin/manufacturers/create", icon: UserPlus },
+    { name: t?.nav?.adminMfgRegistrations || "Mfg registrations", href: "/admin/manufacturer-registrations", icon: ClipboardList },
+    { name: t?.nav?.adminSuppliers || "Suppliers", href: "/admin/suppliers", icon: Factory, badge: "12" },
+    { name: t?.nav?.adminProducts || "Products", href: "/admin/products", icon: Package },
+    { name: t?.nav?.adminIndustries || "Industries", href: "/admin/industries", icon: Layers },
+    { name: t?.nav?.adminQuickFilters || "Quick Filters", href: "/admin/filters", icon: Filter },
+    { name: t?.nav?.adminReviews || "Reviews", href: "/admin/reviews", icon: Star },
+    { name: t?.nav?.adminRFQs || "RFQs", href: "/admin/rfqs", icon: FileText },
+    { name: t?.nav?.adminMessages || "Messages", href: "/admin/messages", icon: MessageSquare },
+    { name: t?.nav?.adminReports || "Reports", href: "/admin/reports", icon: Flag, badge: "3" },
+    { name: t?.nav?.adminPricing || "Pricing", href: "/admin/pricing", icon: DollarSign },
+    { name: t?.nav?.adminPromotions || "Promotions", href: "/admin/promotions", icon: Sparkles },
+    { name: t?.nav?.adminSubscriptions || "Subscriptions", href: "/admin/subscriptions", icon: CreditCard },
+    { name: t?.nav?.adminInsights || "Insights", href: "/admin/insights", icon: Lightbulb },
+    { name: t?.nav?.adminAnalytics || "Analytics", href: "/admin/analytics", icon: BarChart3 },
+    { name: t?.nav?.adminContactPage || "Contact Page", href: "/admin/contact", icon: Mail },
+    { name: t?.nav?.adminFAQManagement || "FAQ Management", href: "/admin/faq", icon: HelpCircle },
+    { name: t?.nav?.adminSiteSettings || "Site Settings", href: "/admin/site-settings", icon: FileText },
+    { name: t?.nav?.adminSettings || "Settings", href: "/admin/settings", icon: Settings },
+  ]
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "admin")) {
@@ -175,7 +178,7 @@ export default function AdminLayout({
               }}
             >
               <LogOut className="h-4 w-4" />
-              Sign Out
+              {t?.nav?.adminSignOut || "Sign Out"}
             </Button>
           </div>
         </div>
@@ -204,7 +207,7 @@ export default function AdminLayout({
           <div className="flex items-center gap-3">
             <NotificationsDropdown />
             <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-              View Site
+              {t?.nav?.adminViewSite || "View Site"}
             </Link>
           </div>
         </header>

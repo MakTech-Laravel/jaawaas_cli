@@ -4,6 +4,7 @@ import { Suspense } from "react"
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useTranslation } from "@/lib/i18n"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
@@ -33,6 +34,7 @@ import {
 function ProductsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t } = useTranslation()
 
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -143,10 +145,10 @@ function ProductsPageContent() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <h1 className="font-serif text-3xl font-medium tracking-tight text-primary-foreground sm:text-4xl lg:text-5xl">
-                Discover Products
+                {t?.landing?.products?.pageTitle || "Discover Products"}
               </h1>
               <p className="mx-auto mt-4 max-w-2xl text-lg text-primary-foreground/80">
-                Browse {products.length.toLocaleString()}+ products from reviewed manufacturers worldwide
+                {t?.landing?.products?.pageDescription?.replace("{productCount}", products.length.toLocaleString()) || `Browse ${products.length.toLocaleString()}+ products from reviewed manufacturers worldwide`}
               </p>
             </div>
 
@@ -157,7 +159,7 @@ function ProductsPageContent() {
                   <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     type="text"
-                    placeholder="Search products, categories..."
+                    placeholder={t?.landing?.products?.searchPlaceholder || "Search products, categories..."}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="h-12 bg-background pl-12 text-base"
@@ -184,13 +186,13 @@ function ProductsPageContent() {
               <aside className={`w-full lg:w-64 lg:shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
                 <div className="sticky top-24 rounded-xl border border-border bg-card p-5">
                   <div className="flex items-center justify-between">
-                    <h2 className="font-semibold text-foreground">Filters</h2>
+                    <h2 className="font-semibold text-foreground">{t?.landing?.products?.filters || "Filters"}</h2>
                     {hasActiveFilters && (
                       <button 
                         onClick={clearFilters}
                         className="text-sm text-secondary hover:underline"
                       >
-                        Clear all
+                        {t?.landing?.products?.clearAll || "Clear all"}
                       </button>
                     )}
                   </div>
@@ -198,13 +200,13 @@ function ProductsPageContent() {
                   <div className="mt-6 space-y-6">
                     {/* Category Filter */}
                     <div>
-                      <label className="text-sm font-medium text-foreground">Category</label>
+                      <label className="text-sm font-medium text-foreground">{t?.landing?.products?.categoryLabel || "Category"}</label>
                       <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                         <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="All Categories" />
+                          <SelectValue placeholder={t?.landing?.products?.allCategories || "All Categories"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">All Categories</SelectItem>
+                          <SelectItem value="all">{t?.landing?.products?.allCategories || "All Categories"}</SelectItem>
                           {categories.map((category) => (
                             <SelectItem key={category.slug} value={category.slug}>
                               {category.name}
@@ -216,18 +218,18 @@ function ProductsPageContent() {
 
                     {/* Sort */}
                     <div>
-                      <label className="text-sm font-medium text-foreground">Sort By</label>
+                      <label className="text-sm font-medium text-foreground">{t?.landing?.products?.sortLabel || "Sort By"}</label>
                       <Select value={sortBy} onValueChange={setSortBy}>
                         <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Sort by" />
+                          <SelectValue placeholder={t?.landing?.products?.sortBy || "Sort by"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="relevance">Relevance</SelectItem>
-                          <SelectItem value="price-low">Price: Low to High</SelectItem>
-                          <SelectItem value="price-high">Price: High to Low</SelectItem>
-                          <SelectItem value="moq-low">Lowest MOQ</SelectItem>
-                          <SelectItem value="newest">Newest First</SelectItem>
-                          <SelectItem value="popularity">Most Popular</SelectItem>
+                          <SelectItem value="relevance">{t?.landing?.products?.relevance || "Relevance"}</SelectItem>
+                          <SelectItem value="price-low">{t?.landing?.products?.priceLow || "Price: Low to High"}</SelectItem>
+                          <SelectItem value="price-high">{t?.landing?.products?.priceHigh || "Price: High to Low"}</SelectItem>
+                          <SelectItem value="moq-low">{t?.landing?.products?.lowestMOQ || "Lowest MOQ"}</SelectItem>
+                          <SelectItem value="newest">{t?.landing?.products?.newestFirst || "Newest First"}</SelectItem>
+                          <SelectItem value="popularity">{t?.landing?.products?.mostPopular || "Most Popular"}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -240,17 +242,17 @@ function ProductsPageContent() {
                 {/* Results Header */}
                 <div className="mb-6 flex items-center justify-between">
                   <p className="text-muted-foreground">
-                    <span className="font-medium text-foreground">{filteredAndSortedProducts.length}</span> products found
+                    <span className="font-medium text-foreground">{filteredAndSortedProducts.length}</span> {t?.landing?.products?.productsFound || "products found"}
                   </p>
                 </div>
 
                 {/* Active Filters */}
                 {hasActiveFilters && (
                   <div className="mb-6 flex flex-wrap items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Active filters:</span>
+                    <span className="text-sm text-muted-foreground">{t?.landing?.suppliers?.activeFilters || "Active filters:"}</span>
                     {searchQuery && (
                       <Badge variant="secondary" className="gap-1">
-                        Search: {searchQuery}
+                        {t?.landing?.suppliers?.search || "Search:"} {searchQuery}
                         <button onClick={() => setSearchQuery("")}>
                           <X className="h-3 w-3" />
                         </button>
@@ -266,7 +268,7 @@ function ProductsPageContent() {
                     )}
                     {sortBy !== "relevance" && (
                       <Badge variant="secondary" className="gap-1">
-                        Sort: {sortBy}
+                        {t?.landing?.products?.sortDisplay || "Sort:"} {sortBy}
                         <button onClick={() => setSortBy("relevance")}>
                           <X className="h-3 w-3" />
                         </button>
@@ -285,7 +287,7 @@ function ProductsPageContent() {
                 {/* Error State */}
                 {error && !loading && (
                   <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-700">
-                    <p className="font-semibold">Error loading products</p>
+                    <p className="font-semibold">{t?.landing?.products?.errorLoadingProducts || "Error loading products"}</p>
                     <p className="mt-1">{error}</p>
                   </div>
                 )}
@@ -308,7 +310,7 @@ function ProductsPageContent() {
                           {product.is_approved && (
                             <Badge className="absolute right-3 top-3 bg-green-500/20 text-green-700 border-green-200">
                               <CheckCircle className="h-3 w-3 mr-1" />
-                              Verified
+                              {t?.landing?.products?.verified || "Verified"}
                             </Badge>
                           )}
                         </div>
@@ -330,13 +332,13 @@ function ProductsPageContent() {
                           </div>
 
                           <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
-                            <span>MOQ: {product.pricing_quantities.minimum_order_quantity}</span>
-                            <span>{product.pricing_quantities.lead_time} days</span>
+                            <span>{t?.landing?.products?.moqLabel || "MOQ:"} {product.pricing_quantities.minimum_order_quantity}</span>
+                            <span>{product.pricing_quantities.lead_time} {t?.landing?.products?.daysLabel || "days"}</span>
                           </div>
 
                           {product.inquiry_count > 0 && (
                             <div className="mt-2 text-xs text-amber-600">
-                              ⭐ {product.inquiry_count} inquiries
+                              ⭐ {product.inquiry_count} {t?.landing?.products?.inquiriesLabel || "inquiries"}
                             </div>
                           )}
                         </div>
@@ -349,16 +351,16 @@ function ProductsPageContent() {
                 {!loading && !error && filteredAndSortedProducts.length === 0 && (
                   <div className="rounded-xl border border-dashed border-border py-16 text-center">
                     <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                    <h3 className="mt-4 font-semibold text-foreground">No products found</h3>
+                    <h3 className="mt-4 font-semibold text-foreground">{t?.landing?.products?.noProductsFound || "No products found"}</h3>
                     <p className="mt-2 text-muted-foreground">
-                      Try adjusting your search or filter criteria
+                      {t?.landing?.suppliers?.adjustSearchFilters || "Try adjusting your search or filter criteria"}
                     </p>
                     <Button 
                       variant="outline" 
                       className="mt-4"
                       onClick={clearFilters}
                     >
-                      Clear all filters
+                      {t?.landing?.suppliers?.clearAllFilters || "Clear all filters"}
                     </Button>
                   </div>
                 )}
