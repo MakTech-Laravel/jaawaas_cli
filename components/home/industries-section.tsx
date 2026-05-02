@@ -165,14 +165,14 @@ export function IndustriesSection() {
           <Button size="lg" variant="default" className="gap-2" asChild>
             <Link href="/industries">
               <Package className="h-4 w-4" />
-              View All Industries
+              {t?.landing?.industries?.viewAll || "View All Industries"}
             </Link>
           </Button>
           {/* Explore Global Map Button */}
           <Button size="lg" variant="outline" className="gap-2" asChild>
             <Link href="/suppliers/map">
               <Globe className="h-4 w-4" />
-              Explore Global Map
+              {t?.landing?.industries?.explorerMap || "Explore Global Map"}
             </Link>
           </Button>
         </div>

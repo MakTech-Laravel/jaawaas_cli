@@ -21,10 +21,13 @@ const en = {
     error: "Error",
     success: "Success",
     warning: "Warning",
+    email: "Email",
+    password: "Password",
   },
 
   // ── Auth ─────────────────────────────────────────────────────────────
   auth: {
+    // Common
     signIn: "Sign In",
     signOut: "Sign Out",
     signUp: "Sign Up",
@@ -35,6 +38,114 @@ const en = {
     noAccount: "Don't have an account?",
     hasAccount: "Already have an account?",
     orContinueWith: "Or continue with",
+    
+    // Sign In page
+    welcomeBack: "Welcome back",
+    signInToYourAccount: "Sign in to your account to continue",
+    buyer: "Buyer",
+    manufacturer: "Manufacturer",
+    admin: "Admin",
+    buyerDescription: "Access your buyer dashboard to manage RFQs, messages, and saved suppliers.",
+    manufacturerDescription: "Access your manufacturer dashboard to manage products, inquiries, and company profile.",
+    adminDescription: "Access the admin panel to manage users, suppliers, and platform settings.",
+    signInAs: "Sign in as",
+    continueWithGoogle: "Continue with Google",
+    dontHaveAccount: "Don't have an account?",
+    createAccount: "Create account",
+    canceledDeletion: "Canceled a deletion request?",
+    restoreAccount: "Restore account",
+    invalidEmailOrPassword: "Invalid email or password. Please try again.",
+    accountRestored: "Account restored",
+    accountRestoredMessage: "You can sign in with your usual credentials.",
+    signingIn: "Signing in...",
+    
+    // Sign Up page
+    createNewAccount: "Create your account",
+    joinOurPlatform: "Join our platform to start selling or finding suppliers",
+    selectYourRole: "Select your role",
+    buyerRole: "Buyer",
+    buyerRoleDesc: "Looking for suppliers and products",
+    manufacturerRole: "Manufacturer",
+    manufacturerRoleDesc: "Supplying products to buyers",
+    continueButton: "Continue",
+    
+    // Sign Up - Details form
+    firstName: "First Name",
+    lastName: "Last Name",
+    company: "Company Name",
+    country: "Country",
+    confirmPassword: "Confirm Password",
+    agreeToTerms: "I agree to the Terms of Service and Privacy Policy",
+    
+    // Manufacturer specific
+    city: "City",
+    businessLicense: "Business License",
+    website: "Website",
+    factoryPhotos: "Factory Photos",
+    additionalNotes: "Additional Notes",
+    uploadBizLicense: "Upload Business License",
+    uploadFactoryPhotos: "Upload Factory Photos (Max 5)",
+    uploadDesc: "Drag and drop or click to select files",
+    max5Photos: "Maximum 5 photos",
+    remove: "Remove",
+    
+    // Social signup
+    needsProfileCompletion: "Complete your profile",
+    profileAlmostReady: "Your profile is almost ready",
+    continueProfileSetup: "Continue setting up your profile",
+    
+    // Errors
+    googleLoginFailed: "Google login failed. Please try again.",
+    errorOccurred: "An error occurred. Please try again.",
+    accountCreated: "Your account has been created",
+    reviewPlans: "Review plans next, or go straight to your dashboard.",
+    verifyEmail: "Please verify your email before continuing.",
+    
+    // Restore Account
+    restoreTitle: "Restore your account",
+    restoreSubtitleStep1: "If you requested account deletion, sign in here to cancel it. We will email you a verification code.",
+    restoreSubtitleStep2: "Enter the verification code sent to your email.",
+    restoreSendingCode: "Sending code…",
+    restoreContinue: "Continue",
+    restoreVerificationCode: "Verification code",
+    restoreEnterCode: "Enter code from email",
+    restoreVerifying: "Verifying…",
+    restoreVerifyButton: "Verify and restore account",
+    restoreDifferentEmail: "Use different email",
+    
+    // Forgot Password
+    forgotTitle: "Forgot your password?",
+    resetTitle: "Reset your password",
+    forgotSubtitle: "No worries, we'll send you reset instructions.",
+    resetSubtitle: "Enter the OTP and your new password to complete reset.",
+    forgotSending: "Sending...",
+    forgotSendCode: "Send reset code",
+    resetPasswordComplete: "Password reset complete",
+    resetOtpLabel: "OTP code",
+    resetOtpPlaceholder: "Enter OTP",
+    resetNewPassword: "New password",
+    resetConfirmPassword: "Confirm password",
+    resetResetting: "Resetting...",
+    resetButton: "Reset password",
+    resetDifferentEmail: "Use another email",
+    rememberPassword: "Remember your password?",
+    passwordMismatch: "Password confirmation does not match.",
+    emailMissing: "Email is missing. Please request a reset code again.",
+  },
+
+  // ── Auth Layout ──────────────────────────────────────────────────────
+  authLayout: {
+    connectManufacturers: "Connect with reviewed manufacturers worldwide",
+    joinBusinesses: "Join thousands of businesses finding reliable manufacturing partners through our curated network.",
+    reviewedManufacturers: "Reviewed Manufacturers",
+    countries: "Countries",
+    productCategories: "Product Categories",
+    clientSatisfaction: "Client Satisfaction",
+    allSuppliersReviewed: "All suppliers reviewed and audited",
+    globalNetwork: "Global network across 120+ countries",
+    secureMessaging: "Secure messaging and transactions",
+    realtimeRFQ: "Real-time RFQ matching",
+    copyright: "SourceNest. All rights reserved.",
   },
 
   // ── Navigation / Sidebar ─────────────────────────────────────────────
@@ -267,7 +378,9 @@ const en = {
       mfgStep5Desc: "Once ready, submit your account for review. Our team will review your business before granting access to the platform.",
       mfgStep6Title: "Go Global",
       mfgStep6Desc: "After approval, your profile goes live. Start receiving inquiries and quote requests from buyers worldwide.",
-      mfgApproval: "All manufacturer accounts require admin approval before going live — ensuring quality and trust for buyers."
+      mfgApproval: "All manufacturer accounts require admin approval before going live — ensuring quality and trust for buyers.",
+      important: "Important: No payment is required upfront. Your account will be reviewed first, and you will only be charged after approval.",
+      paymentComplete: "Once approved, complete your payment to activate your account and unlock full access to the platform."
     },
     whyUse: {
       buyerTitle: "Why Buyers Choose SourceNest",
@@ -372,6 +485,15 @@ const en = {
       popular: "Popular Industries",
       viewAll: "View All Industries",
       rights: "All rights reserved."
+    },
+    industries: {
+      viewAll: "View All Industries",
+      explorerMap: "Explore Global Map",
+      electronicsElectrical: "Electronics & Electrical",
+      machineryEquipment: "Machinery & Equipment",
+      textilesApparel: "Textiles & Apparel",
+      homeGarden: "Home & Garden",
+      healthBeauty: "Health & Beauty",
     }
   },
   forManufacturers: {

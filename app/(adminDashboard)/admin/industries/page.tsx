@@ -68,6 +68,8 @@ interface Category {
   id: string
   name: string
   slug: string
+  description?: string
+  tags?: string
   subcategories: Subcategory[]
 }
 
@@ -138,7 +140,7 @@ export default function AdminIndustriesPage() {
     icon: "",
     icon_color: "#000000",
   })
-  const [newCategory, setNewCategory] = useState({ name: "" })
+  const [newCategory, setNewCategory] = useState({ name: "", description: "", tags: "" })
   const [newSubcategory, setNewSubcategory] = useState({ name: "" })
 
   const slugify = (value: string) => value.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
@@ -344,7 +346,7 @@ export default function AdminIndustriesPage() {
   // Category CRUD
   const openAddCategory = (industry: Industry) => {
     setCurrentIndustry(industry)
-    setNewCategory({ name: "" })
+    setNewCategory({ name: "", description: "", tags: "" })
     setShowAddCategoryDialog(true)
   }
 
@@ -355,6 +357,8 @@ export default function AdminIndustriesPage() {
       const result = await createAdminSubcategory({
         name: newCategory.name,
         slug,
+        description: newCategory.description || undefined,
+        tags: newCategory.tags || undefined,
         industry_id: String(currentIndustry.id),
       })
 
@@ -363,7 +367,7 @@ export default function AdminIndustriesPage() {
         return
       }
 
-      setNewCategory({ name: "" })
+      setNewCategory({ name: "", description: "", tags: "" })
       setShowAddCategoryDialog(false)
       await loadFromBackend()
     })()
@@ -381,6 +385,8 @@ export default function AdminIndustriesPage() {
       const result = await updateAdminSubcategory(String(currentCategory.id), {
         name: currentCategory.name,
         slug: currentCategory.slug || slugify(currentCategory.name),
+        description: currentCategory.description || undefined,
+        tags: currentCategory.tags || undefined,
         industry_id: String(currentIndustry.id),
       })
 
@@ -1340,9 +1346,28 @@ export default function AdminIndustriesPage() {
               <Input 
                 placeholder="e.g., Consumer Electronics"
                 value={newCategory.name}
-                onChange={(e) => setNewCategory({ name: e.target.value })}
+                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
                 className="mt-2"
               />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea 
+                placeholder="Describe this category..."
+                value={newCategory.description}
+                onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                className="mt-2 h-20"
+              />
+            </div>
+            <div>
+              <Label>Tags</Label>
+              <Input 
+                placeholder="e.g., electronics,gadgets,tech"
+                value={newCategory.tags}
+                onChange={(e) => setNewCategory({ ...newCategory, tags: e.target.value })}
+                className="mt-2"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Separate tags with commas</p>
             </div>
           </div>
           <DialogFooter>
@@ -1370,6 +1395,25 @@ export default function AdminIndustriesPage() {
                   onChange={(e) => setCurrentCategory({ ...currentCategory, name: e.target.value })}
                   className="mt-2"
                 />
+              </div>
+              <div>
+                <Label>Description</Label>
+                <Textarea 
+                  placeholder="Describe this category..."
+                  value={currentCategory.description || ""}
+                  onChange={(e) => setCurrentCategory({ ...currentCategory, description: e.target.value })}
+                  className="mt-2 h-20"
+                />
+              </div>
+              <div>
+                <Label>Tags</Label>
+                <Input 
+                  placeholder="e.g., electronics,gadgets,tech"
+                  value={currentCategory.tags || ""}
+                  onChange={(e) => setCurrentCategory({ ...currentCategory, tags: e.target.value })}
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Separate tags with commas</p>
               </div>
             </div>
           )}

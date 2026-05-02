@@ -24,8 +24,11 @@ const es = {
     error: "错误",
     success: "成功",
     warning: "警告",
+    email: "电子邮件",
+    password: "密码",
   },
   auth: {
+    // Common
     signIn: "登录",
     signOut: "登出",
     signUp: "注册",
@@ -36,7 +39,116 @@ const es = {
     noAccount: "还没有账户？",
     hasAccount: "已有账户？",
     orContinueWith: "或使用以下方式继续",
+    
+    // Sign In page
+    welcomeBack: "欢迎回来",
+    signInToYourAccount: "登录您的账户以继续",
+    buyer: "买家",
+    manufacturer: "制造商",
+    admin: "管理员",
+    buyerDescription: "访问您的买家仪表板以管理询价单、消息和已保存的供应商。",
+    manufacturerDescription: "访问您的制造商仪表板以管理产品、询问和公司信息。",
+    adminDescription: "访问管理面板以管理用户、供应商和平台设置。",
+    signInAs: "作为以下身份登录",
+    continueWithGoogle: "使用 Google 继续",
+    dontHaveAccount: "还没有账户？",
+    createAccount: "创建账户",
+    canceledDeletion: "取消了删除请求？",
+    restoreAccount: "恢复账户",
+    invalidEmailOrPassword: "电子邮件或密码无效。请重试。",
+    accountRestored: "账户已恢复",
+    accountRestoredMessage: "您可以使用常用凭证登录。",
+    signingIn: "正在登录...",
+    
+    // Sign Up page
+    createNewAccount: "创建您的账户",
+    joinOurPlatform: "加入我们的平台开始销售或寻找供应商",
+    selectYourRole: "选择您的角色",
+    buyerRole: "买家",
+    buyerRoleDesc: "寻找供应商和产品",
+    manufacturerRole: "制造商",
+    manufacturerRoleDesc: "向买家供应产品",
+    continueButton: "继续",
+    
+    // Sign Up - Details form
+    firstName: "名字",
+    lastName: "姓氏",
+    company: "公司名称",
+    country: "国家",
+    confirmPassword: "确认密码",
+    agreeToTerms: "我同意服务条款和隐私政策",
+    
+    // Manufacturer specific
+    city: "城市",
+    businessLicense: "营业执照",
+    website: "网站",
+    factoryPhotos: "工厂照片",
+    additionalNotes: "其他备注",
+    uploadBizLicense: "上传营业执照",
+    uploadFactoryPhotos: "上传工厂照片（最多5张）",
+    uploadDesc: "拖放或点击选择文件",
+    max5Photos: "最多5张照片",
+    remove: "删除",
+    
+    // Social signup
+    needsProfileCompletion: "完成您的档案",
+    profileAlmostReady: "您的档案几乎已准备好",
+    continueProfileSetup: "继续设置您的档案",
+    
+    // Errors
+    googleLoginFailed: "Google 登录失败。请重试。",
+    errorOccurred: "发生错误。请重试。",
+    accountCreated: "您的账户已创建",
+    reviewPlans: "接下来查看计划，或直接前往您的仪表板。",
+    verifyEmail: "请在继续前验证您的电子邮件。",
+    
+    // Restore Account
+    restoreTitle: "恢复您的账户",
+    restoreSubtitleStep1: "如果您要求删除账户，请在此登录以取消。我们会向您发送验证代码。",
+    restoreSubtitleStep2: "输入发送到您邮箱的验证代码。",
+    restoreSendingCode: "正在发送代码…",
+    restoreContinue: "继续",
+    restoreVerificationCode: "验证代码",
+    restoreEnterCode: "输入来自电子邮件的代码",
+    restoreVerifying: "正在验证…",
+    restoreVerifyButton: "验证并恢复账户",
+    restoreDifferentEmail: "使用其他电子邮件",
+    
+    // Forgot Password
+    forgotTitle: "忘记密码了吗?",
+    resetTitle: "重置密码",
+    forgotSubtitle: "别担心，我们会向您发送重置说明。",
+    resetSubtitle: "输入 OTP 和您的新密码以完成重置。",
+    forgotSending: "正在发送...",
+    forgotSendCode: "发送重置代码",
+    resetPasswordComplete: "密码重置完成",
+    resetOtpLabel: "OTP 代码",
+    resetOtpPlaceholder: "输入 OTP",
+    resetNewPassword: "新密码",
+    resetConfirmPassword: "确认密码",
+    resetResetting: "正在重置...",
+    resetButton: "重置密码",
+    resetDifferentEmail: "使用其他电子邮件",
+    rememberPassword: "还记得密码吗?",
+    passwordMismatch: "密码确认不匹配。",
+    emailMissing: "电子邮件丢失。请重新请求重置代码。",
   },
+
+  // ── Auth Layout ──────────────────────────────────────────────────────
+  authLayout: {
+    connectManufacturers: "与全球经过审查的制造商建立联系",
+    joinBusinesses: "成千上万的企业通过我们的策划网络寻找可靠的制造合作伙伴。",
+    reviewedManufacturers: "已审查的制造商",
+    countries: "国家",
+    productCategories: "产品类别",
+    clientSatisfaction: "客户满意度",
+    allSuppliersReviewed: "所有供应商都经过审查和审计",
+    globalNetwork: "遍布120多个国家的全球网络",
+    secureMessaging: "安全消息传递和交易",
+    realtimeRFQ: "实时RFQ匹配",
+    copyright: "SourceNest。版权所有。",
+  },
+
   nav: {
     dashboard: "仪表板",
     users: "用户",
@@ -243,7 +355,18 @@ const es = {
       mfgStep5Desc: "准备就绪后，提交账户审核。我们的团队将在授予平台访问权限前进行审查。",
       mfgStep6Title: "走向全球",
       mfgStep6Desc: "审核通过后，您的档案将上线。开始接收来自全球买家的询价与报价请求。",
-      mfgApproval: "所有制造商账户在上线前均需管理员审核 — 确保为买家提供质量与信任。"
+      mfgApproval: "所有制造商账户在上线前均需管理员审核 — 确保为买家提供质量与信任。",
+      important: "重要: 无需预付款。您的账户将首先被审核，批准后才会收费。",
+      paymentComplete: "批准后，完成您的付款以激活您的账户并解锁对平台的完整访问权限。"
+    },
+    industries: {
+      viewAll: "查看所有行业",
+      explorerMap: "探索全球地图",
+      electronicsElectrical: "电子与电气",
+      machineryEquipment: "机械与设备",
+      textilesApparel: "纺织品与服装",
+      homeGarden: "家居与花园",
+      healthBeauty: "健康与美容",
     },
     whyUse: {
       buyerTitle: "为什么买家选择 SourceNest",

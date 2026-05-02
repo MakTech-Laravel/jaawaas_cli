@@ -61,11 +61,11 @@ export function Footer() {
   }
 
   const industries = [
-    { label: "Electronics & Electrical", href: "/industries/electronics-electrical" },
-    { label: "Machinery & Equipment", href: "/industries/machinery-equipment" },
-    { label: "Textiles & Apparel", href: "/industries/textiles-apparel" },
-    { label: "Home & Garden", href: "/industries/home-garden" },
-    { label: "Health & Beauty", href: "/industries/health-beauty" },
+    { label: t.landing.industries.electronicsElectrical, href: "/industries/electronics-electrical" },
+    { label: t.landing.industries.machineryEquipment, href: "/industries/machinery-equipment" },
+    { label: t.landing.industries.textilesApparel, href: "/industries/textiles-apparel" },
+    { label: t.landing.industries.homeGarden, href: "/industries/home-garden" },
+    { label: t.landing.industries.healthBeauty, href: "/industries/health-beauty" },
     { label: t.landing.footer.viewAll, href: "/industries" },
   ]
 

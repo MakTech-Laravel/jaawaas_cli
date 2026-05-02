@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 import {
   requestRestoreDeleteAccount,
   verifyRestoreDeleteAccount,
@@ -15,6 +16,7 @@ import { getApiErrorMessage } from "@/lib/api/errors"
 
 export default function RestoreAccountPage() {
   const router = useRouter()
+  const { t } = useTranslation()
   const [step, setStep] = useState<"credentials" | "otp">("credentials")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -65,7 +67,7 @@ export default function RestoreAccountPage() {
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to sign in
+        {t?.auth?.canceledDeletion || "Back to sign in"}
       </Link>
 
       <div className="mt-6 text-center lg:text-left">
@@ -73,12 +75,12 @@ export default function RestoreAccountPage() {
           <ShieldCheck className="h-8 w-8 text-secondary" />
         </div>
         <h1 className="mt-6 font-serif text-3xl font-medium text-foreground">
-          Restore your account
+          {t?.auth?.restoreTitle || "Restore your account"}
         </h1>
         <p className="mt-2 text-muted-foreground">
           {step === "credentials"
-            ? "If you requested account deletion, sign in here to cancel it. We will email you a verification code."
-            : "Enter the verification code sent to your email."}
+            ? t?.auth?.restoreSubtitleStep1 || "If you requested account deletion, sign in here to cancel it. We will email you a verification code."
+            : t?.auth?.restoreSubtitleStep2 || "Enter the verification code sent to your email."}
         </p>
       </div>
 
@@ -89,7 +91,7 @@ export default function RestoreAccountPage() {
       {step === "credentials" ? (
         <form onSubmit={handleRequest} className="mt-8 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t?.common?.email || "Email"}</Label>
             <Input
               id="email"
               type="email"
@@ -101,7 +103,7 @@ export default function RestoreAccountPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t?.common?.password || "Password"}</Label>
             <Input
               id="password"
               type="password"
@@ -116,22 +118,22 @@ export default function RestoreAccountPage() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sending code…
+                {t?.auth?.restoreSendingCode || "Sending code…"}
               </>
             ) : (
-              "Continue"
+              t?.auth?.restoreContinue || "Continue"
             )}
           </Button>
         </form>
       ) : (
         <form onSubmit={handleVerify} className="mt-8 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="otp">Verification code</Label>
+            <Label htmlFor="otp">{t?.auth?.restoreVerificationCode || "Verification code"}</Label>
             <Input
               id="otp"
               inputMode="numeric"
               autoComplete="one-time-code"
-              placeholder="Enter code from email"
+              placeholder={t?.auth?.restoreEnterCode || "Enter code from email"}
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               required
@@ -142,10 +144,10 @@ export default function RestoreAccountPage() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Verifying…
+                {t?.auth?.restoreVerifying || "Verifying…"}
               </>
             ) : (
-              "Verify and restore account"
+              t?.auth?.restoreVerifyButton || "Verify and restore account"
             )}
           </Button>
           <Button
@@ -159,7 +161,7 @@ export default function RestoreAccountPage() {
               setError("")
             }}
           >
-            Use different email
+            {t?.auth?.restoreDifferentEmail || "Use different email"}
           </Button>
         </form>
       )}

@@ -24,8 +24,11 @@ const ar = {
     error: "خطأ",
     success: "نجاح",
     warning: "تحذير",
+    email: "البريد الإلكتروني",
+    password: "كلمة المرور",
   },
   auth: {
+    // Common
     signIn: "تسجيل الدخول",
     signOut: "تسجيل الخروج",
     signUp: "إنشاء حساب",
@@ -36,7 +39,116 @@ const ar = {
     noAccount: "ليس لديك حساب؟",
     hasAccount: "لديك حساب بالفعل؟",
     orContinueWith: "أو تابع باستخدام",
+    
+    // Sign In page
+    welcomeBack: "مرحبا بعودتك",
+    signInToYourAccount: "سجل الدخول إلى حسابك للمتابعة",
+    buyer: "مشتري",
+    manufacturer: "مصنع",
+    admin: "المسؤول",
+    buyerDescription: "قم بالوصول إلى لوحة تحكم المشتري لإدارة الطلبات والرسائل والموردين المحفوظة.",
+    manufacturerDescription: "قم بالوصول إلى لوحة تحكم المصنع لإدارة المنتجات والاستفسارات وملف الشركة.",
+    adminDescription: "قم بالوصول إلى لوحة التحكم لإدارة المستخدمين والموردين وإعدادات المنصة.",
+    signInAs: "سجل الدخول باسم",
+    continueWithGoogle: "المتابعة باستخدام Google",
+    dontHaveAccount: "ليس لديك حساب؟",
+    createAccount: "إنشاء حساب",
+    canceledDeletion: "ألغيت طلب الحذف؟",
+    restoreAccount: "استعادة الحساب",
+    invalidEmailOrPassword: "البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.",
+    accountRestored: "تم استعادة الحساب",
+    accountRestoredMessage: "يمكنك تسجيل الدخول باستخدام بيانات اعتمادك المعتادة.",
+    signingIn: "جارٍ تسجيل الدخول...",
+    
+    // Sign Up page
+    createNewAccount: "إنشاء حسابك",
+    joinOurPlatform: "انضم إلى منصتنا لبدء البيع أو العثور على موردين",
+    selectYourRole: "اختر دورك",
+    buyerRole: "مشتري",
+    buyerRoleDesc: "البحث عن الموردين والمنتجات",
+    manufacturerRole: "مصنع",
+    manufacturerRoleDesc: "توريد المنتجات للمشترين",
+    continueButton: "المتابعة",
+    
+    // Sign Up - Details form
+    firstName: "الاسم الأول",
+    lastName: "اسم العائلة",
+    company: "اسم الشركة",
+    country: "الدولة",
+    confirmPassword: "تأكيد كلمة المرور",
+    agreeToTerms: "أوافق على شروط الخدمة وسياسة الخصوصية",
+    
+    // Manufacturer specific
+    city: "المدينة",
+    businessLicense: "الترخيص التجاري",
+    website: "الموقع الإلكتروني",
+    factoryPhotos: "صور المصنع",
+    additionalNotes: "ملاحظات إضافية",
+    uploadBizLicense: "تحميل الترخيص التجاري",
+    uploadFactoryPhotos: "تحميل صور المصنع (بحد أقصى 5)",
+    uploadDesc: "اسحب الملفات أو انقر لاختيار الملفات",
+    max5Photos: "بحد أقصى 5 صور",
+    remove: "إزالة",
+    
+    // Social signup
+    needsProfileCompletion: "أكمل ملفك الشخصي",
+    profileAlmostReady: "ملفك الشخصي جاهز تقريبا",
+    continueProfileSetup: "متابعة إعداد ملفك الشخصي",
+    
+    // Errors
+    googleLoginFailed: "فشل تسجيل الدخول عبر Google. يرجى المحاولة مرة أخرى.",
+    errorOccurred: "حدث خطأ. يرجى المحاولة مرة أخرى.",
+    accountCreated: "تم إنشاء حسابك",
+    reviewPlans: "راجع الخطط القادمة، أو انتقل مباشرة إلى لوحة التحكم الخاصة بك.",
+    verifyEmail: "يرجى التحقق من بريدك الإلكتروني قبل المتابعة.",
+    
+    // Restore Account
+    restoreTitle: "استعادة حسابك",
+    restoreSubtitleStep1: "إذا طلبت حذف حسابك، فسجل الدخول هنا لإلغاء الطلب. سنرسل لك رمز التحقق عبر البريد الإلكتروني.",
+    restoreSubtitleStep2: "أدخل رمز التحقق المرسل إلى بريدك الإلكتروني.",
+    restoreSendingCode: "جارٍ إرسال الرمز…",
+    restoreContinue: "متابعة",
+    restoreVerificationCode: "رمز التحقق",
+    restoreEnterCode: "أدخل الرمز من البريد الإلكتروني",
+    restoreVerifying: "جارٍ التحقق…",
+    restoreVerifyButton: "تحقق واستعيد حسابك",
+    restoreDifferentEmail: "استخدم بريداً إلكترونياً آخر",
+    
+    // Forgot Password
+    forgotTitle: "هل نسيت كلمة المرور؟",
+    resetTitle: "إعادة تعيين كلمة المرور",
+    forgotSubtitle: "لا تقلق، سنرسل لك تعليمات إعادة التعيين.",
+    resetSubtitle: "أدخل رمز OTP وكلمة المرور الجديدة لإكمال إعادة التعيين.",
+    forgotSending: "جارٍ الإرسال...",
+    forgotSendCode: "إرسال رمز إعادة التعيين",
+    resetPasswordComplete: "تمت إعادة تعيين كلمة المرور بنجاح",
+    resetOtpLabel: "رمز OTP",
+    resetOtpPlaceholder: "أدخل رمز OTP",
+    resetNewPassword: "كلمة المرور الجديدة",
+    resetConfirmPassword: "تأكيد كلمة المرور",
+    resetResetting: "جارٍ إعادة التعيين...",
+    resetButton: "إعادة تعيين كلمة المرور",
+    resetDifferentEmail: "استخدم بريداً إلكترونياً آخر",
+    rememberPassword: "هل تتذكر كلمة المرور؟",
+    passwordMismatch: "لا تتطابق تأكيدات كلمة المرور.",
+    emailMissing: "البريد الإلكتروني مفقود. يرجى طلب رمز إعادة تعيين مرة أخرى.",
   },
+
+  // ── Auth Layout ──────────────────────────────────────────────────────
+  authLayout: {
+    connectManufacturers: "تواصل مع الشركات المصنعة المراجعة عالميا",
+    joinBusinesses: "انضم إلى آلاف الشركات التي تجد شركاء تصنيع موثوقين من خلال شبكتنا المنسقة.",
+    reviewedManufacturers: "شركات مصنعة مراجعة",
+    countries: "دول",
+    productCategories: "فئات المنتجات",
+    clientSatisfaction: "رضا العملاء",
+    allSuppliersReviewed: "تم مراجعة وتدقيق جميع الموردين",
+    globalNetwork: "شبكة عالمية تغطي أكثر من 120 دولة",
+    secureMessaging: "المراسلة الآمنة والمعاملات",
+    realtimeRFQ: "مطابقة RFQ في الوقت الفعلي",
+    copyright: "SourceNest. جميع الحقوق محفوظة.",
+  },
+
   nav: {
     dashboard: "لوحة التحكم",
     users: "المستخدمون",
@@ -243,7 +355,18 @@ const ar = {
       mfgStep5Desc: "بمجرد أن يصبح جاهزاً، أرسل حسابك للتحقق. سيقوم فريقنا بمراجعة عملك قبل منح الوصول إلى المنصة.",
       mfgStep6Title: "انطلق للعالمية",
       mfgStep6Desc: "بعد الموافقة، يصبح ملفك الشخصي نشطاً. ابدأ في تلقي الاستفسارات وطلبات عروض الأسعار من المشترين حول العالم.",
-      mfgApproval: "تتطلب جميع حسابات الشركات المصنعة موافقة الإدارة قبل تفعيلها — لضمان الجودة والثقة للمشترين."
+      mfgApproval: "تتطلب جميع حسابات الشركات المصنعة موافقة الإدارة قبل تفعيلها — لضمان الجودة والثقة للمشترين.",
+      important: "مهم: لا يتطلب أي دفع مقدم. سيتم مراجعة حسابك أولاً، وسيكون مسؤولاً عن الرسوم فقط بعد الموافقة.",
+      paymentComplete: "بعد الموافقة، أكمل الدفع لتفعيل حسابك والوصول الكامل إلى المنصة."
+    },
+    industries: {
+      viewAll: "عرض جميع الصناعات",
+      explorerMap: "استكشاف الخريطة العالمية",
+      electronicsElectrical: "الإلكترونيات والكهرباء",
+      machineryEquipment: "الآلات والمعدات",
+      textilesApparel: "المنسوجات والملابس",
+      homeGarden: "المنزل والحديقة",
+      healthBeauty: "الصحة والجمال",
     },
     whyUse: {
       buyerTitle: "لماذا يختار المشترون SourceNest",

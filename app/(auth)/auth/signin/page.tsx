@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/lib/auth-context"
+import { useTranslation } from "@/lib/i18n"
 import type { UserRole } from "@/lib/roles/dashboard-route"
 import { Eye, EyeOff, Loader2, Users, Factory, Shield, AlertCircle } from "lucide-react"
 import { FcGoogle } from "react-icons/fc";
@@ -20,6 +21,7 @@ function RestoredAccountNotifier() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { t } = useTranslation()
   const notified = useRef(false)
 
   useEffect(() => {
@@ -27,11 +29,11 @@ function RestoredAccountNotifier() {
     if (searchParams.get("restored") !== "1") return
     notified.current = true
     toast({
-      title: "Account restored",
-      description: "You can sign in with your usual credentials.",
+      title: t?.auth?.accountRestored || "Account restored",
+      description: t?.auth?.accountRestoredMessage || "You can sign in with your usual credentials.",
     })
     router.replace("/auth/signin", { scroll: false })
-  }, [searchParams, toast, router])
+  }, [searchParams, toast, router, t])
 
   return null
 }
@@ -39,6 +41,7 @@ function RestoredAccountNotifier() {
 export default function SignInPage() {
   const router = useRouter()
   const { login, loginWithGoogle } = useAuth()
+  const { t } = useTranslation()
 
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -90,10 +93,10 @@ export default function SignInPage() {
 
         router.push(`/auth/two-factor?${params.toString()}`)
       } else {
-        setError(result.message || "Invalid email or password. Please try again.")
+        setError(result.message || (t?.auth?.invalidEmailOrPassword || "Invalid email or password. Please try again."))
       }
     } catch {
-      setError("An error occurred. Please try again.")
+      setError(t?.auth?.errorOccurred || "An error occurred. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -144,9 +147,9 @@ export default function SignInPage() {
         return
       }
 
-      setError(result.message || "Google login failed. Please try again.")
+      setError(result.message || (t?.auth?.googleLoginFailed || "Google login failed. Please try again."))
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Google login failed. Please try again."
+      const message = err instanceof Error ? err.message : (t?.auth?.googleLoginFailed || "Google login failed. Please try again.")
       setError(message)
     } finally {
       setIsLoading(false)
@@ -160,39 +163,39 @@ export default function SignInPage() {
       </Suspense>
       <div>
         <div className="text-center lg:text-left">
-          <h1 className="font-serif text-3xl font-medium text-foreground">Welcome back</h1>
-          <p className="mt-2 text-muted-foreground">Sign in to your account to continue</p>
+          <h1 className="font-serif text-3xl font-medium text-foreground">{t?.auth?.welcomeBack || "Welcome back"}</h1>
+          <p className="mt-2 text-muted-foreground">{t?.auth?.signInToYourAccount || "Sign in to your account to continue"}</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UserRole)} className="mt-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="buyer" className="gap-2">
               <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Buyer</span>
+              <span className="hidden sm:inline">{t?.auth?.buyer || "Buyer"}</span>
             </TabsTrigger>
             <TabsTrigger value="manufacturer" className="gap-2">
               <Factory className="h-4 w-4" />
-              <span className="hidden sm:inline">Manufacturer</span>
+              <span className="hidden sm:inline">{t?.auth?.manufacturer || "Manufacturer"}</span>
             </TabsTrigger>
             <TabsTrigger value="admin" className="gap-2">
               <Shield className="h-4 w-4" />
-              <span className="hidden sm:inline">Admin</span>
+              <span className="hidden sm:inline">{t?.auth?.admin || "Admin"}</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="buyer" className="mt-4">
             <p className="text-sm text-muted-foreground">
-              Access your buyer dashboard to manage RFQs, messages, and saved suppliers.
+              {t?.auth?.buyerDescription || "Access your buyer dashboard to manage RFQs, messages, and saved suppliers."}
             </p>
           </TabsContent>
           <TabsContent value="manufacturer" className="mt-4">
             <p className="text-sm text-muted-foreground">
-              Access your manufacturer dashboard to manage products, inquiries, and company profile.
+              {t?.auth?.manufacturerDescription || "Access your manufacturer dashboard to manage products, inquiries, and company profile."}
             </p>
           </TabsContent>
           <TabsContent value="admin" className="mt-4">
             <p className="text-sm text-muted-foreground">
-              Access the admin panel to manage users, suppliers, and platform settings.
+              {t?.auth?.adminDescription || "Access the admin panel to manage users, suppliers, and platform settings."}
             </p>
           </TabsContent>
         </Tabs>
@@ -207,7 +210,7 @@ export default function SignInPage() {
         <form onSubmit={handleSubmit} className="mt-6 space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
+              <Label htmlFor="email">{t?.auth?.email || "Email address"}</Label>
               <Input
                 id="email"
                 type="email"
@@ -221,9 +224,9 @@ export default function SignInPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t?.auth?.password || "Password"}</Label>
                 <Link href="/auth/forgot-password" className="text-sm text-secondary hover:underline">
-                  Forgot password?
+                  {t?.auth?.forgotPassword || "Forgot password?"}
                 </Link>
               </div>
               <div className="relative">
@@ -254,9 +257,7 @@ export default function SignInPage() {
                 onCheckedChange={(checked) => setFormData({ ...formData, remember: checked as boolean })}
                 disabled={isLoading}
               />
-              <Label htmlFor="remember" className="text-sm font-normal">
-                Remember me
-              </Label>
+              <Label htmlFor="remember" className="text-sm font-normal">{t?.auth?.rememberMe || "Remember me"}</Label>
             </div>
           </div>
 
@@ -264,10 +265,10 @@ export default function SignInPage() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
+                {t?.auth?.signingIn || "Signing in..."}
               </>
             ) : (
-              `Sign in as ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`
+              `${t?.auth?.signInAs || "Sign in as"} ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`
             )}
           </Button>
 
@@ -278,7 +279,7 @@ export default function SignInPage() {
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or</span>
+                  <span className="bg-background px-2 text-muted-foreground">{t?.auth?.orContinueWith || "Or"}</span>
                 </div>
               </div>
 
@@ -290,22 +291,22 @@ export default function SignInPage() {
                 disabled={isLoading}
               >
                 <FcGoogle className="w-4 h-4" />
-                Continue with Google
+                {t?.auth?.continueWithGoogle || "Continue with Google"}
               </Button>
             </>
           )}
         </form>
 
         <p className="mt-8 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
+          {t?.auth?.noAccount || "Don't have an account?"}{" "}
           <Link href="/auth/signup" className="font-medium text-secondary hover:underline">
-            Create account
+            {t?.auth?.createAccount || "Create account"}
           </Link>
         </p>
         <p className="mt-3 text-center text-sm text-muted-foreground">
-          Canceled a deletion request?{" "}
+          {t?.auth?.canceledDeletion || "Canceled a deletion request?"}{" "}
           <Link href="/auth/restore-account" className="font-medium text-secondary hover:underline">
-            Restore account
+            {t?.auth?.restoreAccount || "Restore account"}
           </Link>
         </p>
       </div>

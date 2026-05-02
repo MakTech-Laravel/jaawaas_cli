@@ -1,12 +1,16 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
 import { CheckCircle2, Globe2, Shield, TrendingUp } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const { t } = useTranslation()
   return (
     <div className="flex min-h-screen">
       {/* Left Side - Branding */}
@@ -24,10 +28,10 @@ export default function AuthLayout({
         <div className="space-y-8">
           <div>
             <h2 className="font-serif text-3xl font-medium text-primary-foreground">
-              Connect with reviewed manufacturers worldwide
+              {t?.authLayout?.connectManufacturers || "Connect with reviewed manufacturers worldwide"}
             </h2>
             <p className="mt-4 text-primary-foreground/80">
-              Join thousands of businesses finding reliable manufacturing partners through our curated network.
+              {t?.authLayout?.joinBusinesses || "Join thousands of businesses finding reliable manufacturing partners through our curated network."}
             </p>
           </div>
 
@@ -35,19 +39,19 @@ export default function AuthLayout({
           <div className="grid grid-cols-2 gap-6">
             <div>
               <div className="text-3xl font-bold text-primary-foreground">50,000+</div>
-              <div className="text-sm text-primary-foreground/70">Reviewed Manufacturers</div>
+              <div className="text-sm text-primary-foreground/70">{t?.authLayout?.reviewedManufacturers || "Reviewed Manufacturers"}</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-primary-foreground">120+</div>
-              <div className="text-sm text-primary-foreground/70">Countries</div>
+              <div className="text-sm text-primary-foreground/70">{t?.authLayout?.countries || "Countries"}</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-primary-foreground">500+</div>
-              <div className="text-sm text-primary-foreground/70">Product Categories</div>
+              <div className="text-sm text-primary-foreground/70">{t?.authLayout?.productCategories || "Product Categories"}</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-primary-foreground">98%</div>
-              <div className="text-sm text-primary-foreground/70">Client Satisfaction</div>
+              <div className="text-sm text-primary-foreground/70">{t?.authLayout?.clientSatisfaction || "Client Satisfaction"}</div>
             </div>
           </div>
 
@@ -55,26 +59,26 @@ export default function AuthLayout({
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-primary-foreground/90">
               <CheckCircle2 className="h-5 w-5 text-primary-foreground" />
-              <span>All suppliers reviewed and audited</span>
+              <span>{t?.authLayout?.allSuppliersReviewed || "All suppliers reviewed and audited"}</span>
             </div>
             <div className="flex items-center gap-3 text-primary-foreground/90">
               <Globe2 className="h-5 w-5 text-primary-foreground" />
-              <span>Global network across 120+ countries</span>
+              <span>{t?.authLayout?.globalNetwork || "Global network across 120+ countries"}</span>
             </div>
             <div className="flex items-center gap-3 text-primary-foreground/90">
               <Shield className="h-5 w-5 text-primary-foreground" />
-              <span>Secure messaging and transactions</span>
+              <span>{t?.authLayout?.secureMessaging || "Secure messaging and transactions"}</span>
             </div>
             <div className="flex items-center gap-3 text-primary-foreground/90">
               <TrendingUp className="h-5 w-5 text-primary-foreground" />
-              <span>Real-time RFQ matching</span>
+              <span>{t?.authLayout?.realtimeRFQ || "Real-time RFQ matching"}</span>
             </div>
           </div>
 
           </div>
 
         <div className="text-sm text-primary-foreground/60">
-          &copy; {new Date().getFullYear()} SourceNest. All rights reserved.
+          &copy; {new Date().getFullYear()} {t?.authLayout?.copyright || "SourceNest. All rights reserved."}
         </div>
       </div>
 

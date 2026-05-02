@@ -327,6 +327,8 @@ export async function createAdminSubcategory(
     name: string; 
     slug: string; 
     industry_id: string | number;
+    description?: string;
+    tags?: string;
     icon?: File
   }
 ): Promise<ApiResult<null>> {
@@ -335,6 +337,8 @@ export async function createAdminSubcategory(
     form.append("name", input.name)
     form.append("slug", input.slug)
     form.append("industry_id", String(input.industry_id))
+    if (input.description) form.append("description", input.description)
+    if (input.tags) form.append("tags", input.tags)
     if (input.icon) form.append("icon", input.icon)
 
     await apiClient.post("/admin/subcategories/create", form)
@@ -354,6 +358,8 @@ export async function updateAdminSubcategory(
     name: string; 
     slug: string; 
     industry_id: string | number;
+    description?: string;
+    tags?: string;
     icon?: File
   }
 ): Promise<ApiResult<null>> {
@@ -362,6 +368,8 @@ export async function updateAdminSubcategory(
     form.append("name", input.name)
     form.append("slug", input.slug)
     form.append("industry_id", String(input.industry_id))
+    if (input.description) form.append("description", input.description)
+    if (input.tags) form.append("tags", input.tags)
     if (input.icon) form.append("icon", input.icon)
 
     await apiClient.put(`/admin/subcategories/${subcategoryId}`, form)

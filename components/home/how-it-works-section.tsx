@@ -185,10 +185,10 @@ export function HowItWorksSection() {
             <div className="mx-auto mt-12 max-w-2xl rounded-xl bg-secondary/10 p-6 text-center">
               <Shield className="mx-auto h-8 w-8 text-secondary" />
               <p className="mt-4 font-medium text-secondary">
-                Important: No payment is required upfront. Your account will be reviewed first, and you will only be charged after approval.
+                {t?.landing?.howItWorks?.important || "Important: No payment is required upfront. Your account will be reviewed first, and you will only be charged after approval."}
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
-                Once approved, complete your payment to activate your account and unlock full access to the platform.
+                {t?.landing?.howItWorks?.paymentComplete || "Once approved, complete your payment to activate your account and unlock full access to the platform."}
               </p>
             </div>
           </div>

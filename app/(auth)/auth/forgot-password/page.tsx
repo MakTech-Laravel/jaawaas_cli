@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Loader2, Mail, CheckCircle, Eye, EyeOff } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 import { forgotPassword, resetPassword } from "@/lib/api/auth"
 import { getApiErrorMessage } from "@/lib/api/errors"
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation()
   const [step, setStep] = useState<"request" | "reset" | "done">("request")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -50,12 +52,12 @@ export default function ForgotPasswordPage() {
     setError("")
 
     if (password !== passwordConfirmation) {
-      setError("Password confirmation does not match.")
+      setError(t?.auth?.passwordMismatch || "Password confirmation does not match.")
       return
     }
 
     if (!email.trim()) {
-      setError("Email is missing. Please request a reset code again.")
+      setError(t?.auth?.emailMissing || "Email is missing. Please request a reset code again.")
       setStep("request")
       return
     }
@@ -91,13 +93,13 @@ export default function ForgotPasswordPage() {
           <CheckCircle className="h-8 w-8 text-secondary" />
         </div>
         <h1 className="mt-6 font-serif text-3xl font-medium text-foreground">
-          Password reset complete
+          {t?.auth?.resetPasswordComplete || "Password reset complete"}
         </h1>
         <p className="mt-2 text-muted-foreground">{successMessage}</p>
 
         <div className="mt-8 space-y-4">
           <Link href="/auth/signin">
-            <Button className="w-full">Back to sign in</Button>
+            <Button className="w-full">{t?.auth?.canceledDeletion || "Back to sign in"}</Button>
           </Link>
         </div>
       </div>
@@ -111,7 +113,7 @@ export default function ForgotPasswordPage() {
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to sign in
+        {t?.auth?.canceledDeletion || "Back to sign in"}
       </Link>
 
       <div className="mt-6 text-center lg:text-left">
@@ -119,12 +121,12 @@ export default function ForgotPasswordPage() {
           <Mail className="h-8 w-8 text-secondary" />
         </div>
         <h1 className="mt-6 font-serif text-3xl font-medium text-foreground">
-          {step === "request" ? "Forgot your password?" : "Reset your password"}
+          {step === "request" ? t?.auth?.forgotTitle || "Forgot your password?" : t?.auth?.resetTitle || "Reset your password"}
         </h1>
         <p className="mt-2 text-muted-foreground">
           {step === "request"
-            ? "No worries, we&apos;ll send you reset instructions."
-            : "Enter the OTP and your new password to complete reset."}
+            ? t?.auth?.forgotSubtitle || "No worries, we'll send you reset instructions."
+            : t?.auth?.resetSubtitle || "Enter the OTP and your new password to complete reset."}
         </p>
       </div>
 
@@ -135,11 +137,11 @@ export default function ForgotPasswordPage() {
       {step === "request" ? (
         <form onSubmit={handleRequestResetCode} className="mt-8 space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="email">Email address</Label>
+            <Label htmlFor="email">{t?.common?.email || "Email address"}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="you@company.com"
+              placeholder={t?.auth?.forgotTitle || "you@company.com"}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -151,10 +153,10 @@ export default function ForgotPasswordPage() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sending...
+                {t?.auth?.forgotSending || "Sending..."}
               </>
             ) : (
-              "Send reset code"
+              t?.auth?.forgotSendCode || "Send reset code"
             )}
           </Button>
         </form>
@@ -164,12 +166,12 @@ export default function ForgotPasswordPage() {
           <input type="hidden" name="email" value={email} readOnly />
 
           <div className="space-y-2">
-            <Label htmlFor="otp">OTP code</Label>
+            <Label htmlFor="otp">{t?.auth?.resetOtpLabel || "OTP code"}</Label>
             <Input
               id="otp"
               inputMode="numeric"
               autoComplete="one-time-code"
-              placeholder="Enter OTP"
+              placeholder={t?.auth?.resetOtpPlaceholder || "Enter OTP"}
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               required
@@ -178,7 +180,7 @@ export default function ForgotPasswordPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="new-password">New password</Label>
+            <Label htmlFor="new-password">{t?.auth?.resetNewPassword || "New password"}</Label>
             <div className="relative">
               <Input
                 id="new-password"
@@ -205,7 +207,7 @@ export default function ForgotPasswordPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirm password</Label>
+            <Label htmlFor="confirm-password">{t?.auth?.resetConfirmPassword || "Confirm password"}</Label>
             <div className="relative">
               <Input
                 id="confirm-password"
@@ -235,10 +237,10 @@ export default function ForgotPasswordPage() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Resetting...
+                {t?.auth?.resetResetting || "Resetting..."}
               </>
             ) : (
-              "Reset password"
+              t?.auth?.resetButton || "Reset password"
             )}
           </Button>
 
@@ -255,15 +257,15 @@ export default function ForgotPasswordPage() {
               setError("")
             }}
           >
-            Use another email
+            {t?.auth?.resetDifferentEmail || "Use another email"}
           </Button>
         </form>
       )}
 
       <p className="mt-8 text-center text-sm text-muted-foreground">
-        Remember your password?{" "}
+        {t?.auth?.rememberPassword || "Remember your password?"}{" "}
         <Link href="/auth/signin" className="font-medium text-secondary hover:underline">
-          Back to sign in
+          {t?.auth?.canceledDeletion || "Back to sign in"}
         </Link>
       </p>
     </div>

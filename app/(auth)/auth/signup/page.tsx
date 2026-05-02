@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useAuth, type UserRole } from "@/lib/auth-context"
+import { useTranslation } from "@/lib/i18n"
 import { REGISTER_SUCCESS_STORAGE_KEY } from "@/lib/register-success-storage"
 import { countries } from "@/lib/data/countries"
 import { cn } from "@/lib/utils"
@@ -26,6 +27,7 @@ import { decodeGoogleIdTokenPayload, getGoogleIdToken } from "@/lib/google-ident
 export default function SignUpPage() {
   const router = useRouter()
   const { signup, loginWithGoogle } = useAuth()
+  const { t } = useTranslation()
   
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -132,7 +134,7 @@ export default function SignUpPage() {
           : {
               message:
                 result.message ||
-                "Your account has been created. Review plans next, or go straight to your dashboard.",
+                (t?.auth?.reviewPlans || "Your account has been created. Review plans next, or go straight to your dashboard."),
               manufactureStatus: null as string | null,
               isLoggedIn: true as const,
               dashboardPath: result.redirectTo,
@@ -141,10 +143,10 @@ export default function SignUpPage() {
         sessionStorage.setItem(REGISTER_SUCCESS_STORAGE_KEY, JSON.stringify(payload))
         router.push("/auth/register-success")
       } else {
-        setError(result.message || "Registration failed. Please try again.")
+        setError(result.message || (t?.auth?.registrationFailed || "Registration failed. Please try again."))
       }
     } catch {
-      setError("An error occurred. Please try again.")
+      setError(t?.auth?.errorOccurred || "An error occurred. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -193,9 +195,9 @@ export default function SignUpPage() {
         return
       }
 
-      setError(result.message || "Google login failed. Please try again.")
+      setError(result.message || (t?.auth?.googleLoginFailed || "Google login failed. Please try again."))
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Google login failed. Please try again."
+      const message = err instanceof Error ? err.message : (t?.auth?.googleLoginFailed || "Google login failed. Please try again.")
       setError(message)
     } finally {
       setIsLoading(false)
@@ -207,10 +209,10 @@ export default function SignUpPage() {
       <div>
         <div className="text-center lg:text-left">
           <h1 className="font-serif text-3xl font-medium text-foreground">
-            Join SourceNest
+            {t?.auth?.createNewAccount || "Create your account"}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Choose how you want to use the platform
+            {t?.auth?.joinOurPlatform || "Join our platform to start selling or find suppliers"}
           </p>
         </div>
 
@@ -224,22 +226,22 @@ export default function SignUpPage() {
                 <Users className="h-6 w-6 text-secondary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-foreground">I&apos;m a Buyer</h3>
+                <h3 className="font-semibold text-foreground">{t?.auth?.buyerRole || "I'm a Buyer"}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Search suppliers, compare factories, request quotes — completely free
+                  {t?.auth?.buyerRoleDesc || "Search suppliers, compare factories, request quotes — completely free"}
                 </p>
                 <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-secondary" />
-                    Free forever
+                    {t?.auth?.free || "Free forever"}
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-secondary" />
-                    Direct messaging
+                    {t?.auth?.directMessaging || "Direct messaging"}
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-secondary" />
-                    Unlimited RFQs
+                    {t?.auth?.unlimitedRFQs || "Unlimited RFQs"}
                   </li>
                 </ul>
               </div>
@@ -255,22 +257,22 @@ export default function SignUpPage() {
                 <Factory className="h-6 w-6 text-secondary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-foreground">I&apos;m a Manufacturer</h3>
+                <h3 className="font-semibold text-foreground">{t?.auth?.manufacturerRole || "I'm a Manufacturer"}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Showcase your factory and reach buyers worldwide
+                  {t?.auth?.manufacturerRoleDesc || "Showcase your factory and reach buyers worldwide"}
                 </p>
                 <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-secondary" />
-                    Global visibility
+                    {t?.auth?.globalVisibility || "Global visibility"}
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-secondary" />
-                    Reviewed badge
+                    {t?.auth?.reviewedBadge || "Reviewed badge"}
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-secondary" />
-                    No commission fees
+                    {t?.auth?.noCommissionFees || "No commission fees"}
                   </li>
                 </ul>
               </div>
@@ -279,9 +281,9 @@ export default function SignUpPage() {
         </div>
 
         <p className="mt-8 text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
+          {t?.auth?.hasAccount || "Already have an account?"}{" "}
           <Link href="/auth/signin" className="font-medium text-secondary hover:underline">
-            Sign in
+            {t?.auth?.signIn || "Sign in"}
           </Link>
         </p>
       </div>
@@ -295,15 +297,15 @@ export default function SignUpPage() {
           onClick={() => setStep("role")}
           className="mb-4 text-sm text-muted-foreground hover:text-foreground"
         >
-          ← Back to role selection
+          ← {t?.auth?.backToRoleSelection || "Back to role selection"}
         </button>
         <h1 className="font-serif text-3xl font-medium text-foreground">
-          Create your {formData.role === "buyer" ? "buyer" : "manufacturer"} account
+          {t?.auth?.createNewAccount || "Create your account"}
         </h1>
         <p className="mt-2 text-muted-foreground">
           {formData.role === "buyer"
-            ? "Start sourcing from reviewed suppliers worldwide"
-            : "Complete registration, then choose a plan to get started"}
+            ? (t?.auth?.startSourcing || "Start sourcing from reviewed suppliers worldwide")
+            : (t?.auth?.completeRegistration || "Complete registration, then choose a plan to get started")}
         </p>
       </div>
 
@@ -318,7 +320,7 @@ export default function SignUpPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName">First name <span className="text-destructive">*</span></Label>
+              <Label htmlFor="firstName">{t?.auth?.firstName || "First name"} <span className="text-destructive">*</span></Label>
               <Input
                 id="firstName"
                 placeholder="John"
@@ -329,7 +331,7 @@ export default function SignUpPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">Last name <span className="text-destructive">*</span></Label>
+              <Label htmlFor="lastName">{t?.auth?.lastName || "Last name"} <span className="text-destructive">*</span></Label>
               <Input
                 id="lastName"
                 placeholder="Doe"
@@ -342,7 +344,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Work email <span className="text-destructive">*</span></Label>
+            <Label htmlFor="email">{t?.auth?.email || "Work email"} <span className="text-destructive">*</span></Label>
             <Input
               id="email"
               type="email"
@@ -355,7 +357,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="company">Company name <span className="text-destructive">*</span></Label>
+            <Label htmlFor="company">{t?.auth?.company || "Company name"} <span className="text-destructive">*</span></Label>
             <Input
               id="company"
               placeholder="Your company"
@@ -367,7 +369,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="country">Country <span className="text-destructive">*</span></Label>
+            <Label htmlFor="country">{t?.auth?.country || "Country"} <span className="text-destructive">*</span></Label>
             <Select 
               value={formData.country} 
               onValueChange={(value) => setFormData({ ...formData, country: value })}
@@ -387,7 +389,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
+            <Label htmlFor="password">{t?.auth?.password || "Password"} <span className="text-destructive">*</span></Label>
             <div className="relative">
               <Input
                 id="password"
@@ -412,7 +414,7 @@ export default function SignUpPage() {
                 )}
               </button>
             </div>
-            <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
+            <p className="text-xs text-muted-foreground">{t?.auth?.passwordMinLength || "Must be at least 8 characters"}</p>
           </div>
 
           {/* Manufacturer Review Section */}
@@ -424,10 +426,9 @@ export default function SignUpPage() {
                 <div className="flex items-start gap-3">
                   <Info className="h-5 w-5 text-secondary mt-0.5" />
                   <div>
-                    <h3 className="font-medium text-foreground">Review Documents Required</h3>
+                    <h3 className="font-medium text-foreground">{t?.auth?.reviewDocsRequired || "Review Documents Required"}</h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      To ensure quality and trust on our platform, we require basic review documents. 
-                      Your account will be reviewed by our team before activation.
+                      {t?.auth?.reviewDocsDescription || "To ensure quality and trust on our platform, we require basic review documents. Your account will be reviewed by our team before activation."}
                     </p>
                   </div>
                 </div>
@@ -437,10 +438,10 @@ export default function SignUpPage() {
               <div className="space-y-2">
                 <Label htmlFor="businessLicense" className="flex items-center gap-1">
                   <FileText className="h-4 w-4 text-secondary" />
-                  Business License <span className="text-destructive">*</span>
+                  {t?.auth?.businessLicense || "Business License"} <span className="text-destructive">*</span>
                 </Label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Upload your official company registration document (PDF, JPG, PNG - max 10MB)
+                  {t?.auth?.uploadBizLicense || "Upload your official company registration document (PDF, JPG, PNG - max 10MB)"}
                 </p>
                 <input
                   ref={businessLicenseRef}
@@ -494,7 +495,7 @@ export default function SignUpPage() {
               <div className="space-y-2">
                 <Label htmlFor="city" className="flex items-center gap-1">
                   <Building2 className="h-4 w-4 text-secondary" />
-                  City <span className="text-destructive">*</span>
+                  {t?.auth?.city || "City"} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="city"
@@ -505,7 +506,7 @@ export default function SignUpPage() {
                   disabled={isLoading}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Combined with country above, this forms your company address
+                  {t?.auth?.cityDescription || "Combined with country above, this forms your company address"}
                 </p>
               </div>
 
@@ -513,7 +514,7 @@ export default function SignUpPage() {
               <div className="space-y-2">
                 <Label htmlFor="website" className="flex items-center gap-1">
                   <Globe className="h-4 w-4 text-secondary" />
-                  Company Website <span className="text-destructive">*</span>
+                  {t?.auth?.website || "Company Website"} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="website"
@@ -529,10 +530,10 @@ export default function SignUpPage() {
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
                   <Camera className="h-4 w-4 text-secondary" />
-                  Factory Photos <span className="text-destructive">*</span> <span className="text-muted-foreground text-xs">(max 5)</span>
+                  {t?.auth?.factoryPhotos || "Factory Photos"} <span className="text-destructive">*</span> <span className="text-muted-foreground text-xs">(max 5)</span>
                 </Label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Upload photos of your production line or factory building to support your application
+                  {t?.auth?.uploadFactoryDesc || "Upload photos of your production line or factory building to support your application"}
                 </p>
                 <input
                   ref={factoryPhotosRef}
@@ -577,7 +578,7 @@ export default function SignUpPage() {
                     disabled={isLoading}
                   >
                     <Upload className="mr-2 h-4 w-4" />
-                    Add Factory Photos ({formData.factoryPhotos.length}/5)
+                    {t?.auth?.addFactoryPhotos || `Add Factory Photos (${formData.factoryPhotos.length}/5)`}
                   </Button>
                 )}
               </div>
@@ -585,7 +586,7 @@ export default function SignUpPage() {
               {/* Additional Notes */}
               <div className="space-y-2">
                 <Label htmlFor="notes" className="flex items-center gap-1">
-                  Additional Notes <span className="text-muted-foreground text-xs">(optional)</span>
+                  {t?.auth?.additionalNotes || "Additional Notes"} <span className="text-muted-foreground text-xs">(optional)</span>
                 </Label>
                 <Textarea
                   id="notes"
@@ -612,13 +613,14 @@ export default function SignUpPage() {
               className="mt-0.5"
             />
             <Label htmlFor="terms" className="text-sm font-normal leading-snug">
-              I agree to the{" "}
+              {t?.auth?.agreeToTerms || "I agree to the"}
+              {" "}
               <Link href="/terms" className="text-secondary hover:underline">
-                Terms of Service
-              </Link>{" "}
-              and{" "}
+                {t?.auth?.termsOfService || "Terms of Service"}
+              </Link>
+              {" and "}
               <Link href="/privacy" className="text-secondary hover:underline">
-                Privacy Policy
+                {t?.auth?.privacyPolicy || "Privacy Policy"}
               </Link>
             </Label>
           </div>
@@ -640,12 +642,12 @@ export default function SignUpPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating account...
+                    {t?.auth?.creatingAccount || "Creating account..."}
                   </>
                 ) : formData.role === "buyer" ? (
-                  "Create free account"
+                  t?.auth?.createFreeAccount || "Create free account"
                 ) : (
-                  "Submit for Review"
+                  t?.auth?.submitForReview || "Submit for Review"
                 )}
               </Button>
 
@@ -666,9 +668,9 @@ export default function SignUpPage() {
       </form>
 
       <p className="mt-8 text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
+        {t?.auth?.alreadyHaveAccount || "Already have an account?"}{" "}
         <Link href="/auth/signin" className="font-medium text-secondary hover:underline">
-          Sign in
+          {t?.auth?.signIn || "Sign in"}
         </Link>
       </p>
     </div>
