@@ -1,4 +1,6 @@
+import axios from "axios"
 import { apiClient } from "./client"
+import { getApiErrorMessage } from "./errors"
 
 export type NotificationType = "message" | "inquiry" | "quote" | "supplier" | "order" | "system"
 
@@ -165,15 +167,25 @@ export async function getNotifications(limit = 20, offset = 0): Promise<Notifica
       params: { limit, offset },
     })
     return normalizeNotificationsResponse(response.data)
-  } catch (error: any) {
-    console.error("Failed to fetch notifications:", error)
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      // Guests/expired sessions should not surface a noisy console error here.
+      return {
+        success: true,
+        data: {
+          notifications: [],
+          unreadCount: 0,
+        },
+      }
+    }
+
     return {
       success: false,
       data: {
         notifications: [],
         unreadCount: 0,
       },
-      message: error?.response?.data?.message || "Failed to fetch notifications",
+      message: getApiErrorMessage(error, "Failed to fetch notifications"),
     }
   }
 }

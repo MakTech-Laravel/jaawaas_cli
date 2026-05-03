@@ -577,7 +577,7 @@ export default function AdminIndustriesPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{featuredCount}</p>
-              <p className="text-sm text-muted-foreground">Main Categories</p>
+              <p className="text-sm text-muted-foreground">Featured category</p>
             </div>
           </div>
         </div>
