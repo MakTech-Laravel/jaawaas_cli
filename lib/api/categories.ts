@@ -27,8 +27,12 @@ export interface BackendSubcategory {
   id: number | string
   name: string
   slug?: string
+  description?: string
+  icon?: string
+  icon_color?: string | null
   category_id?: number | string
   industry_id?: number | string
+  tags?: string[]
 }
 
 interface ApiResult<T> {
@@ -73,10 +77,27 @@ function normalizeSubcategory(raw: unknown): BackendSubcategory | null {
     return null
   }
 
+  const rawTags = value.tags
+  const tags = Array.isArray(rawTags)
+    ? rawTags.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : undefined
+
+  const description = typeof value.description === "string" ? value.description : undefined
+  const icon = typeof value.icon === "string" ? value.icon : undefined
+  const icon_color =
+    value.icon_color === null
+      ? null
+      : typeof value.icon_color === "string"
+        ? value.icon_color
+        : undefined
+
   return {
     id,
     name,
     slug: typeof value.slug === "string" ? value.slug : undefined,
+    description,
+    icon,
+    icon_color,
     category_id:
       typeof value.category_id === "number" || typeof value.category_id === "string"
         ? value.category_id
@@ -85,6 +106,7 @@ function normalizeSubcategory(raw: unknown): BackendSubcategory | null {
       typeof value.industry_id === "number" || typeof value.industry_id === "string"
         ? value.industry_id
         : undefined,
+    ...(tags?.length ? { tags } : {}),
   }
 }
 
@@ -192,6 +214,29 @@ export async function getPublicCategories(params?: { perPage?: number; page?: nu
   }
 }
 
+/** Fetches every page from `GET /categories` and merges results (Laravel-style pagination). */
+export async function getAllPublicCategories(options?: { perPage?: number }): Promise<ApiResult<BackendCategory[]>> {
+  const perPage = typeof options?.perPage === "number" ? options.perPage : 50
+  const merged: BackendCategory[] = []
+  let page = 1
+
+  for (;;) {
+    const batch = await getPublicCategories({ perPage, page })
+    if (!batch.success) {
+      return page === 1
+        ? { success: false, message: batch.message, data: [] }
+        : { success: true, data: merged }
+    }
+    if (!batch.data.length) break
+    merged.push(...batch.data)
+    if (batch.data.length < perPage) break
+    page += 1
+    if (page > 200) break
+  }
+
+  return { success: true, data: merged }
+}
+
 export async function createAdminCategory(input: {
   name: string
   slug: string
@@ -238,46 +283,53 @@ export async function createAdminCategory(input: {
 
 export async function updateAdminCategory(
   categoryId: string,
-  input: { 
-    name: string; 
-    slug: string; 
-    description?: string; 
-    color?: string; 
-    title_color?: string;
-    desc_color?: string;
-    description_color?: string;
-    btn_color?: string;
-    supplier_color?: string;
-    supplier_count_color?: string;
-    featured?: boolean;
-    icon?: string;
-    icon_color?: string;
-    icon_url?: string;
+  input: {
+    name: string
+    slug: string
+    description?: string
+    color?: string
+    title_color?: string
+    desc_color?: string
+    description_color?: string
+    btn_color?: string
+    supplier_color?: string
+    supplier_count_color?: string
+    featured?: boolean
+    icon?: string
+    icon_color?: string
+    icon_url?: string
   }
 ): Promise<ApiResult<null>> {
   try {
-    const form = new FormData()
-    form.append("name", input.name)
-    form.append("slug", input.slug)
-    if (input.description !== undefined) form.append("description", input.description)
-    if (input.color) form.append("color", input.color)
-    if (input.title_color) form.append("title_color", input.title_color)
     const descColor = input.desc_color || input.description_color
     const supplierColor = input.supplier_color || input.supplier_count_color
-    if (descColor) form.append("desc_color", descColor)
-    if (input.btn_color) form.append("btn_color", input.btn_color)
-    if (supplierColor) form.append("supplier_color", supplierColor)
-    if (input.featured !== undefined) form.append("featured", input.featured ? "1" : "0")
-    if (input.icon) form.append("icon", input.icon)
-    if (input.icon_color !== undefined) form.append("icon_color", input.icon_color || "")
-    if (input.icon_url) form.append("icon_url", input.icon_url)
 
-    await apiClient.put(`/admin/categories/${categoryId}`, form)
+    const body: Record<string, unknown> = {
+      name: input.name,
+      slug: input.slug,
+      description: input.description ?? "",
+      color: input.color ?? "",
+      title_color: input.title_color ?? "",
+      desc_color: descColor ?? "",
+      btn_color: input.btn_color ?? "",
+      supplier_color: supplierColor ?? "",
+      icon: (input.icon ?? "").trim(),
+      icon_color: (input.icon_color ?? "").trim(),
+    }
+    if (input.featured !== undefined) {
+      body.featured = input.featured ? 1 : 0
+    }
+    const iconUrl = typeof input.icon_url === "string" ? input.icon_url.trim() : ""
+    if (iconUrl) {
+      body.icon_url = iconUrl
+    }
+
+    await apiClient.put(`/admin/categories/${categoryId}`, body)
     return { success: true, data: null }
   } catch (error) {
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to update category",
+      message: getApiErrorMessage(error, "Failed to update category."),
       data: null,
     }
   }
@@ -322,16 +374,16 @@ export async function toggleAdminCategoryFeatured(
 // Subcategories
 // ------------------------------------------------------------------
 
-export async function createAdminSubcategory(
-  input: { 
-    name: string; 
-    slug: string; 
-    industry_id: string | number;
-    description?: string;
-    tags?: string;
-    icon?: File
-  }
-): Promise<ApiResult<null>> {
+export async function createAdminSubcategory(input: {
+  name: string
+  slug: string
+  industry_id: string | number
+  description?: string
+  /** Comma-separated tag list, e.g. `a,b,c` (matches Laravel form-data). */
+  tags?: string
+  /** Lucide name, label, or file upload — same field name as Postman `icon` text. */
+  icon?: string | File
+}): Promise<ApiResult<null>> {
   try {
     const form = new FormData()
     form.append("name", input.name)
@@ -339,14 +391,20 @@ export async function createAdminSubcategory(
     form.append("industry_id", String(input.industry_id))
     if (input.description) form.append("description", input.description)
     if (input.tags) form.append("tags", input.tags)
-    if (input.icon) form.append("icon", input.icon)
+    if (input.icon !== undefined && input.icon !== "") {
+      if (input.icon instanceof File) {
+        form.append("icon", input.icon)
+      } else {
+        form.append("icon", String(input.icon).trim())
+      }
+    }
 
     await apiClient.post("/admin/subcategories/create", form)
     return { success: true, data: null }
   } catch (error) {
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to create subcategory",
+      message: getApiErrorMessage(error, "Failed to create subcategory."),
       data: null,
     }
   }
@@ -354,13 +412,13 @@ export async function createAdminSubcategory(
 
 export async function updateAdminSubcategory(
   subcategoryId: string,
-  input: { 
-    name: string; 
-    slug: string; 
-    industry_id: string | number;
-    description?: string;
-    tags?: string;
-    icon?: File
+  input: {
+    name: string
+    slug: string
+    industry_id: string | number
+    description?: string
+    tags?: string
+    icon?: string | File
   }
 ): Promise<ApiResult<null>> {
   try {
@@ -370,14 +428,20 @@ export async function updateAdminSubcategory(
     form.append("industry_id", String(input.industry_id))
     if (input.description) form.append("description", input.description)
     if (input.tags) form.append("tags", input.tags)
-    if (input.icon) form.append("icon", input.icon)
+    if (input.icon !== undefined && input.icon !== "") {
+      if (input.icon instanceof File) {
+        form.append("icon", input.icon)
+      } else {
+        form.append("icon", String(input.icon).trim())
+      }
+    }
 
     await apiClient.put(`/admin/subcategories/${subcategoryId}`, form)
     return { success: true, data: null }
   } catch (error) {
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to update subcategory",
+      message: getApiErrorMessage(error, "Failed to update subcategory."),
       data: null,
     }
   }
@@ -390,7 +454,7 @@ export async function deleteAdminSubcategory(id: string): Promise<ApiResult<null
   } catch (error) {
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Failed to delete subcategory",
+      message: getApiErrorMessage(error, "Failed to delete subcategory."),
       data: null,
     }
   }

@@ -71,6 +71,7 @@ interface Category {
   slug: string
   description?: string
   tags?: string
+  icon?: string
   subcategories: Subcategory[]
 }
 
@@ -112,6 +113,8 @@ export default function AdminIndustriesPage() {
   
   // Current selections
   const [currentIndustry, setCurrentIndustry] = useState<Industry | null>(null)
+  /** Snapshot of `featured` when "Edit Industry" opened — used to sync changes via PATCH toggle after PUT. */
+  const [editIndustryFeaturedAtOpen, setEditIndustryFeaturedAtOpen] = useState<boolean | null>(null)
   const [currentCategory, setCurrentCategory] = useState<Category | null>(null)
   const [currentSubcategory, setCurrentSubcategory] = useState<Subcategory | null>(null)
   
@@ -141,7 +144,13 @@ export default function AdminIndustriesPage() {
     icon: "",
     icon_color: "#000000",
   })
-  const [newCategory, setNewCategory] = useState({ name: "", description: "", tags: "" })
+  const [newCategory, setNewCategory] = useState({
+    name: "",
+    slug: "",
+    description: "",
+    tags: "",
+    icon: "",
+  })
   const [newSubcategory, setNewSubcategory] = useState({ name: "" })
 
   const slugify = (value: string) => value.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
@@ -186,6 +195,9 @@ export default function AdminIndustriesPage() {
           id: String(sub.id),
           name: sub.name,
           slug: sub.slug || slugify(sub.name),
+          description: sub.description,
+          tags: sub.tags?.length ? sub.tags.join(",") : undefined,
+          icon: sub.icon,
           subcategories: [],
         })),
       }
@@ -302,7 +314,6 @@ export default function AdminIndustriesPage() {
         name: currentIndustry.name,
         slug: currentIndustry.slug || slugify(currentIndustry.name),
         description: currentIndustry.description,
-        featured: currentIndustry.featured,
         color: currentIndustry.color,
         title_color: currentIndustry.title_color,
         description_color: currentIndustry.description_color,
@@ -317,7 +328,23 @@ export default function AdminIndustriesPage() {
         return
       }
 
+      const baseline = editIndustryFeaturedAtOpen
+      if (baseline !== null && currentIndustry.featured !== baseline) {
+        const tgl = await toggleAdminCategoryFeatured(String(currentIndustry.id))
+        if (!tgl.success) {
+          setErrorMessage(
+            tgl.message ||
+              "Industry was saved, but homepage/main category status could not be updated (e.g. max 8 featured)."
+          )
+          setShowEditIndustryDialog(false)
+          setEditIndustryFeaturedAtOpen(null)
+          await loadFromBackend()
+          return
+        }
+      }
+
       setShowEditIndustryDialog(false)
+      setEditIndustryFeaturedAtOpen(null)
       await loadFromBackend()
     })()
   }
@@ -352,19 +379,25 @@ export default function AdminIndustriesPage() {
   // Category CRUD
   const openAddCategory = (industry: Industry) => {
     setCurrentIndustry(industry)
-    setNewCategory({ name: "", description: "", tags: "" })
+    setNewCategory({ name: "", slug: "", description: "", tags: "", icon: "" })
     setShowAddCategoryDialog(true)
   }
 
   const handleAddCategory = () => {
     if (!currentIndustry) return
     void (async () => {
-      const slug = slugify(newCategory.name)
+      const slug = (newCategory.slug || "").trim() || slugify(newCategory.name)
+      const tagsCsv = newCategory.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .join(",")
       const result = await createAdminSubcategory({
-        name: newCategory.name,
+        name: newCategory.name.trim(),
         slug,
-        description: newCategory.description || undefined,
-        tags: newCategory.tags || undefined,
+        description: newCategory.description.trim() || undefined,
+        tags: tagsCsv || undefined,
+        icon: newCategory.icon.trim() || undefined,
         industry_id: String(currentIndustry.id),
       })
 
@@ -373,7 +406,7 @@ export default function AdminIndustriesPage() {
         return
       }
 
-      setNewCategory({ name: "", description: "", tags: "" })
+      setNewCategory({ name: "", slug: "", description: "", tags: "", icon: "" })
       setShowAddCategoryDialog(false)
       await loadFromBackend()
     })()
@@ -388,11 +421,18 @@ export default function AdminIndustriesPage() {
   const handleEditCategory = () => {
     if (!currentIndustry || !currentCategory) return
     void (async () => {
+      const tagsCsv =
+        (currentCategory.tags || "")
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .join(",") || undefined
       const result = await updateAdminSubcategory(String(currentCategory.id), {
         name: currentCategory.name,
         slug: currentCategory.slug || slugify(currentCategory.name),
-        description: currentCategory.description || undefined,
-        tags: currentCategory.tags || undefined,
+        description: currentCategory.description?.trim() || undefined,
+        tags: tagsCsv,
+        icon: currentCategory.icon?.trim() || undefined,
         industry_id: String(currentIndustry.id),
       })
 
@@ -653,16 +693,17 @@ export default function AdminIndustriesPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => openManageCategories(industry)}>
+                      {/* <DropdownMenuItem onClick={() => openManageCategories(industry)}>
                         <FolderOpen className="mr-2 h-4 w-4" />
                         Manage Categories
-                      </DropdownMenuItem>
+                      </DropdownMenuItem> */}
                       <DropdownMenuItem onClick={() => openAddCategory(industry)}>
                         <Plus className="mr-2 h-4 w-4" />
                         Add Category
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => {
                         setCurrentIndustry(industry)
+                        setEditIndustryFeaturedAtOpen(industry.featured)
                         setShowEditIndustryDialog(true)
                       }}>
                         <Edit className="mr-2 h-4 w-4" />
@@ -933,15 +974,6 @@ export default function AdminIndustriesPage() {
                     />
                   </div>
                 </div>
-                <div>
-                  <Label>Icon URL</Label>
-                  <Input 
-                    placeholder="e.g., https://example.com/icon.png"
-                    value={newIndustry.icon}
-                    onChange={(e) => setNewIndustry({ ...newIndustry, icon: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1100,7 +1132,13 @@ export default function AdminIndustriesPage() {
       </Dialog>
 
       {/* Edit Industry Dialog */}
-      <Dialog open={showEditIndustryDialog} onOpenChange={setShowEditIndustryDialog}>
+      <Dialog
+        open={showEditIndustryDialog}
+        onOpenChange={(open) => {
+          setShowEditIndustryDialog(open)
+          if (!open) setEditIndustryFeaturedAtOpen(null)
+        }}
+      >
         <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl">
           <DialogHeader className="p-6 pb-0">
             <DialogTitle>Edit Industry</DialogTitle>
@@ -1170,15 +1208,6 @@ export default function AdminIndustriesPage() {
                         className="flex-1"
                       />
                     </div>
-                  </div>
-                  <div>
-                    <Label>Icon URL</Label>
-                    <Input 
-                      placeholder="e.g., https://example.com/icon.png"
-                      value={currentIndustry.icon || ""}
-                      onChange={(e) => setCurrentIndustry({ ...currentIndustry, icon: e.target.value })}
-                      className="mt-2"
-                    />
                   </div>
                 </div>
 
@@ -1347,18 +1376,48 @@ export default function AdminIndustriesPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label>Category Name</Label>
-              <Input 
-                placeholder="e.g., Consumer Electronics"
-                value={newCategory.name}
-                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Category Name</Label>
+                <Input
+                  placeholder="e.g., Consumer Electronics"
+                  value={newCategory.name}
+                  onChange={(e) => {
+                    const name = e.target.value
+                    setNewCategory({
+                      ...newCategory,
+                      name,
+                      slug: slugify(name),
+                    })
+                  }}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label>Slug</Label>
+                <Input
+                  placeholder="e.g., consumer-electronics"
+                  value={newCategory.slug}
+                  onChange={(e) => setNewCategory({ ...newCategory, slug: e.target.value })}
+                  className="mt-2"
+                />
+              </div>
+            </div>
+            {/* <div>
+              <Label>Icon</Label>
+              <Input
+                placeholder="e.g., Package or red (sent as text to API)"
+                value={newCategory.icon}
+                onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })}
                 className="mt-2"
               />
-            </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Optional text value for the API `icon` field (same as Postman form-data).
+              </p>
+            </div> */}
             <div>
               <Label>Description</Label>
-              <Textarea 
+              <Textarea
                 placeholder="Describe this category..."
                 value={newCategory.description}
                 onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
@@ -1367,18 +1426,18 @@ export default function AdminIndustriesPage() {
             </div>
             <div>
               <Label>Tags</Label>
-              <Input 
-                placeholder="e.g., electronics,gadgets,tech"
+              <Input
+                placeholder="e.g., tags,dsdf,fgf"
                 value={newCategory.tags}
                 onChange={(e) => setNewCategory({ ...newCategory, tags: e.target.value })}
                 className="mt-2"
               />
-              <p className="text-xs text-muted-foreground mt-1">Separate tags with commas</p>
+              {/* <p className="text-xs text-muted-foreground mt-1">Comma-separated (stored as one form field, same as Postman).</p> */}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddCategoryDialog(false)}>Cancel</Button>
-            <Button onClick={handleAddCategory} disabled={!newCategory.name}>Add Category</Button>
+            <Button onClick={handleAddCategory} disabled={!newCategory.name.trim()}>Add Category</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1394,17 +1453,36 @@ export default function AdminIndustriesPage() {
           </DialogHeader>
           {currentCategory && (
             <div className="space-y-4">
-              <div>
-                <Label>Category Name</Label>
-                <Input 
-                  value={currentCategory.name}
-                  onChange={(e) => setCurrentCategory({ ...currentCategory, name: e.target.value })}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Category Name</Label>
+                  <Input
+                    value={currentCategory.name}
+                    onChange={(e) => setCurrentCategory({ ...currentCategory, name: e.target.value })}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label>Slug</Label>
+                  <Input
+                    value={currentCategory.slug}
+                    onChange={(e) => setCurrentCategory({ ...currentCategory, slug: e.target.value })}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+              {/* <div>
+                <Label>Icon</Label>
+                <Input
+                  placeholder="Optional"
+                  value={currentCategory.icon || ""}
+                  onChange={(e) => setCurrentCategory({ ...currentCategory, icon: e.target.value })}
                   className="mt-2"
                 />
-              </div>
+              </div> */}
               <div>
                 <Label>Description</Label>
-                <Textarea 
+                <Textarea
                   placeholder="Describe this category..."
                   value={currentCategory.description || ""}
                   onChange={(e) => setCurrentCategory({ ...currentCategory, description: e.target.value })}
@@ -1413,13 +1491,13 @@ export default function AdminIndustriesPage() {
               </div>
               <div>
                 <Label>Tags</Label>
-                <Input 
-                  placeholder="e.g., electronics,gadgets,tech"
+                <Input
+                  placeholder="e.g., tags,dsdf,fgf"
                   value={currentCategory.tags || ""}
                   onChange={(e) => setCurrentCategory({ ...currentCategory, tags: e.target.value })}
                   className="mt-2"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Separate tags with commas</p>
+                <p className="text-xs text-muted-foreground mt-1">Comma-separated for the API `tags` field.</p>
               </div>
             </div>
           )}
