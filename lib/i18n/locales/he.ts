@@ -251,6 +251,7 @@ const he = {
     adminPromotions: "קידומים",
     adminSubscriptions: "מנויים",
     adminInsights: "תובנות",
+    adminCertificateType: "סוג תעודה",
     adminAnalytics: "אנליטיקה",
     adminContactPage: "דף יצירת קשר",
     adminFAQManagement: "ניהול שאלות נפוצות",

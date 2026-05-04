@@ -247,6 +247,7 @@ const ar = {
     adminPromotions: "العروض الترويجية",
     adminSubscriptions: "الاشتراكات",
     adminInsights: "الرؤى",
+    adminCertificateType: "نوع الشهادة",
     adminAnalytics: "التحليلات",
     adminContactPage: "صفحة التواصل",
     adminFAQManagement: "إدارة الأسئلة الشائعة",

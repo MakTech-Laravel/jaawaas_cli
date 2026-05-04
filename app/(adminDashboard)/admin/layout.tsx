@@ -35,7 +35,8 @@ import {
   Mail,
   Filter,
   HelpCircle,
-  ClipboardList
+  ClipboardList,
+  Award
 } from "lucide-react"
 import { useState } from "react"
 
@@ -68,6 +69,7 @@ export default function AdminLayout({
     { name: t?.nav?.adminPromotions || "Promotions", href: "/admin/promotions", icon: Sparkles },
     { name: t?.nav?.adminSubscriptions || "Subscriptions", href: "/admin/subscriptions", icon: CreditCard },
     { name: t?.nav?.adminInsights || "Insights", href: "/admin/insights", icon: Lightbulb },
+    { name: t?.nav?.adminCertificateType || "Certificate Type", href: "/admin/certificatetype", icon: Award },
     { name: t?.nav?.adminAnalytics || "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { name: t?.nav?.adminContactPage || "Contact Page", href: "/admin/contact", icon: Mail },
     { name: t?.nav?.adminFAQManagement || "FAQ Management", href: "/admin/faq", icon: HelpCircle },

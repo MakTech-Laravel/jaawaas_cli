@@ -247,6 +247,7 @@ const en = {
     adminPromotions: "Promotions",
     adminSubscriptions: "Subscriptions",
     adminInsights: "Insights",
+    adminCertificateType: "Certificate Type",
     adminAnalytics: "Analytics",
     adminContactPage: "Contact Page",
     adminFAQManagement: "FAQ Management",

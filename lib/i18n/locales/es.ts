@@ -247,6 +247,7 @@ const es = {
     adminPromotions: "促销",
     adminSubscriptions: "订阅",
     adminInsights: "见解",
+    adminCertificateType: "证书类型",
     adminAnalytics: "分析",
     adminContactPage: "联系页面",
     adminFAQManagement: "常见问题管理",
