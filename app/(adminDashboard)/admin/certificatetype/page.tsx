@@ -58,25 +58,21 @@ import {
 interface CertificateType {
   id: string
   name: string
-  description: string
-  category: string
   status: "active" | "inactive"
   createdAt: string
   updatedAt: string
   usageCount: number
 }
 
-const categories = ["ISO", "Quality Management", "Environmental", "Safety", "Food & Agriculture", "Regulatory", "Industry Specific", "Other"]
-
 const initialTypes: CertificateType[] = [
-  { id: "1", name: "ISO 9001:2015", description: "Quality Management System", category: "ISO", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 45 },
-  { id: "2", name: "ISO 14001:2015", description: "Environmental Management System", category: "ISO", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 32 },
-  { id: "3", name: "ISO 45001", description: "Occupational Health & Safety", category: "ISO", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 28 },
-  { id: "4", name: "CE Certification", description: "EU Conformity Assessment", category: "Regulatory", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 56 },
-  { id: "5", name: "RoHS Compliance", description: "Restriction of Hazardous Substances", category: "Regulatory", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 41 },
-  { id: "6", name: "BSCI Audit", description: "Business Social Compliance Initiative", category: "Quality Management", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 23 },
-  { id: "7", name: "FDA Registration", description: "US Food & Drug Administration", category: "Food & Agriculture", status: "active", createdAt: "2024-01-20", updatedAt: "2024-01-20", usageCount: 19 },
-  { id: "8", name: "REACH Compliance", description: "EU Chemical Regulations", category: "Regulatory", status: "inactive", createdAt: "2024-01-15", updatedAt: "2024-02-01", usageCount: 8 },
+  { id: "1", name: "ISO 9001:2015", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 45 },
+  { id: "2", name: "ISO 14001:2015", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 32 },
+  { id: "3", name: "ISO 45001", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 28 },
+  { id: "4", name: "CE Certification", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 56 },
+  { id: "5", name: "RoHS Compliance", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 41 },
+  { id: "6", name: "BSCI Audit", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 23 },
+  { id: "7", name: "FDA Registration", status: "active", createdAt: "2024-01-20", updatedAt: "2024-01-20", usageCount: 19 },
+  { id: "8", name: "REACH Compliance", status: "inactive", createdAt: "2024-01-15", updatedAt: "2024-02-01", usageCount: 8 },
 ]
 
 const statusConfig = {
@@ -91,17 +87,12 @@ export default function AdminCertificateTypePage() {
   const [editingType, setEditingType] = useState<CertificateType | null>(null)
   const [deletingTypeId, setDeletingTypeId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [categoryFilter, setCategoryFilter] = useState("all")
   const [newType, setNewType] = useState({
     name: "",
-    description: "",
-    category: "",
     status: "active" as "active" | "inactive",
   })
   const [editType, setEditType] = useState({
     name: "",
-    description: "",
-    category: "",
     status: "active" as "active" | "inactive",
   })
 
@@ -111,19 +102,17 @@ export default function AdminCertificateTypePage() {
   }
 
   const addType = () => {
-    if (newType.name && newType.category) {
+    if (newType.name) {
       const now = new Date().toISOString().split('T')[0]
       setTypes(prev => [{
         id: `type-${Date.now()}`,
         name: newType.name,
-        description: newType.description,
-        category: newType.category,
         status: newType.status,
         createdAt: now,
         updatedAt: now,
         usageCount: 0
       }, ...prev])
-      setNewType({ name: "", description: "", category: "", status: "active" })
+      setNewType({ name: "", status: "active" })
       setShowAddDialog(false)
     }
   }
@@ -132,15 +121,13 @@ export default function AdminCertificateTypePage() {
     setEditingType(type)
     setEditType({
       name: type.name,
-      description: type.description,
-      category: type.category,
       status: type.status,
     })
     setShowEditDialog(true)
   }
 
   const saveEditType = () => {
-    if (editingType && editType.name && editType.category) {
+    if (editingType && editType.name) {
       const now = new Date().toISOString().split('T')[0]
       setTypes(prev => prev.map(t =>
         t.id === editingType.id
@@ -153,10 +140,8 @@ export default function AdminCertificateTypePage() {
   }
 
   const filteredTypes = types.filter(type => {
-    const matchesSearch = type.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         type.description.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = categoryFilter === "all" || type.category === categoryFilter
-    return matchesSearch && matchesCategory
+    const matchesSearch = type.name.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesSearch
   })
 
   return (
@@ -183,26 +168,12 @@ export default function AdminCertificateTypePage() {
               <div className="relative mt-2">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or description..."
+                  placeholder="Search by name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
                 />
               </div>
-            </div>
-            <div className="w-full sm:w-48">
-              <Label className="text-xs">Category</Label>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="mt-2">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </div>
         </CardContent>
@@ -217,8 +188,6 @@ export default function AdminCertificateTypePage() {
                 <TableHeader>
                   <TableRow className="border-b">
                     <TableHead className="px-4 py-3">Name</TableHead>
-                    <TableHead className="px-4 py-3">Description</TableHead>
-                    <TableHead className="px-4 py-3">Category</TableHead>
                     <TableHead className="px-4 py-3 text-right">Usage</TableHead>
                     <TableHead className="px-4 py-3 text-center">Status</TableHead>
                     <TableHead className="px-4 py-3 text-right">Actions</TableHead>
@@ -228,10 +197,6 @@ export default function AdminCertificateTypePage() {
                   {filteredTypes.map((type) => (
                     <TableRow key={type.id} className="border-b hover:bg-muted/50 transition-colors">
                       <TableCell className="px-4 py-3 font-medium">{type.name}</TableCell>
-                      <TableCell className="px-4 py-3 text-sm text-muted-foreground">{type.description}</TableCell>
-                      <TableCell className="px-4 py-3">
-                        <Badge variant="outline">{type.category}</Badge>
-                      </TableCell>
                       <TableCell className="px-4 py-3 text-right font-medium">{type.usageCount}</TableCell>
                       <TableCell className="px-4 py-3 text-center">
                         <Badge className={statusConfig[type.status].color}>
@@ -297,32 +262,6 @@ export default function AdminCertificateTypePage() {
               />
             </div>
             <div>
-              <Label>Description</Label>
-              <Textarea
-                placeholder="Brief description of the certificate"
-                value={newType.description}
-                onChange={(e) => setNewType({ ...newType, description: e.target.value })}
-                className="mt-2"
-                rows={2}
-              />
-            </div>
-            <div>
-              <Label>Category</Label>
-              <Select
-                value={newType.category}
-                onValueChange={(value) => setNewType({ ...newType, category: value })}
-              >
-                <SelectTrigger className="mt-2">
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
               <Label>Status</Label>
               <Select
                 value={newType.status}
@@ -363,32 +302,6 @@ export default function AdminCertificateTypePage() {
                 onChange={(e) => setEditType({ ...editType, name: e.target.value })}
                 className="mt-2"
               />
-            </div>
-            <div>
-              <Label>Description</Label>
-              <Textarea
-                placeholder="Brief description of the certificate"
-                value={editType.description}
-                onChange={(e) => setEditType({ ...editType, description: e.target.value })}
-                className="mt-2"
-                rows={2}
-              />
-            </div>
-            <div>
-              <Label>Category</Label>
-              <Select
-                value={editType.category}
-                onValueChange={(value) => setEditType({ ...editType, category: value })}
-              >
-                <SelectTrigger className="mt-2">
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div>
               <Label>Status</Label>
