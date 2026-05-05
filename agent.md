@@ -38,7 +38,7 @@ Next.js 14+ Full-Stack B2B Marketplace Platform
   ├── /roles           → Role management
   ├── /i18n            → Internationalization
   ├── auth-context.tsx → Authentication state
-  ├── types.ts         → Shared TypeScript types
+  ├── typzh.ts         → Shared TypeScript types
   └── utils.ts         → Helper utilities
 /hooks                  → Custom React hooks
 /styles                 → Global styles
@@ -51,7 +51,7 @@ Next.js 14+ Full-Stack B2B Marketplace Platform
 - Naming: PascalCase
 - Export with index if needed
 - Use hooks from `/hooks`
-- Import types from `/lib/types.ts`
+- Import types from `/lib/typzh.ts`
 
 ### Pages & Routes
 - Location: `/app/(route-group)/feature/page.tsx`
@@ -85,7 +85,7 @@ const { user, isAuthenticated } = useAuth()
 1. Create folder: `/app/(group)/feature/`
 2. Add `page.tsx` with route
 3. Use existing layouts
-4. Import types from `/lib/types.ts`
+4. Import types from `/lib/typzh.ts`
 
 ### Creating a Component
 1. Check `/components/ui` first

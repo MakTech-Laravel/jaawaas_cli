@@ -180,7 +180,7 @@ Tailwind CSS
   ├── favorites-context.tsx → Favorites state
   ├── subscription-context.tsx → Subscription state
   ├── notifications-context.tsx → Notifications state
-  ├── types.ts        → Shared TypeScript interfaces
+  ├── typzh.ts        → Shared TypeScript interfaces
   ├── utils.ts        → Helper utilities
   └── ...
 /hooks                  → Custom React hooks
@@ -206,7 +206,7 @@ Tailwind CSS
 - Location: `/components/{feature}/{component-name}.tsx`
 - Naming: PascalCase
 - Export as default
-- Import types from `/lib/types.ts`
+- Import types from `/lib/typzh.ts`
 - Use hooks from `/hooks`
 
 #### Pages & Routes
@@ -251,7 +251,7 @@ const { user, isAuthenticated } = useAuth()
 1. Ask permission if it's a major change
 2. Create folder: `/app/(group)/feature/`
 3. Add `page.tsx` with route
-4. Import types from `/lib/types.ts`
+4. Import types from `/lib/typzh.ts`
 5. Test in browser
 6. Update `PROJECT_MASTER_README.md`
 
@@ -268,7 +268,7 @@ const { user, isAuthenticated } = useAuth()
 2. Use `apiClient` from `/lib/api/client.ts`
 3. Handle errors properly with try-catch
 4. Use `useToast()` for user feedback
-5. Type responses with interfaces from `/lib/types.ts`
+5. Type responses with interfaces from `/lib/typzh.ts`
 6. Update `PROJECT_MASTER_README.md` with integration status
 
 ---
@@ -348,7 +348,7 @@ pnpm remove          # Uninstall package
   ├── /roles           → Role management
   ├── /i18n            → Internationalization
   ├── auth-context.tsx → Authentication state
-  ├── types.ts         → Shared TypeScript types
+  ├── typzh.ts         → Shared TypeScript types
   └── utils.ts         → Helper utilities
 /hooks                  → Custom React hooks
 /styles                 → Global styles
@@ -361,7 +361,7 @@ pnpm remove          # Uninstall package
 - Naming: PascalCase
 - Export with index if needed
 - Use hooks from `/hooks`
-- Import types from `/lib/types.ts`
+- Import types from `/lib/typzh.ts`
 
 ### Pages & Routes
 - Location: `/app/(route-group)/feature/page.tsx`
@@ -395,7 +395,7 @@ const { user, isAuthenticated } = useAuth()
 1. Create folder: `/app/(group)/feature/`
 2. Add `page.tsx` with route
 3. Use existing layouts
-4. Import types from `/lib/types.ts`
+4. Import types from `/lib/typzh.ts`
 
 ### Creating a Component
 1. Check `/components/ui` first

@@ -105,7 +105,7 @@ export default function VerificationPage() {
                 Our Review Process
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-lg text-primary-foreground/80">
-                Every manufacturer on SourceNest goes through a thorough review process based on submitted information before being approved. Here&apos;s how we maintain quality standards.
+                Suppliers on SourceNest go through a review process based on submitted information. This process is intended to improve transparency and does not constitute verification or guarantee of any kind.
               </p>
             </div>
           </div>

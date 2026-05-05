@@ -993,7 +993,7 @@ const en = {
     hero: {
       badge: "Trust & Quality",
       title: "Our Review Process",
-      description: "Every manufacturer on SourceNest goes through a thorough review process based on submitted information before being approved. Here's how we maintain quality standards."
+      description: "Suppliers on SourceNest go through a review process based on submitted information. This process is intended to improve transparency and does not constitute verification or guarantee of any kind."
     },
     whyMatters: {
       title: "Why Our Review Process Matters",

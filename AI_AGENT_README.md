@@ -147,7 +147,7 @@ Type Check: pnpm type-check
 - Auth Context: /lib/auth-context.tsx
 - UI Components: /components/ui/*
 - Hooks: /hooks/*
-- Types: /lib/types.ts
+- Types: /lib/typzh.ts
 ```
 
 ---
@@ -223,7 +223,7 @@ Next.js Full-Stack B2B Marketplace Platform
 - ESLint + Prettier configured
 - File naming: lowercase with hyphens (components-folder/)
 - Component naming: PascalCase
-- Always export types from lib/types.ts
+- Always export types from lib/typzh.ts
 
 ## Common Tasks
 1. Adding a new page: Create folder in /app, add page.tsx

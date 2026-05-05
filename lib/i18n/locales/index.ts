@@ -1,5 +1,5 @@
 import en from "./en";
-import es from "./es";
+import es from "./zh";
 import ar from "./ar";
 import he from "./he";
 import type { TranslationKeys } from "./en";

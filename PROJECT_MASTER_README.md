@@ -109,7 +109,7 @@ readywithfixes/
 │   │   ├── auth.ts                # Auth endpoints
 │   │   ├── products.ts            # Product API
 │   │   ├── rfqs.ts                # RFQ API
-│   │   ├── messages.ts            # Messaging API
+│   │   ├── messagzh.ts            # Messaging API
 │   │   ├── notifications.ts       # Notifications API
 │   │   ├── admin-*.ts             # Admin-specific APIs
 │   │   ├── manufacturer-*.ts      # Manufacturer-specific APIs
@@ -123,7 +123,7 @@ readywithfixes/
 │   ├── favorites-context.tsx      # Favorites state
 │   ├── subscription-context.tsx   # Subscription state
 │   ├── notifications-context.tsx  # Notifications state
-│   ├── types.ts                   # Shared TypeScript types
+│   ├── typzh.ts                   # Shared TypeScript types
 │   ├── utils.ts                   # Utility functions
 │   ├── google-identity.ts
 │   ├── register-success-storage.ts
@@ -262,7 +262,7 @@ import { apiClient } from "@/lib/api/client"
 | RFQs (Admin) | `admin-rfqs.ts` | monitor, filter, stats | ✅ Complete |
 | RFQs (Buyer) | `buyer-rfqs.ts` | my rfqs, analytics | ✅ Complete |
 | RFQs (Manufacturer) | `manufacturer-rfqs.ts` | responses, quotes | ✅ Complete |
-| Messages | `messages.ts` | create, list, search, notify | ✅ Complete |
+| Messages | `messagzh.ts` | create, list, search, notify | ✅ Complete |
 | Notifications | `notifications.ts` | fetch, mark read, settings | ✅ Complete |
 | Account | `account.ts` | profile, settings, preferences | ✅ Complete |
 | Two-Factor | `two-factor.ts` | enable, disable, verify | ✅ Complete |
@@ -273,8 +273,8 @@ import { apiClient } from "@/lib/api/client"
 | Admin Quick Filters | `admin-quick-filters.ts` | manage filters | ✅ Complete |
 | Manufacturer Catalogs | `manufacturer-catalogs.ts` | create, update, manage | ✅ Complete |
 | Manufacturer Products | `manufacturer-products.ts` | list, manage | ✅ Complete |
-| Categories | `categories.ts` | list, get, filter | ✅ Complete |
-| Currencies | `currencies.ts` | list, exchange rates | ✅ Complete |
+| Categories | `categorizh.ts` | list, get, filter | ✅ Complete |
+| Currencies | `currencizh.ts` | list, exchange rates | ✅ Complete |
 
 ---
 
@@ -421,7 +421,7 @@ import { apiClient } from "@/lib/api/client"
    - Add row to API Integration Points table
    - Include endpoints and status
 4. Update relevant pages to use the new API
-5. Document any new types in `/lib/types.ts`
+5. Document any new types in `/lib/typzh.ts`
 
 ### ❌ WHEN REMOVING/DEPRECATING:
 
@@ -479,7 +479,7 @@ Utilities:
 |------|---------|-------|
 | `/lib/api/client.ts` | Central API client | All HTTP requests go through here |
 | `/lib/auth-context.tsx` | Auth state | Authentication & user info |
-| `/lib/types.ts` | Type definitions | Shared TypeScript interfaces |
+| `/lib/typzh.ts` | Type definitions | Shared TypeScript interfaces |
 | `/lib/utils.ts` | Utilities | Helper functions |
 | `/hooks/use-toast.ts` | Toast notifications | User feedback system |
 | `/app/layout.tsx` | Root layout | Global layout, theme provider |
@@ -545,7 +545,7 @@ pnpm test:watch     # Watch mode
 - All API calls must go through `/lib/api/client.ts`
 - Component library (shadcn/ui) provides consistent UI
 - Context API manages global state (auth, favorites, etc.)
-- Types should be added to `/lib/types.ts`
+- Types should be added to `/lib/typzh.ts`
 
 ### ⏰ RECENT CHANGES
 
@@ -578,7 +578,7 @@ When handing off to another agent:
 For questions about:
 - **Page structure**: Check the tables above
 - **API integration**: Look at `/lib/api/` directory
-- **Component usage**: Check `/components/` and `/lib/types.ts`
+- **Component usage**: Check `/components/` and `/lib/typzh.ts`
 - **Agent instructions**: See `agent.md`
 - **Agent configuration**: See `AI_AGENT_README.md`
 

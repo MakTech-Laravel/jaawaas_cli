@@ -969,7 +969,7 @@ const es = {
     hero: {
       badge: "信任与质量",
       title: "我们的审核流程",
-      description: "SourceNest 上的每个制造商都需要通过严格的审核流程，根据提交的信息进行审核，然后才能被批准。以下是我们维持质量标准的方式。"
+      description: "SourceNest 上的供应商要经过基于提交信息的审查流程。此流程旨在改进透明度，不构成任何形式的验证或保证。"
     },
     whyMatters: {
       title: "为什么我们的审核流程很重要",
