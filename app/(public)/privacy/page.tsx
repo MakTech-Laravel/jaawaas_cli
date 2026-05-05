@@ -19,27 +19,49 @@ export default function PrivacyPage() {
           <div className="prose prose-neutral mt-8 max-w-none">
             <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">1. Introduction</h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              SourceNest (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services.
+              SourceNest is committed to protecting user privacy.
             </p>
             
-            <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">2. Information We Collect</h2>
+            <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">2. Information Collected</h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              We collect information you provide directly to us, such as when you create an account, make a purchase, submit an inquiry, or contact us for support. This may include your name, email address, company name, phone number, and payment information.
+              We may collect personal, business, technical, and transactional information provided by users.
             </p>
             
-            <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">3. How We Use Your Information</h2>
+            <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">3. Use of Information</h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              We use the information we collect to provide, maintain, and improve our services, process transactions, send you technical notices and support messages, and respond to your comments and questions.
+              Information is used to operate the platform, facilitate interactions, improve services, process transactions, and maintain security.
             </p>
             
-            <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">4. Data Security</h2>
+            <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">4. Information Sharing</h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              We implement appropriate technical and organizational security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.
+              Information may be shared between users, with service providers, or as required by law.
             </p>
             
-            <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">5. Contact Us</h2>
+            <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">5. Supplier Information Disclaimer</h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              If you have any questions about this Privacy Policy, please contact us at info@sourcenest.tech.
+              Supplier information is provided by users. SourceNest does not verify or guarantee the accuracy, completeness, reliability, or legality of such information. Users are solely responsible for verifying any information before relying on it.
+            </p>
+            
+            <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">6. No Responsibility for Interactions</h2>
+            <p className="mt-4 text-muted-foreground leading-relaxed">
+              SourceNest is not responsible for any communications, negotiations, or outcomes between users.
+            </p>
+            
+            <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">7. Data Security</h2>
+            <p className="mt-4 text-muted-foreground leading-relaxed">
+              Reasonable safeguards are implemented, but no system is completely secure.
+            </p>
+            
+            <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">8. Data Retention</h2>
+            <p className="mt-4 text-muted-foreground leading-relaxed">
+              Data may be retained as required for legal, operational, and security purposes.
+            </p>
+            
+            <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">9. Contact</h2>
+            <p className="mt-4 text-muted-foreground leading-relaxed">
+              <a href="mailto:privacy@sourcenest.com" className="text-primary hover:underline">
+                privacy@sourcenest.com
+              </a>
             </p>
           </div>
         </div>

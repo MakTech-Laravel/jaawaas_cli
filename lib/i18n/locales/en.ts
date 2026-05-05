@@ -542,7 +542,7 @@ const en = {
       mfgBtn: "Join as Manufacturer"
     },
     footer: {
-      slogan: "The premium global sourcing platform connecting buyers with reviewed manufacturers worldwide.",
+      slogan: "SourceNest facilitates connections between independent users and does not take responsibility for transactions between them.",
       platform: "Platform",
       forBuyers: "For Buyers",
       forMfg: "For Manufacturers",

@@ -656,7 +656,7 @@ const es = {
       mfgBtn: "作为制造商加入"
     },
     footer: {
-      slogan: "连接买家与已审核制造商的优质全球采购平台。",
+      slogan: "SourceNest 促进独立用户之间的联系，不对他们之间的交易负责。",
       platform: "平台",
       forBuyers: "面向买家",
       forMfg: "面向制造商",

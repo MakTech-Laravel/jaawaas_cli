@@ -496,10 +496,10 @@ export default function AdminUsersPage() {
               <CheckCircle className="mr-1 h-3 w-3" />
               Activate
             </Button>
-            <Button size="sm" variant="outline" onClick={() => bulkUpdateStatus("suspended")}> 
+            {/* <Button size="sm" variant="outline" onClick={() => bulkUpdateStatus("suspended")}> 
               <Ban className="mr-1 h-3 w-3" />
               Suspend
-            </Button>
+            </Button> */}
             <Button size="sm" variant="outline" onClick={() => { setBulkDeactivateReason(""); setBulkDeactivateOpen(true); }}>
               Deactivate
             </Button>
@@ -575,12 +575,12 @@ export default function AdminUsersPage() {
                             Activate
                           </DropdownMenuItem>
                         )}
-                        {user.status !== "suspended" && (
+                        {/* {user.status !== "suspended" && (
                           <DropdownMenuItem onClick={() => updateUserStatus(user.id, "suspended")}>
                             <Ban className="mr-2 h-4 w-4 text-red-600" />
                             Suspend
                           </DropdownMenuItem>
-                        )}
+                        )} */}
                         {user.status !== "deactivated" && (
                           <DropdownMenuItem onClick={() => { setDeactivateTarget(user.id); setDeactivateReason(""); setDeactivateOpen(true); }}>
                             Deactivate
@@ -722,12 +722,12 @@ export default function AdminUsersPage() {
                             Activate
                           </DropdownMenuItem>
                         )}
-                        {user.status !== "suspended" && (
+                        {/* {user.status !== "suspended" && (
                           <DropdownMenuItem onClick={() => updateUserStatus(user.id, "suspended")}>
                             <Ban className="mr-2 h-4 w-4 text-red-600" />
                             Suspend
                           </DropdownMenuItem>
-                        )}
+                        )} */}
                         {user.status !== "deactivated" && (
                           <DropdownMenuItem onClick={() => { setDeactivateTarget(user.id); setDeactivateReason(""); setDeactivateOpen(true); }}>
                             Deactivate
