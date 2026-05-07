@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +45,8 @@ import {
   MoreVertical,
   Plus,
   Edit,
-  Search
+  Search,
+  Loader2
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -54,66 +54,171 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-
-interface CertificateType {
-  id: string
-  name: string
-  status: "active" | "inactive"
-  createdAt: string
-  updatedAt: string
-  usageCount: number
-}
-
-const initialTypes: CertificateType[] = [
-  { id: "1", name: "ISO 9001:2015", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 45 },
-  { id: "2", name: "ISO 14001:2015", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 32 },
-  { id: "3", name: "ISO 45001", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 28 },
-  { id: "4", name: "CE Certification", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 56 },
-  { id: "5", name: "RoHS Compliance", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 41 },
-  { id: "6", name: "BSCI Audit", status: "active", createdAt: "2024-01-15", updatedAt: "2024-01-15", usageCount: 23 },
-  { id: "7", name: "FDA Registration", status: "active", createdAt: "2024-01-20", updatedAt: "2024-01-20", usageCount: 19 },
-  { id: "8", name: "REACH Compliance", status: "inactive", createdAt: "2024-01-15", updatedAt: "2024-02-01", usageCount: 8 },
-]
+import { useToast } from "@/hooks/use-toast"
+import {
+  CertificateType,
+  getAdminCertificateTypes,
+  createAdminCertificateType,
+  updateAdminCertificateType,
+  deleteAdminCertificateType,
+  CreateCertificateTypeInput,
+} from "@/lib/api/admin-certificate-types"
 
 const statusConfig = {
   active: { label: "Active", color: "bg-emerald-100 text-emerald-700" },
   inactive: { label: "Inactive", color: "bg-gray-100 text-gray-700" },
 }
 
+// Generate slug from name
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "") // Remove special characters
+    .replace(/\s+/g, "_") // Replace spaces with underscores
+    .replace(/_{2,}/g, "_") // Replace multiple underscores with single
+}
+
 export default function AdminCertificateTypePage() {
-  const [types, setTypes] = useState<CertificateType[]>(initialTypes)
+  const { toast } = useToast()
+  const [types, setTypes] = useState<CertificateType[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editingType, setEditingType] = useState<CertificateType | null>(null)
-  const [deletingTypeId, setDeletingTypeId] = useState<string | null>(null)
+  const [deletingTypeId, setDeletingTypeId] = useState<string | number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [perPage] = useState(10)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  
   const [newType, setNewType] = useState({
     name: "",
+    slug: "",
     status: "active" as "active" | "inactive",
   })
   const [editType, setEditType] = useState({
     name: "",
+    slug: "",
     status: "active" as "active" | "inactive",
   })
 
-  const deleteType = (id: string) => {
-    setTypes(prev => prev.filter(t => t.id !== id))
-    setDeletingTypeId(null)
+  // Load certificate types on component mount and when page/search changes
+  useEffect(() => {
+    loadCertificateTypes()
+  }, [currentPage, searchQuery])
+
+  const loadCertificateTypes = async (page: number = currentPage, search: string = searchQuery) => {
+    setIsLoading(true)
+    try {
+      const response = await getAdminCertificateTypes(search, page, perPage)
+      if (response.success) {
+        setTypes(response.data)
+        // Update pagination info
+        if (response.pagination) {
+          setTotalPages(response.pagination.last_page)
+          setTotalItems(response.pagination.total)
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to load certificate types",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const addType = () => {
-    if (newType.name) {
-      const now = new Date().toISOString().split('T')[0]
-      setTypes(prev => [{
-        id: `type-${Date.now()}`,
+  const deleteType = async (id: string | number) => {
+    setIsSubmitting(true)
+    try {
+      const response = await deleteAdminCertificateType(id)
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: response.message || "Certificate type deleted successfully",
+        })
+        // Reload the current page
+        await loadCertificateTypes(currentPage, searchQuery)
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to delete certificate type",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+      setDeletingTypeId(null)
+    }
+  }
+
+  const addType = async () => {
+    if (!newType.name.trim() || !newType.slug.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Ensure status is valid
+    const status = (newType.status === "active" || newType.status === "inactive") 
+      ? newType.status 
+      : "active"
+
+    setIsSubmitting(true)
+    try {
+      const response = await createAdminCertificateType({
         name: newType.name,
-        status: newType.status,
-        createdAt: now,
-        updatedAt: now,
-        usageCount: 0
-      }, ...prev])
-      setNewType({ name: "", status: "active" })
-      setShowAddDialog(false)
+        slug: newType.slug,
+        status: status,
+      })
+
+      if (response.success) {
+        setNewType({ name: "", slug: "", status: "active" })
+        setShowAddDialog(false)
+        setCurrentPage(1) // Reset to first page
+        toast({
+          title: "Success",
+          description: response.message || "Certificate type created successfully",
+        })
+        // Reload page 1 to show the new item
+        await loadCertificateTypes(1, searchQuery)
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to create certificate type",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -121,28 +226,61 @@ export default function AdminCertificateTypePage() {
     setEditingType(type)
     setEditType({
       name: type.name,
+      slug: type.slug,
       status: type.status,
     })
     setShowEditDialog(true)
   }
 
-  const saveEditType = () => {
-    if (editingType && editType.name) {
-      const now = new Date().toISOString().split('T')[0]
-      setTypes(prev => prev.map(t =>
-        t.id === editingType.id
-          ? { ...t, ...editType, updatedAt: now }
-          : t
-      ))
-      setShowEditDialog(false)
-      setEditingType(null)
+  const saveEditType = async () => {
+    if (!editingType || !editType.name.trim() || !editType.slug.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Ensure status is valid
+    const status = (editType.status === "active" || editType.status === "inactive") 
+      ? editType.status 
+      : "active"
+
+    setIsSubmitting(true)
+    try {
+      const response = await updateAdminCertificateType(editingType.id, {
+        name: editType.name,
+        slug: editType.slug,
+        status: status,
+      })
+
+      if (response.success) {
+        setShowEditDialog(false)
+        setEditingType(null)
+        toast({
+          title: "Success",
+          description: response.message || "Certificate type updated successfully",
+        })
+        // Reload the current page
+        await loadCertificateTypes(currentPage, searchQuery)
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to update certificate type",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
-
-  const filteredTypes = types.filter(type => {
-    const matchesSearch = type.name.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesSearch
-  })
 
   return (
     <div className="space-y-6">
@@ -153,7 +291,7 @@ export default function AdminCertificateTypePage() {
             Manage certification types available for manufacturers
           </p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)} className="gap-2">
+        <Button onClick={() => setShowAddDialog(true)} className="gap-2" disabled={isLoading}>
           <Plus className="h-4 w-4" />
           Add Certificate Type
         </Button>
@@ -170,8 +308,12 @@ export default function AdminCertificateTypePage() {
                 <Input
                   placeholder="Search by name..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setCurrentPage(1) // Reset to first page on search
+                  }}
                   className="pl-9"
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -182,22 +324,28 @@ export default function AdminCertificateTypePage() {
       {/* Certificate Types Table */}
       <Card>
         <CardContent className="p-0">
-          {filteredTypes.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b">
-                    <TableHead className="px-4 py-3">Name</TableHead>
-                    <TableHead className="px-4 py-3 text-right">Usage</TableHead>
-                    <TableHead className="px-4 py-3 text-center">Status</TableHead>
-                    <TableHead className="px-4 py-3 text-right">Actions</TableHead>
+          {isLoading ? (
+            <div className="py-12 text-center">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+              <p className="mt-4 text-muted-foreground">Loading certificate types...</p>
+            </div>
+          ) : types.length > 0 ? (
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b">
+                      <TableHead className="px-4 py-3">Name</TableHead>
+                      <TableHead className="px-4 py-3">Slug</TableHead>
+                      <TableHead className="px-4 py-3 text-center">Status</TableHead>
+                      <TableHead className="px-4 py-3 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTypes.map((type) => (
+                  {types.map((type) => (
                     <TableRow key={type.id} className="border-b hover:bg-muted/50 transition-colors">
                       <TableCell className="px-4 py-3 font-medium">{type.name}</TableCell>
-                      <TableCell className="px-4 py-3 text-right font-medium">{type.usageCount}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-muted-foreground font-mono">{type.slug}</TableCell>
                       <TableCell className="px-4 py-3 text-center">
                         <Badge className={statusConfig[type.status].color}>
                           {statusConfig[type.status].label}
@@ -229,7 +377,61 @@ export default function AdminCertificateTypePage() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="border-t px-4 py-4 flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Showing {types.length > 0 ? (currentPage - 1) * perPage + 1 : 0} to {Math.min(currentPage * perPage, totalItems)} of {totalItems} items
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1 || isLoading}
+                  >
+                    Previous
+                  </Button>
+                  
+                  {/* Page numbers */}
+                  <div className="flex gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        // Show first page, last page, current page, and adjacent pages
+                        if (page === 1 || page === totalPages) return true
+                        if (page === currentPage) return true
+                        if (Math.abs(page - currentPage) <= 1) return true
+                        return false
+                      })
+                      .map((page, idx, arr) => (
+                        <div key={page}>
+                          {idx > 0 && arr[idx - 1] !== page - 1 && (
+                            <span className="px-2 py-1 text-muted-foreground">...</span>
+                          )}
+                          <Button
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(page)}
+                            disabled={isLoading}
+                          >
+                            {page}
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages || isLoading}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
           ) : (
             <div className="py-12 text-center">
               <Award className="mx-auto h-12 w-12 text-muted-foreground/50" />
@@ -243,7 +445,12 @@ export default function AdminCertificateTypePage() {
       </Card>
 
       {/* Add Certificate Type Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+      <Dialog open={showAddDialog} onOpenChange={(open) => {
+        setShowAddDialog(open)
+        if (!open) {
+          setNewType({ name: "", slug: "", status: "active" })
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Certificate Type</DialogTitle>
@@ -253,19 +460,37 @@ export default function AdminCertificateTypePage() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Certificate Name</Label>
+              <Label>Certificate Name *</Label>
               <Input
                 placeholder="e.g., ISO 9001:2015"
                 value={newType.name}
-                onChange={(e) => setNewType({ ...newType, name: e.target.value })}
+                onChange={(e) => {
+                  const newName = e.target.value
+                  setNewType({ ...newType, name: newName, slug: generateSlug(newName) })
+                }}
                 className="mt-2"
+                disabled={isSubmitting}
               />
+            </div>
+            <div>
+              <Label>Slug *</Label>
+              <Input
+                placeholder="e.g., iso_9001_2015"
+                value={newType.slug}
+                onChange={(e) => setNewType({ ...newType, slug: e.target.value })}
+                className="mt-2"
+                disabled={isSubmitting}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Auto-generated from the certificate name. You can edit it if needed (lowercase, underscores only)
+              </p>
             </div>
             <div>
               <Label>Status</Label>
               <Select
                 value={newType.status}
                 onValueChange={(value) => setNewType({ ...newType, status: value as "active" | "inactive" })}
+                disabled={isSubmitting}
               >
                 <SelectTrigger className="mt-2">
                   <SelectValue placeholder="Select status" />
@@ -278,14 +503,31 @@ export default function AdminCertificateTypePage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-            <Button onClick={addType}>Add Type</Button>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button onClick={addType} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                "Add Type"
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Edit Certificate Type Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+      <Dialog open={showEditDialog} onOpenChange={(open) => {
+        setShowEditDialog(open)
+        if (!open) {
+          setEditingType(null)
+          setEditType({ name: "", slug: "", status: "active" })
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Certificate Type</DialogTitle>
@@ -295,19 +537,34 @@ export default function AdminCertificateTypePage() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Certificate Name</Label>
+              <Label>Certificate Name *</Label>
               <Input
                 placeholder="e.g., ISO 9001:2015"
                 value={editType.name}
                 onChange={(e) => setEditType({ ...editType, name: e.target.value })}
                 className="mt-2"
+                disabled={isSubmitting}
               />
+            </div>
+            <div>
+              <Label>Slug *</Label>
+              <Input
+                placeholder="e.g., iso_9001_2015"
+                value={editType.slug}
+                onChange={(e) => setEditType({ ...editType, slug: e.target.value })}
+                className="mt-2"
+                disabled={isSubmitting}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                A unique identifier used in the system (lowercase, hyphens or underscores)
+              </p>
             </div>
             <div>
               <Label>Status</Label>
               <Select
                 value={editType.status}
                 onValueChange={(value) => setEditType({ ...editType, status: value as "active" | "inactive" })}
+                disabled={isSubmitting}
               >
                 <SelectTrigger className="mt-2">
                   <SelectValue placeholder="Select status" />
@@ -319,16 +576,26 @@ export default function AdminCertificateTypePage() {
               </Select>
             </div>
             {editingType && (
-              <div className="text-sm text-muted-foreground space-y-1 pt-2">
-                <p>Created: {editingType.createdAt}</p>
-                <p>Last Updated: {editingType.updatedAt}</p>
-                <p>Usage Count: {editingType.usageCount}</p>
+              <div className="text-sm text-muted-foreground space-y-1 pt-2 border-t">
+                <p>Created: {editingType.created_at || "N/A"}</p>
+                <p>Last Updated: {editingType.updated_at || "N/A"}</p>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
-            <Button onClick={saveEditType}>Save Changes</Button>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button onClick={saveEditType} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -339,16 +606,24 @@ export default function AdminCertificateTypePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Certificate Type?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this certificate type. Existing certificates using this type will not be affected.
+              This action cannot be undone. This will permanently delete this certificate type.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingTypeId && deleteType(deletingTypeId)}
+              disabled={isSubmitting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
