@@ -24,9 +24,9 @@ import {
   CheckCircle,
   AlertTriangle,
   Plus,
-  RefreshCw,
-  Edit,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -36,9 +36,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
 import { AddCertificationModal } from "@/components/manufacturers/add-certification-modal"
+import { EditCertificationModal } from "@/components/manufacturers/edit-certification-modal"
 import {
   fetchCertifications,
-  fetchCertificateTypes,
+  deleteCertificate,
   Certificate,
 } from "@/lib/api/manufacturer-certificates"
 
@@ -72,51 +73,63 @@ export default function ManufacturerCertificationsPage() {
   const [certs, setCerts] = useState<Certificate[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editingCert, setEditingCert] = useState<Certificate | null>(null)
   const [deletingCertId, setDeletingCertId] = useState<number | null>(null)
-  const [certTypes, setCertTypes] = useState<Map<number, string>>(new Map())
 
-  // Fetch certifications on mount
-  useEffect(() => {
-    const loadCertifications = async () => {
-      try {
-        setIsLoading(true)
-        const [certs, types] = await Promise.all([
-          fetchCertifications(),
-          fetchCertificateTypes(),
-        ])
-        setCerts(certs)
-        // Create a map of type IDs to names
-        const typeMap = new Map(types.map((t) => [t.id, t.name]))
-        setCertTypes(typeMap)
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description:
-            error instanceof Error
-              ? error.message
-              : "Failed to load certifications",
-        })
-      } finally {
-        setIsLoading(false)
-      }
+  const [currentPage, setCurrentPage] = useState(1)
+  const [lastPage, setLastPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const perPage = 10
+
+  const loadCertifications = async (page: number) => {
+    try {
+      setIsLoading(true)
+      const response = await fetchCertifications(page, perPage)
+      setCerts(response.data)
+      setCurrentPage(response.meta.current_page)
+      setLastPage(response.meta.last_page)
+      setTotal(response.meta.total)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to load certifications",
+      })
+    } finally {
+      setIsLoading(false)
     }
+  }
 
-    loadCertifications()
-  }, [toast])
+  useEffect(() => {
+    void loadCertifications(1)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCertificateAdded = (newCert: Certificate) => {
-    setCerts((prev) => [newCert, ...prev])
+    // Reload page 1 to reflect the new cert in server order
+    void loadCertifications(1)
+  }
+
+  const handleCertificateUpdated = (updated: Certificate) => {
+    setCerts((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
   }
 
   const handleDeleteCert = async (id: number) => {
-    // TODO: Implement delete API call when backend endpoint is available
-    toast({
-      variant: "destructive",
-      title: "Coming Soon",
-      description: "Delete functionality will be available soon",
-    })
-    setDeletingCertId(null)
+    try {
+      await deleteCertificate(id)
+      toast({ title: "Deleted", description: "Certification deleted successfully" })
+      // Stay on current page; if it becomes empty go back one page
+      const targetPage = certs.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage
+      void loadCertifications(targetPage)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete certification",
+      })
+    } finally {
+      setDeletingCertId(null)
+    }
   }
 
   const validCount = certs.filter(
@@ -128,7 +141,6 @@ export default function ManufacturerCertificationsPage() {
   const expiredCount = certs.filter(
     (c) => calculateCertStatus(c.expiry_date) === "expired"
   ).length
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -200,135 +212,76 @@ export default function ManufacturerCertificationsPage() {
           <div className="grid gap-4">
             {certs.map((cert) => {
               const status = calculateCertStatus(cert.expiry_date)
-              const StatusIcon = statusConfig[status].icon
+              const { icon: StatusIcon, label: statusLabel, color: statusColor } = statusConfig[status]
               return (
-                <Card key={cert.id} className="w-full overflow-hidden relative">
+                <Card key={cert.id} className="w-full">
                   <CardContent className="p-4 sm:p-5">
-                    {/* Mobile floating menu */}
-                    <div className="absolute right-4 top-4 sm:hidden">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {cert.certificate_pdf && (
-                            <DropdownMenuItem asChild>
-                              <a
-                                href={cert.certificate_pdf}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="cursor-pointer"
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Document
-                              </a>
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem 
-                            className="text-destructive"
-                            onClick={() => setDeletingCertId(cert.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-
-                    {/* Desktop badge (top-right) */}
-                    <div className="hidden sm:block absolute right-4 top-4">
-                      <Badge className={statusConfig[status].color}>
-                        <StatusIcon className="mr-1 h-3 w-3" />
-                        {statusConfig[status].label}
-                      </Badge>
-                    </div>
-
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-start gap-4 min-w-0">
                         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-muted">
                           <Award className="h-7 w-7 text-muted-foreground" />
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-foreground truncate">
-                              {certTypes.get(cert.certificate_type_id) ||
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-foreground">
+                              {cert.certificateType?.name ||
                                 `Certificate #${cert.certificate_type_id}`}
                             </h3>
+                            <Badge className={`${statusColor} shrink-0`}>
+                              <StatusIcon className="mr-1 h-3 w-3" />
+                              {statusLabel}
+                            </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground truncate">
+                          <p className="mt-0.5 text-sm text-muted-foreground">
                             Issued by {cert.issuing_body} • {cert.certificate_number}
                           </p>
-                          <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1 truncate">
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               Issued: {new Date(cert.issue_date).toLocaleDateString()}
                             </span>
-                            <span className="flex items-center gap-1 truncate">
+                            <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               Expires: {new Date(cert.expiry_date).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex flex-col sm:flex-row items-center gap-2 shrink-0 mt-2 sm:mt-0 w-full sm:w-auto">
-                        {/* Mobile badge (shows above action buttons) */}
-                        <div className="sm:hidden w-full">
-                          <Badge className={statusConfig[status].color}>
-                            <StatusIcon className="mr-1 h-3 w-3" />
-                            {statusConfig[status].label}
-                          </Badge>
-                        </div>
-                        {cert.certificate_pdf && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="gap-1 w-full sm:w-auto justify-center"
-                            asChild
-                          >
-                            <a
-                              href={cert.certificate_pdf}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <Eye className="h-3 w-3" />
+
+                      <div className="flex items-center gap-2 shrink-0 mt-2 sm:mt-0">
+                        {(cert.certificate_pdf_url ?? cert.certificate_pdf) && (
+                          <Button variant="outline" size="sm" className="gap-1.5" asChild>
+                            <a href={cert.certificate_pdf_url ?? cert.certificate_pdf} target="_blank" rel="noopener noreferrer">
+                              <Eye className="h-3.5 w-3.5" />
                               View Document
                             </a>
                           </Button>
                         )}
-                        {/* Inline menu for sm+ */}
-                        <div className="hidden sm:block">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {cert.certificate_pdf && (
-                                <DropdownMenuItem asChild>
-                                  <a
-                                    href={cert.certificate_pdf}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="cursor-pointer"
-                                  >
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    View Document
-                                  </a>
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem 
-                                className="text-destructive"
-                                onClick={() => setDeletingCertId(cert.id)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => setEditingCert(cert)}
+                        >
+                          <Upload className="h-3.5 w-3.5" />
+                          Update
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => setDeletingCertId(cert.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   </CardContent>
@@ -348,6 +301,38 @@ export default function ManufacturerCertificationsPage() {
               </Card>
             )}
           </div>
+
+          {/* Pagination */}
+          {lastPage > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * perPage + 1}–{Math.min(currentPage * perPage, total)} of {total}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void loadCertifications(currentPage - 1)}
+                  disabled={currentPage <= 1 || isLoading}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {currentPage} of {lastPage}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void loadCertifications(currentPage + 1)}
+                  disabled={currentPage >= lastPage || isLoading}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -356,6 +341,14 @@ export default function ManufacturerCertificationsPage() {
         open={showAddModal}
         onOpenChange={setShowAddModal}
         onSuccess={handleCertificateAdded}
+      />
+
+      {/* Edit Certification Modal */}
+      <EditCertificationModal
+        open={editingCert !== null}
+        onOpenChange={(open) => !open && setEditingCert(null)}
+        certificate={editingCert}
+        onSuccess={handleCertificateUpdated}
       />
 
       {/* Delete Confirmation Dialog */}

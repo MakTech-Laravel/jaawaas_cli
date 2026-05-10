@@ -11,8 +11,8 @@ export interface AdminCertification {
   expiry_date: string
   certificate_pdf: string | null
   notes: string
-  status: "active" | "inactive"
-  manufacturer_id?: number | string
+  status: "pending" | "valid"
+  user_id?: number | string
   manufacturer_name: string
   manufacturer_email: string
   created_at?: string
@@ -80,9 +80,9 @@ function toNullableString(value: unknown): string | null {
   return null
 }
 
-function toStatus(value: unknown): "active" | "inactive" {
-  const status = toString(value, "active").toLowerCase()
-  return status === "inactive" ? "inactive" : "active"
+function toStatus(value: unknown): "pending" | "valid" {
+  const status = toString(value, "pending").toLowerCase()
+  return status === "valid" ? "valid" : "pending"
 }
 
 function getNestedString(record: RecordLike, path: string[]): string {
@@ -96,32 +96,27 @@ function getNestedString(record: RecordLike, path: string[]): string {
 
 function normalizeCertification(payload: unknown): AdminCertification {
   const record = toRecord(payload)
-  const manufacturer = toRecord(record.manufacturer)
-  const certificateType = toRecord(record.certificate_type)
+  const certificateType = toRecord(record.certificateType ?? record.certificate_type)
+  const user = toRecord(record.user)
 
-  const manufacturerName =
+  const manufacturerName = `${toString(user.first_name).trim()} ${toString(user.last_name).trim()}`.trim() ||
     toString(record.manufacturer_name) ||
     toString(record.company_name) ||
-    toString(manufacturer.company_name) ||
-    toString(manufacturer.name) ||
-    getNestedString(record, ["user", "name"])
+    "Unknown Manufacturer"
 
   const manufacturerEmail =
+    toString(user.email) ||
     toString(record.manufacturer_email) ||
     toString(record.email) ||
-    toString(manufacturer.email) ||
-    getNestedString(record, ["user", "email"])
+    ""
 
   const certificatePdf =
-    toNullableString(record.certificate_pdf) ||
     toNullableString(record.certificate_pdf_url) ||
+    toNullableString(record.certificate_pdf) ||
     toNullableString(record.document_url) ||
     toNullableString(record.file_url)
 
-  const certificateTypeName =
-    toString(record.certificate_type_name) ||
-    toString(record.certificate_name) ||
-    toString(certificateType.name)
+  const certificateTypeName = toString(certificateType.name) || toString(record.certificate_type_name) || "Unknown Type"
 
   return {
     id: typeof record.id === "number" ? record.id : toString(record.id),
@@ -137,10 +132,10 @@ function normalizeCertification(payload: unknown): AdminCertification {
     certificate_pdf: certificatePdf,
     notes: toString(record.notes),
     status: toStatus(record.status),
-    manufacturer_id:
-      typeof record.manufacturer_id === "number"
-        ? record.manufacturer_id
-        : toString(record.manufacturer_id) || undefined,
+    user_id:
+      typeof record.user_id === "number"
+        ? record.user_id
+        : toString(record.user_id) || undefined,
     manufacturer_name: manufacturerName,
     manufacturer_email: manufacturerEmail,
     created_at: toString(record.created_at),
@@ -194,48 +189,6 @@ function normalizeMutationResponse(
   }
 }
 
-async function tryGetFromEndpoints(
-  endpoints: string[],
-  params: URLSearchParams
-): Promise<AdminCertificationsResponse> {
-  let lastError: unknown = null
-
-  for (const endpoint of endpoints) {
-    try {
-      const response = await apiClient.get(endpoint, { params })
-      return normalizeListResponse(response.data)
-    } catch (error: unknown) {
-      lastError = error
-    }
-  }
-
-  return {
-    success: false,
-    message: getApiErrorMessage(lastError, "Failed to fetch certifications."),
-    data: [],
-  }
-}
-
-async function tryDeleteFromEndpoints(
-  endpoints: string[]
-): Promise<AdminCertificationMutationResponse> {
-  let lastError: unknown = null
-
-  for (const endpoint of endpoints) {
-    try {
-      const response = await apiClient.delete(endpoint)
-      return normalizeMutationResponse(response.data, "Certification deleted successfully.")
-    } catch (error: unknown) {
-      lastError = error
-    }
-  }
-
-  return {
-    success: false,
-    message: getApiErrorMessage(lastError, "Failed to delete certification."),
-  }
-}
-
 export async function getAdminCertifications(
   search?: string,
   page = 1,
@@ -248,19 +201,28 @@ export async function getAdminCertifications(
   params.append("page", String(page))
   params.append("per_page", String(perPage))
 
-  return tryGetFromEndpoints([
-    "/admin/certifications",
-    "/admin/certificates",
-    "/admin/manufacturer/certifications",
-  ], params)
+  try {
+    const response = await apiClient.get("/admin/certifications", { params })
+    return normalizeListResponse(response.data)
+  } catch (error: unknown) {
+    return {
+      success: false,
+      message: getApiErrorMessage(error, "Failed to fetch certifications."),
+      data: [],
+    }
+  }
 }
 
 export async function deleteAdminCertification(
   certificationId: string | number
 ): Promise<AdminCertificationMutationResponse> {
-  return tryDeleteFromEndpoints([
-    `/admin/certifications/${certificationId}`,
-    `/admin/certificates/${certificationId}`,
-    `/admin/manufacturer/certifications/${certificationId}`,
-  ])
+  try {
+    const response = await apiClient.delete(`/manufacturer/certificate/${certificationId}`)
+    return normalizeMutationResponse(response.data, "Certification deleted successfully.")
+  } catch (error: unknown) {
+    return {
+      success: false,
+      message: getApiErrorMessage(error, "Failed to delete certification."),
+    }
+  }
 }

@@ -543,7 +543,7 @@ export default function AdminCertificateTypePage() {
                       </div>
                       <div>
                         <p className="text-2xl font-bold text-foreground">{validCount}</p>
-                        <p className="text-sm text-muted-foreground">Valid (Current Page)</p>
+                        <p className="text-sm text-muted-foreground">Valid</p>
                       </div>
                     </div>
                   </CardContent>
@@ -569,7 +569,7 @@ export default function AdminCertificateTypePage() {
                       </div>
                       <div>
                         <p className="text-2xl font-bold text-foreground">{expiredCount}</p>
-                        <p className="text-sm text-muted-foreground">Expired (Current Page)</p>
+                        <p className="text-sm text-muted-foreground">Expired</p>
                       </div>
                     </div>
                   </CardContent>
