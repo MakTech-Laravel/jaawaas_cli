@@ -38,6 +38,12 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import {
   Award,
   Building2,
   Calendar,
@@ -108,6 +114,20 @@ const certificateStatusConfig: Record<
   },
 }
 
+interface GroupedCertificationStats {
+  valid: number
+  expiring: number
+  expired: number
+  lastUpdated: string
+}
+
+interface GroupedCertification {
+  manufacturerEmail: string
+  manufacturerName: string
+  certifications: AdminCertification[]
+  stats: GroupedCertificationStats
+}
+
 function generateSlug(name: string): string {
   return name
     .toLowerCase()
@@ -155,12 +175,55 @@ function formatDisplayDate(rawDate: string): string {
   return date.toLocaleDateString()
 }
 
+function groupCertificationsByManufacturer(
+  certifications: AdminCertification[]
+): GroupedCertification[] {
+  const groupMap = new Map<string, GroupedCertification>()
+
+  for (const cert of certifications) {
+    const email = cert.manufacturer_email || "unknown"
+    const name = cert.manufacturer_name || "Unknown Manufacturer"
+
+    if (!groupMap.has(email)) {
+      groupMap.set(email, {
+        manufacturerEmail: email,
+        manufacturerName: name,
+        certifications: [],
+        stats: {
+          valid: 0,
+          expiring: 0,
+          expired: 0,
+          lastUpdated: "",
+        },
+      })
+    }
+
+    const group = groupMap.get(email)!
+    group.certifications.push(cert)
+
+    // Update stats
+    const status = calculateCertificationStatus(cert.expiry_date)
+    if (status === "valid") group.stats.valid++
+    else if (status === "expiring") group.stats.expiring++
+    else if (status === "expired") group.stats.expired++
+
+    // Update last updated date
+    if (cert.updated_at) {
+      if (!group.stats.lastUpdated || new Date(cert.updated_at) > new Date(group.stats.lastUpdated)) {
+        group.stats.lastUpdated = cert.updated_at
+      }
+    }
+  }
+
+  return Array.from(groupMap.values())
+}
+
 export default function AdminCertificateTypePage() {
   const { toast } = useToast()
 
   const [activeTab, setActiveTab] = useState("certificates")
 
-  const [certifications, setCertifications] = useState<AdminCertification[]>([])
+  const [groupedCertifications, setGroupedCertifications] = useState<GroupedCertification[]>([])
   const [certificationsLoading, setCertificationsLoading] = useState(true)
   const [certificationsSearch, setCertificationsSearch] = useState("")
   const [certificationsPage, setCertificationsPage] = useState(1)
@@ -198,7 +261,7 @@ export default function AdminCertificateTypePage() {
 
   useEffect(() => {
     void loadAdminCertificates()
-  }, [certificationsPage, certificationsSearch])
+  }, [certificationsPage])
 
   useEffect(() => {
     void loadCertificateTypes()
@@ -210,9 +273,12 @@ export default function AdminCertificateTypePage() {
   ) => {
     setCertificationsLoading(true)
     try {
-      const response = await getAdminCertifications(search, page, certificationsPerPage)
+      // Don't pass search to API - let backend return all results for this page
+      // Client-side filtering will handle manufacturer search
+      const response = await getAdminCertifications("", page, certificationsPerPage)
       if (response.success) {
-        setCertifications(response.data)
+        const grouped = groupCertificationsByManufacturer(response.data)
+        setGroupedCertifications(grouped)
         if (response.pagination) {
           setCertificationsTotalPages(response.pagination.last_page)
           setCertificationsTotalItems(response.pagination.total)
@@ -221,7 +287,7 @@ export default function AdminCertificateTypePage() {
           setCertificationsTotalItems(response.data.length)
         }
       } else {
-        setCertifications([])
+        setGroupedCertifications([])
         toast({
           title: "Error",
           description: response.message || "Failed to load certifications",
@@ -229,7 +295,7 @@ export default function AdminCertificateTypePage() {
         })
       }
     } catch (_error) {
-      setCertifications([])
+      setGroupedCertifications([])
       toast({
         title: "Error",
         description: "An unexpected error occurred while loading certifications",
@@ -288,8 +354,12 @@ export default function AdminCertificateTypePage() {
           description: response.message || "Certification deleted successfully",
         })
 
-        const shouldGoToPreviousPage =
-          certifications.length === 1 && certificationsPage > 1
+        // Check if we need to go to previous page
+        const totalCertsInGroups = groupedCertifications.reduce(
+          (acc, group) => acc + group.certifications.length,
+          0
+        )
+        const shouldGoToPreviousPage = totalCertsInGroups === 1 && certificationsPage > 1
 
         if (shouldGoToPreviousPage) {
           setCertificationsPage((prev) => Math.max(1, prev - 1))
@@ -455,27 +525,48 @@ export default function AdminCertificateTypePage() {
 
   const validCount = useMemo(
     () =>
-      certifications.filter(
-        (cert) => calculateCertificationStatus(cert.expiry_date) === "valid"
-      ).length,
-    [certifications]
+      groupedCertifications.reduce((acc, group) => acc + group.stats.valid, 0),
+    [groupedCertifications]
   )
 
   const expiringCount = useMemo(
     () =>
-      certifications.filter(
-        (cert) => calculateCertificationStatus(cert.expiry_date) === "expiring"
-      ).length,
-    [certifications]
+      groupedCertifications.reduce((acc, group) => acc + group.stats.expiring, 0),
+    [groupedCertifications]
   )
 
   const expiredCount = useMemo(
     () =>
-      certifications.filter(
-        (cert) => calculateCertificationStatus(cert.expiry_date) === "expired"
-      ).length,
-    [certifications]
+      groupedCertifications.reduce((acc, group) => acc + group.stats.expired, 0),
+    [groupedCertifications]
   )
+
+  const filteredGroupedCertifications = useMemo(() => {
+    if (!certificationsSearch.trim()) {
+      return groupedCertifications
+    }
+
+    const searchTerm = certificationsSearch.toLowerCase()
+
+    return groupedCertifications
+      .map((group) => ({
+        ...group,
+        certifications: group.certifications.filter((cert) =>
+          [
+            cert.manufacturer_name,
+            cert.manufacturer_email,
+            cert.certificate_type_name,
+            cert.issuing_body,
+            cert.certificate_number,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(searchTerm)
+        ),
+      }))
+      .filter((group) => group.certifications.length > 0)
+  }, [groupedCertifications, certificationsSearch])
 
   return (
     <div className="space-y-6">
@@ -576,157 +667,120 @@ export default function AdminCertificateTypePage() {
                 </Card>
               </div>
 
-              <div className="grid gap-4">
-                {certifications.map((certification) => {
-                  const status = calculateCertificationStatus(certification.expiry_date)
-                  const statusUi = certificateStatusConfig[status]
-                  const StatusIcon = statusUi.icon
-
-                  return (
-                    <Card key={certification.id} className="w-full overflow-hidden relative">
-                      <CardContent className="p-4 sm:p-5">
-                        <div className="absolute right-4 top-4 sm:hidden">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {certification.certificate_pdf && (
-                                <DropdownMenuItem asChild>
-                                  <a
-                                    href={certification.certificate_pdf}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="cursor-pointer"
-                                  >
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    View Document
-                                  </a>
-                                </DropdownMenuItem>
+              <div className="space-y-4">
+                {filteredGroupedCertifications.length > 0 ? (
+                  <Accordion type="single" collapsible className="w-full">
+                    {filteredGroupedCertifications.map((group, index) => (
+                      <AccordionItem key={group.manufacturerEmail} value={`group-${index}`}>
+                        <AccordionTrigger className="hover:no-underline">
+                          <div className="flex w-full flex-col gap-3 text-left">
+                            <div className="flex flex-col gap-1">
+                              <h3 className="font-semibold text-foreground">{group.manufacturerName}</h3>
+                              <p className="text-sm text-muted-foreground">{group.manufacturerEmail}</p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {group.stats.valid > 0 && (
+                                <Badge className="bg-emerald-100 text-emerald-700">
+                                  <CheckCircle className="mr-1 h-3 w-3" />
+                                  {group.stats.valid} Valid
+                                </Badge>
                               )}
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => setDeletingCertificationId(certification.id)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-
-                        <div className="hidden sm:block absolute right-4 top-4">
-                          <Badge className={statusUi.color}>
-                            <StatusIcon className="mr-1 h-3 w-3" />
-                            {statusUi.label}
-                          </Badge>
-                        </div>
-
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="flex items-start gap-4 min-w-0">
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-muted">
-                              <FileText className="h-7 w-7 text-muted-foreground" />
-                            </div>
-                            <div className="min-w-0 space-y-2">
-                              <h3 className="font-semibold text-foreground truncate">
-                                {certification.certificate_type_name ||
-                                  `Certificate #${certification.certificate_type_id}`}
-                              </h3>
-                              <p className="text-sm text-muted-foreground truncate">
-                                Issued by {certification.issuing_body || "N/A"} •{" "}
-                                {certification.certificate_number || "N/A"}
-                              </p>
-                              <p className="flex items-center gap-1 text-sm text-muted-foreground truncate">
-                                <Building2 className="h-3 w-3" />
-                                {certification.manufacturer_name || "Unknown Manufacturer"}
-                                {certification.manufacturer_email
-                                  ? ` (${certification.manufacturer_email})`
-                                  : ""}
-                              </p>
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1 truncate">
-                                  <Calendar className="h-3 w-3" />
-                                  Issued: {formatDisplayDate(certification.issue_date)}
+                              {group.stats.expiring > 0 && (
+                                <Badge className="bg-amber-100 text-amber-700">
+                                  <AlertTriangle className="mr-1 h-3 w-3" />
+                                  {group.stats.expiring} Expiring
+                                </Badge>
+                              )}
+                              {group.stats.expired > 0 && (
+                                <Badge className="bg-red-100 text-red-700">
+                                  <AlertTriangle className="mr-1 h-3 w-3" />
+                                  {group.stats.expired} Expired
+                                </Badge>
+                              )}
+                              {group.stats.lastUpdated && (
+                                <span className="text-xs text-muted-foreground">
+                                  Last updated: {formatDisplayDate(group.stats.lastUpdated)}
                                 </span>
-                                <span className="flex items-center gap-1 truncate">
-                                  <Calendar className="h-3 w-3" />
-                                  Expires: {formatDisplayDate(certification.expiry_date)}
-                                </span>
-                              </div>
+                              )}
                             </div>
                           </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-4">
+                          <div className="space-y-3">
+                            {group.certifications.map((certification) => {
+                              const status = calculateCertificationStatus(certification.expiry_date)
+                              const statusUi = certificateStatusConfig[status]
+                              const StatusIcon = statusUi.icon
 
-                          <div className="flex flex-col sm:flex-row items-center gap-2 shrink-0 mt-2 sm:mt-0 w-full sm:w-auto">
-                            <div className="sm:hidden w-full">
-                              <Badge className={statusUi.color}>
-                                <StatusIcon className="mr-1 h-3 w-3" />
-                                {statusUi.label}
-                              </Badge>
-                            </div>
+                              return (
+                                <Card key={certification.id} className="w-full overflow-hidden">
+                                  <CardContent className="p-4">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                      <div className="flex items-start gap-3 min-w-0">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                                          <FileText className="h-5 w-5 text-muted-foreground" />
+                                        </div>
+                                        <div className="min-w-0 space-y-1">
+                                          <h4 className="font-semibold text-foreground truncate text-sm">
+                                            {certification.certificate_type_name ||
+                                              `Certificate #${certification.certificate_type_id}`}
+                                          </h4>
+                                          <p className="text-xs text-muted-foreground truncate">
+                                            Issued by {certification.issuing_body || "N/A"} • {certification.certificate_number || "N/A"}
+                                          </p>
+                                          <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                                            <span>Issued: {formatDisplayDate(certification.issue_date)}</span>
+                                            <span>Expires: {formatDisplayDate(certification.expiry_date)}</span>
+                                          </div>
+                                        </div>
+                                      </div>
 
-                            {certification.certificate_pdf ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1 w-full sm:w-auto justify-center"
-                                asChild
-                              >
-                                <a
-                                  href={certification.certificate_pdf}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <Eye className="h-3 w-3" />
-                                  View Document
-                                </a>
-                              </Button>
-                            ) : (
-                              <Badge variant="outline" className="w-full sm:w-auto justify-center">
-                                No Document File
-                              </Badge>
-                            )}
-
-                            <div className="hidden sm:block">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {certification.certificate_pdf && (
-                                    <DropdownMenuItem asChild>
-                                      <a
-                                        href={certification.certificate_pdf}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="cursor-pointer"
-                                      >
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        View Document
-                                      </a>
-                                    </DropdownMenuItem>
-                                  )}
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={() => setDeletingCertificationId(certification.id)}
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <Badge className={statusUi.color}>
+                                          <StatusIcon className="mr-1 h-3 w-3" />
+                                          {statusUi.label}
+                                        </Badge>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                              <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                            {certification.certificate_pdf && (
+                                              <DropdownMenuItem asChild>
+                                                <a
+                                                  href={certification.certificate_pdf}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="cursor-pointer"
+                                                >
+                                                  <Eye className="mr-2 h-4 w-4" />
+                                                  View Document
+                                                </a>
+                                              </DropdownMenuItem>
+                                            )}
+                                            <DropdownMenuItem
+                                              className="text-destructive"
+                                              onClick={() => setDeletingCertificationId(certification.id)}
+                                            >
+                                              <Trash2 className="mr-2 h-4 w-4" />
+                                              Delete
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              )
+                            })}
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-
-                {certifications.length === 0 && (
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                ) : (
                   <Card>
                     <CardContent className="py-12 text-center">
                       <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
