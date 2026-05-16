@@ -1,6 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { apiClient } from "@/lib/api/client"
+import { getApiErrorMessage } from "@/lib/api/errors"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -40,9 +43,9 @@ import {
   Calendar,
   FileText,
   Tag,
+  Image,
   Save,
   ExternalLink,
-  Clock,
   User
 } from "lucide-react"
 
@@ -58,12 +61,14 @@ interface InsightArticle {
   publishedAt: string | null
   status: "draft" | "published" | "archived"
   featured: boolean
+  featuredImage?: string | null
+  featuredImageName?: string | null
   views: number
   createdAt: string
   updatedAt: string
 }
 
-const categories = [
+const initialCategories = [
   "Industry News",
   "Sourcing Tips",
   "Market Analysis",
@@ -142,14 +147,64 @@ const initialArticles: InsightArticle[] = [
 ]
 
 export default function AdminInsightsPage() {
-  const [articles, setArticles] = useState<InsightArticle[]>(initialArticles)
+  const [articles, setArticles] = useState<InsightArticle[]>([]) // Start empty, fetch from server on mount
+  const [articlesLoading, setArticlesLoading] = useState(false)
+  const [articlesError, setArticlesError] = useState<string | null>(null)
+  const [categories, setCategories] = useState<string[]>([]) // Start empty, fetch from server on mount
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
+  const [showCategoriesDialog, setShowCategoriesDialog] = useState(false)
+  const [categoryForm, setCategoryForm] = useState({ name: "", index: -1 })
+  const [rawCategories, setRawCategories] = useState<Array<Record<string, any>>>([])
+  const [categoriesLoading, setCategoriesLoading] = useState(false)
+  const [categoriesError, setCategoriesError] = useState<string | null>(null)
+  const [featuredImageError, setFeaturedImageError] = useState<string | null>(null)
+  const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5MB
+  const [featuredFile, setFeaturedFile] = React.useState<File | null>(null)
+  const [isSubmittingArticle, setIsSubmittingArticle] = React.useState(false)
+  const { toast } = useToast()
+
+  function formatBytes(bytes: number) {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  function handleFeaturedFile(file: File) {
+    if (!file.type.startsWith('image/')) {
+      setFeaturedImageError('Please upload a valid image file.')
+      return
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setFeaturedImageError(`Image is too large. Max ${formatBytes(MAX_IMAGE_BYTES)}.`)
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      setEditForm(prev => ({ ...prev, featuredImage: String(reader.result), featuredImageName: file.name }))
+      setFeaturedFile(file)
+      setFeaturedImageError(null)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function removeFeaturedImage() {
+    setEditForm(prev => ({ ...prev, featuredImage: null, featuredImageName: undefined }))
+    setFeaturedImageError(null)
+    setFeaturedFile(null)
+  }
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editingArticle, setEditingArticle] = useState<InsightArticle | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false)
+  const [previewArticle, setPreviewArticle] = useState<InsightArticle | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
   
   const [editForm, setEditForm] = useState({
     title: "",
@@ -160,8 +215,12 @@ export default function AdminInsightsPage() {
     tags: "",
     author: "",
     status: "draft" as "draft" | "published" | "archived",
-    featured: false
+    featured: false,
+    featuredImage: null as string | null,
+    featuredImageName: undefined as string | undefined
   })
+  const [slugEdited, setSlugEdited] = useState(false)
+  const [excerptEdited, setExcerptEdited] = useState(false)
 
   const filteredArticles = articles.filter(article => {
     if (searchQuery && !article.title.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -186,9 +245,13 @@ export default function AdminInsightsPage() {
       category: "",
       tags: "",
       author: "Editorial Team",
-      status: "draft",
-      featured: false
+      status: "published",
+      featured: false,
+      featuredImage: null,
+      featuredImageName: undefined
     })
+    setSlugEdited(false)
+    setExcerptEdited(false)
     setShowEditDialog(true)
   }
 
@@ -203,8 +266,13 @@ export default function AdminInsightsPage() {
       tags: article.tags.join(", "),
       author: article.author,
       status: article.status,
-      featured: article.featured
+      featured: article.featured,
+      featuredImage: (article as any).featuredImage ?? null,
+      featuredImageName: (article as any).featuredImageName ?? undefined
     })
+    // if the slug equals generated slug from title we can allow auto-updates until user edits
+    setSlugEdited(Boolean(article.slug && article.slug !== generateSlug(article.title)))
+    setExcerptEdited(Boolean(article.excerpt && article.excerpt.trim().length > 0))
     setShowEditDialog(true)
   }
 
@@ -212,39 +280,309 @@ export default function AdminInsightsPage() {
     const now = new Date().toISOString().split('T')[0]
     
     if (editingArticle) {
-      // Update existing
-      setArticles(prev => prev.map(a => 
-        a.id === editingArticle.id 
-          ? {
-              ...a,
-              ...editForm,
-              tags: editForm.tags.split(",").map(t => t.trim()).filter(Boolean),
-              publishedAt: editForm.status === "published" && !a.publishedAt ? now : a.publishedAt,
-              updatedAt: now
-            }
-          : a
-      ))
+      // Update existing (PUT to backend)
+      ;(async () => {
+        setIsSubmittingArticle(true)
+        const form = new FormData()
+        form.append('title', editForm.title)
+        form.append('slug', editForm.slug)
+        form.append('excerpt', editForm.excerpt)
+        form.append('content', editForm.content)
+        form.append('author', editForm.author)
+        form.append('is_featured', editForm.featured ? '1' : '0')
+        form.append('status', editForm.status)
+
+        // find category id if available
+        const cat = rawCategories.find(c => String(c.name) === String(editForm.category))
+        if (cat && cat.id) {
+          form.append('article_category_id', String(cat.id))
+        }
+
+        if (featuredFile) {
+          form.append('article_image', featuredFile)
+        }
+
+        const tags = editForm.tags.split(',').map(t => t.trim()).filter(Boolean)
+        tags.forEach((t) => form.append('tags[]', t))
+
+        try {
+          const res = await apiClient.put(`/admin/articles/${editingArticle.id}`, form)
+          const updated = res.data?.data ?? null
+          toast({ title: 'Article updated', description: res.data?.message || 'Article saved successfully.' })
+
+          // Update in-memory list with returned data
+          setArticles(prev => prev.map(a => 
+            a.id === editingArticle.id 
+              ? {
+                  id: String(updated?.id ?? editingArticle.id),
+                  title: updated?.title ?? editForm.title,
+                  slug: updated?.slug ?? editForm.slug,
+                  excerpt: updated?.excerpt ?? editForm.excerpt,
+                  content: updated?.content ?? editForm.content,
+                  category: editForm.category,
+                  tags: tags,
+                  author: updated?.author ?? editForm.author,
+                  publishedAt: updated?.published_at ?? (editForm.status === 'published' ? now : null),
+                  status: editForm.status,
+                  featured: editForm.featured,
+                  featuredImage: updated?.image_url ?? editForm.featuredImage ?? null,
+                  featuredImageName: updated?.image_url ? updated.image_url.split('/').pop() : editForm.featuredImageName ?? null,
+                  views: updated?.views ?? a.views,
+                  createdAt: a.createdAt,
+                  updatedAt: updated?.updated_at ?? now,
+                }
+              : a
+          ))
+          setShowEditDialog(false)
+          setFeaturedFile(null)
+          setFeaturedImageError(null)
+        } catch (err: unknown) {
+          toast({ title: 'Failed to save', description: getApiErrorMessage(err, 'Failed to save article.') })
+        } finally {
+          setIsSubmittingArticle(false)
+        }
+      })()
     } else {
-      // Create new
-      const newArticle: InsightArticle = {
-        id: `article-${Date.now()}`,
-        title: editForm.title,
-        slug: editForm.slug || editForm.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-        excerpt: editForm.excerpt,
-        content: editForm.content,
-        category: editForm.category,
-        tags: editForm.tags.split(",").map(t => t.trim()).filter(Boolean),
-        author: editForm.author,
-        publishedAt: editForm.status === "published" ? now : null,
-        status: editForm.status,
-        featured: editForm.featured,
-        views: 0,
-        createdAt: now,
-        updatedAt: now
-      }
-      setArticles(prev => [newArticle, ...prev])
+      // Create new (POST to backend)
+      ;(async () => {
+        setIsSubmittingArticle(true)
+        const form = new FormData()
+        form.append('title', editForm.title)
+        form.append('slug', editForm.slug)
+        form.append('excerpt', editForm.excerpt)
+        form.append('content', editForm.content)
+        form.append('author', editForm.author)
+        form.append('is_featured', editForm.featured ? '1' : '0')
+        form.append('status', editForm.status)
+
+        // find category id if available
+        const cat = rawCategories.find(c => String(c.name) === String(editForm.category))
+        if (cat && cat.id) {
+          form.append('article_category_id', String(cat.id))
+        }
+
+        if (featuredFile) {
+          form.append('article_image', featuredFile)
+        }
+
+        const tags = editForm.tags.split(',').map(t => t.trim()).filter(Boolean)
+        tags.forEach((t) => form.append('tags[]', t))
+
+        try {
+          const res = await apiClient.post('/admin/articles/create', form)
+          const created = res.data?.data ?? null
+          toast({ title: 'Article created', description: res.data?.message || 'Article created successfully.' })
+
+          // Add to in-memory list using returned data when available
+          const newArticle: InsightArticle = {
+            id: created?.id ? String(created.id) : `article-${Date.now()}`,
+            title: created?.title ?? editForm.title,
+            slug: created?.slug ?? editForm.slug,
+            excerpt: created?.excerpt ?? editForm.excerpt,
+            content: created?.content ?? editForm.content,
+            category: editForm.category,
+            tags: tags,
+            author: created?.author ?? editForm.author,
+            publishedAt: editForm.status === 'published' ? now : null,
+            status: editForm.status,
+            featured: editForm.featured,
+            featuredImage: created?.article_image ?? editForm.featuredImage ?? null,
+            featuredImageName: created?.article_image_name ?? editForm.featuredImageName ?? null,
+            views: 0,
+            createdAt: created?.created_at ?? now,
+            updatedAt: created?.updated_at ?? now,
+          }
+          setArticles(prev => [newArticle, ...prev])
+          setShowEditDialog(false)
+        } catch (err: unknown) {
+          toast({ title: 'Failed to create', description: getApiErrorMessage(err, 'Failed to create article.' ) })
+        } finally {
+          setIsSubmittingArticle(false)
+        }
+      })()
     }
-    setShowEditDialog(false)
+  }
+
+  async function fetchCategories() {
+    setCategoriesLoading(true)
+    setCategoriesError(null)
+    try {
+      const res = await apiClient.get("/admin/article/categories")
+      const payload = res.data
+      const list = Array.isArray(payload?.data) ? payload.data : []
+      setRawCategories(list)
+      setCategories(list.map((c: any) => String(c.name)))
+    } catch (err: unknown) {
+      setCategoriesError(getApiErrorMessage(err, "Failed to load categories."))
+    } finally {
+      setCategoriesLoading(false)
+    }
+  }
+
+  async function fetchArticles() {
+    setArticlesLoading(true)
+    setArticlesError(null)
+    try {
+      const res = await apiClient.get("/admin/articles")
+      const payload = res.data
+      const list = Array.isArray(payload?.data) ? payload.data : []
+      
+      const normalized = list.map((article: any) => ({
+        id: String(article.id),
+        title: String(article.title || ''),
+        slug: String(article.slug || ''),
+        excerpt: String(article.excerpt || ''),
+        content: String(article.content || ''),
+        category: article.category?.name ? String(article.category.name) : '',
+        tags: Array.isArray(article.tags) ? article.tags.map((t: any) => String(t)) : [],
+        author: String(article.author || ''),
+        publishedAt: article.published_at ? String(article.published_at) : null,
+        status: ['draft', 'published', 'archived'].includes(article.status) ? article.status : 'draft',
+        featured: Boolean(article.is_featured),
+        views: Number(article.views) || 0,
+        createdAt: String(article.created_at || ''),
+        updatedAt: String(article.updated_at || ''),
+        featuredImage: article.image_url ? String(article.image_url) : null,
+        featuredImageName: article.image_url ? article.image_url.split('/').pop() : null,
+      }))
+      
+      setArticles(normalized)
+    } catch (err: unknown) {
+      setArticlesError(getApiErrorMessage(err, "Failed to load articles."))
+    } finally {
+      setArticlesLoading(false)
+    }
+  }
+
+  async function fetchAndPreviewArticle(articleId: string) {
+    setPreviewLoading(true)
+    try {
+      const res = await apiClient.get(`/admin/articles/${articleId}`)
+      const article = res.data?.data
+      
+      const normalized: InsightArticle = {
+        id: String(article.id),
+        title: String(article.title || ''),
+        slug: String(article.slug || ''),
+        excerpt: String(article.excerpt || ''),
+        content: String(article.content || ''),
+        category: article.category?.name ? String(article.category.name) : '',
+        tags: Array.isArray(article.tags) ? article.tags.map((t: any) => String(t)) : [],
+        author: String(article.author || ''),
+        publishedAt: article.published_at ? String(article.published_at) : null,
+        status: ['draft', 'published', 'archived'].includes(article.status) ? article.status : 'draft',
+        featured: Boolean(article.is_featured),
+        views: Number(article.views) || 0,
+        createdAt: String(article.created_at || ''),
+        updatedAt: String(article.updated_at || ''),
+        featuredImage: article.image_url ? String(article.image_url) : null,
+        featuredImageName: article.image_url ? article.image_url.split('/').pop() : null,
+      }
+      
+      setPreviewArticle(normalized)
+      setShowPreviewDialog(true)
+    } catch (err: unknown) {
+      toast({ variant: "destructive", title: "Error", description: getApiErrorMessage(err, "Failed to load article preview.") })
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  async function addCategory(name: string) {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    try {
+      const slug = trimmed.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 100)
+      await apiClient.post("/admin/article/categories", { name: trimmed, slug })
+      await fetchCategories()
+    } catch (err: unknown) {
+      setCategoriesError(getApiErrorMessage(err, "Failed to add category."))
+    }
+  }
+
+  async function updateCategory(index: number, name: string) {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    const entry = rawCategories[index]
+    if (!entry || !entry.id) {
+      setCategoriesError("Category not found for update.")
+      return
+    }
+    try {
+      const slug = trimmed.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 100)
+      await apiClient.put(`/admin/article/categories/${entry.id}`, { name: trimmed, slug })
+      await fetchCategories()
+    } catch (err: unknown) {
+      setCategoriesError(getApiErrorMessage(err, "Failed to update category."))
+    }
+  }
+
+  async function removeCategory(index: number) {
+    const entry = rawCategories[index]
+    if (!entry || !entry.id) {
+      setCategoriesError("Category not found for delete.")
+      return
+    }
+    try {
+      await apiClient.delete(`/admin/article/categories/${entry.id}`)
+      await fetchCategories()
+    } catch (err: unknown) {
+      setCategoriesError(getApiErrorMessage(err, "Failed to delete category."))
+    }
+  }
+
+  React.useEffect(() => {
+    if (showCategoriesDialog) {
+      fetchCategories()
+    }
+  }, [showCategoriesDialog])
+
+  // Fetch categories and articles on mount so they populate from server
+  React.useEffect(() => {
+    fetchCategories()
+    fetchArticles()
+  }, [])
+
+  // --- Auto-generate helpers for slug and excerpt ---
+  function generateSlug(input: string) {
+    return input
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .slice(0, 100)
+  }
+
+  function generateExcerptFromContent(content: string) {
+    const text = String(content || '').replace(/!\[[^\]]*\]\([^\)]+\)/g, '') // remove images
+      .replace(/\[[^\]]+\]\([^\)]+\)/g, '') // remove links
+      .replace(/[#>*`~\-]{1,}/g, '') // remove some markdown chars
+      .replace(/\s+/g, ' ').trim()
+    if (!text) return ''
+    return text.length <= 200 ? text : text.slice(0, 197).trim() + '...'
+  }
+
+  // keep slug in sync with title while user hasn't manually edited slug
+  React.useEffect(() => {
+    if (!slugEdited) {
+      setEditForm(prev => ({ ...prev, slug: generateSlug(prev.title) }))
+    }
+  }, [editForm.title, slugEdited])
+
+  // keep excerpt in sync with content while user hasn't manually edited excerpt
+  React.useEffect(() => {
+    if (!excerptEdited) {
+      setEditForm(prev => ({ ...prev, excerpt: generateExcerptFromContent(prev.content) }))
+    }
+  }, [editForm.content, excerptEdited])
+
+  function openCategoriesDialog() {
+    // Clear previous values so UI shows loading state instead of stale list
+    setCategories([])
+    setRawCategories([])
+    setCategoryForm({ name: "", index: -1 })
+    setCategoriesError(null)
+    setShowCategoriesDialog(true)
   }
 
   const deleteArticle = () => {
@@ -255,25 +593,13 @@ export default function AdminInsightsPage() {
     }
   }
 
-  const toggleFeatured = (id: string) => {
-    setArticles(prev => prev.map(a => 
-      a.id === id ? { ...a, featured: !a.featured } : a
-    ))
-  }
-
   const publishArticle = (id: string) => {
     const now = new Date().toISOString().split('T')[0]
     setArticles(prev => prev.map(a => 
       a.id === id ? { ...a, status: "published", publishedAt: now, updatedAt: now } : a
     ))
   }
-
-  const unpublishArticle = (id: string) => {
-    const now = new Date().toISOString().split('T')[0]
-    setArticles(prev => prev.map(a => 
-      a.id === id ? { ...a, status: "draft", updatedAt: now } : a
-    ))
-  }
+  
 
   const statusColors = {
     draft: "bg-amber-100 text-amber-700",
@@ -312,14 +638,6 @@ export default function AdminInsightsPage() {
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-amber-600">
-              {articles.filter(a => a.status === "draft").length}
-            </div>
-            <p className="text-sm text-muted-foreground">Drafts</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
             <div className="text-2xl font-bold">
               {articles.reduce((acc, a) => acc + a.views, 0).toLocaleString()}
             </div>
@@ -342,18 +660,17 @@ export default function AdminInsightsPage() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-37.5">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="published">Published</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-45">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -363,6 +680,9 @@ export default function AdminInsightsPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Button variant="outline" size="sm" onClick={() => openCategoriesDialog()}>
+              Manage Categories
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -437,27 +757,11 @@ export default function AdminInsightsPage() {
                         <Edit className="mr-2 h-4 w-4" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => fetchAndPreviewArticle(article.id)}>
                         <ExternalLink className="mr-2 h-4 w-4" />
                         Preview
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => toggleFeatured(article.id)}>
-                        <Tag className="mr-2 h-4 w-4" />
-                        {article.featured ? "Remove Featured" : "Set Featured"}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      {article.status === "draft" ? (
-                        <DropdownMenuItem onClick={() => publishArticle(article.id)}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          Publish
-                        </DropdownMenuItem>
-                      ) : article.status === "published" ? (
-                        <DropdownMenuItem onClick={() => unpublishArticle(article.id)}>
-                          <Clock className="mr-2 h-4 w-4" />
-                          Unpublish
-                        </DropdownMenuItem>
-                      ) : null}
-                      <DropdownMenuSeparator />
+                      
                       <DropdownMenuItem 
                         className="text-destructive"
                         onClick={() => {
@@ -516,7 +820,10 @@ export default function AdminInsightsPage() {
                 <Label>URL Slug</Label>
                 <Input 
                   value={editForm.slug}
-                  onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })}
+                  onChange={(e) => {
+                    setSlugEdited(true)
+                    setEditForm({ ...editForm, slug: e.target.value })
+                  }}
                   className="mt-2"
                   placeholder="article-url-slug"
                 />
@@ -543,7 +850,10 @@ export default function AdminInsightsPage() {
               <Label>Excerpt</Label>
               <Textarea 
                 value={editForm.excerpt}
-                onChange={(e) => setEditForm({ ...editForm, excerpt: e.target.value })}
+                  onChange={(e) => {
+                    setExcerptEdited(true)
+                    setEditForm({ ...editForm, excerpt: e.target.value })
+                  }}
                 className="mt-2"
                 rows={2}
                 placeholder="Brief summary of the article"
@@ -559,6 +869,57 @@ export default function AdminInsightsPage() {
                 rows={10}
                 placeholder="Full article content (supports Markdown)"
               />
+            </div>
+
+            <div>
+              <Label>Featured Image</Label>
+              <div className="mt-2">
+                <div
+                  className="group relative flex items-center gap-4 rounded border border-dashed border-border p-3 hover:border-primary transition-colors"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    const file = e.dataTransfer?.files && e.dataTransfer.files[0]
+                    if (file) handleFeaturedFile(file)
+                  }}
+                >
+                  <input
+                    ref={(el) => { fileInputRef.current = el }}
+                    id="featured-image-input"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files && e.target.files[0]
+                      if (file) handleFeaturedFile(file)
+                    }}
+                  />
+
+                  {editForm.featuredImage ? (
+                    <img src={editForm.featuredImage} alt="preview" className="h-24 w-36 object-cover rounded" />
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <Image className="h-8 w-8 text-muted-foreground" />
+                      <div className="text-sm text-muted-foreground">Drop an image here, or</div>
+                    </div>
+                  )}
+
+                  <div className="ml-auto flex items-center gap-2">
+                    <Button size="sm" onClick={() => fileInputRef.current?.click()}>Choose file</Button>
+                    {editForm.featuredImage && (
+                      <Button size="sm" variant="outline" onClick={() => removeFeaturedImage()}>
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {featuredImageError && (
+                  <div className="mt-2 text-sm text-destructive">{featuredImageError}</div>
+                )}
+                {editForm.featuredImage && (
+                  <div className="mt-2 text-xs text-muted-foreground">{editForm.featuredImageName ?? "Uploaded image"}</div>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -595,7 +956,6 @@ export default function AdminInsightsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="published">Published</SelectItem>
                     <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>
@@ -616,9 +976,9 @@ export default function AdminInsightsPage() {
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={saveArticle}>
+            <Button onClick={saveArticle} disabled={isSubmittingArticle}>
               <Save className="mr-2 h-4 w-4" />
-              {editingArticle ? "Save Changes" : "Create Article"}
+              {isSubmittingArticle ? (editingArticle ? "Saving..." : "Creating...") : (editingArticle ? "Save Changes" : "Create Article")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -640,6 +1000,181 @@ export default function AdminInsightsPage() {
             <Button variant="destructive" onClick={deleteArticle}>
               Delete
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Categories Management Dialog */}
+      <Dialog open={showCategoriesDialog} onOpenChange={setShowCategoriesDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Manage Article Categories</DialogTitle>
+            <DialogDescription>Add, edit, or remove categories used for insights.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Input
+                placeholder="New category name"
+                value={categoryForm.name}
+                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+              />
+              <Button
+                onClick={() => {
+                  const name = categoryForm.name.trim()
+                  if (!name) return
+                  if (categoryForm.index >= 0) {
+                    updateCategory(categoryForm.index, name)
+                  } else {
+                    addCategory(name)
+                  }
+                  setCategoryForm({ name: "", index: -1 })
+                }}
+              >
+                {categoryForm.index >= 0 ? "Save" : "Add"}
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              {categoriesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gray-300 animate-spin" />
+                  <div className="ml-3 text-sm text-muted-foreground">Loading categories...</div>
+                </div>
+              ) : categoriesError ? (
+                <div className="py-6 text-sm text-destructive">{categoriesError}</div>
+              ) : categories.length === 0 ? (
+                <div className="py-6 text-sm text-muted-foreground">No categories found.</div>
+              ) : (
+                categories.map((cat, i) => (
+                  <div key={cat} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <Tag className="h-4 w-4 text-muted-foreground" />
+                      <div>{cat}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCategoryForm({ name: cat, index: i })}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeCategory(i)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCategoriesDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Article Preview Dialog */}
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Article Preview</DialogTitle>
+          </DialogHeader>
+          
+          {previewLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gray-300 animate-spin" />
+              <div className="ml-3 text-sm text-muted-foreground">Loading article...</div>
+            </div>
+          ) : previewArticle ? (
+            <div className="space-y-6">
+              {/* Featured Image */}
+              {previewArticle.featuredImage && (
+                <div className="w-full">
+                  <img 
+                    src={previewArticle.featuredImage} 
+                    alt={previewArticle.title}
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
+                </div>
+              )}
+
+              {/* Article Header */}
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold">{previewArticle.title}</h2>
+                <p className="text-muted-foreground">{previewArticle.excerpt}</p>
+              </div>
+
+              {/* Meta Information */}
+              <div className="grid grid-cols-2 gap-4 py-4 border-y">
+                <div>
+                  <p className="text-xs text-muted-foreground">Author</p>
+                  <p className="text-sm font-medium">{previewArticle.author}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Category</p>
+                  <p className="text-sm font-medium">{previewArticle.category}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <Badge variant="outline" className="capitalize">{previewArticle.status}</Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Views</p>
+                  <p className="text-sm font-medium">{previewArticle.views.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Published</p>
+                  <p className="text-sm font-medium">{previewArticle.publishedAt || "Not published"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Tags</p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {previewArticle.tags.length > 0 ? (
+                      previewArticle.tags.map(tag => (
+                        <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                      ))
+                    ) : (
+                      <span className="text-sm text-muted-foreground">No tags</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Content</h3>
+                <div className="bg-muted p-4 rounded-lg text-sm leading-relaxed whitespace-pre-wrap">
+                  {previewArticle.content}
+                </div>
+              </div>
+
+              {/* Featured Badge */}
+              {previewArticle.featured && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-sm text-amber-800 font-medium">⭐ This is a featured article</p>
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>Close</Button>
+            {previewArticle && (
+              <Button onClick={() => {
+                openEditArticle(previewArticle)
+                setShowPreviewDialog(false)
+              }}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
