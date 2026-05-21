@@ -112,6 +112,9 @@ export interface Product {
   created_at: string
   updated_at: string
   available_locales: string[]
+  supplierId?: string
+  supplierSlug?: string
+  supplierName?: string
   category: Category
   sub_category: SubCategory
   images: string[]
@@ -183,8 +186,11 @@ export async function getProducts(
 ): Promise<GetProductsResponse> {
   try {
     const params: Record<string, unknown> = {
-      page,
       ...filters,
+    }
+
+    if (page !== 1) {
+      params.page = page
     }
 
     const response = await apiClient.get("/products", { params })
@@ -229,6 +235,7 @@ export async function getProduct(slug: string): Promise<GetProductResponse> {
 // Helper: Normalize product data
 function normalizeProduct(payload: unknown): Product {
   const product = toRecord(payload)
+  const supplier = toRecord(product.supplier)
 
   const pricingQuantities = toRecord(product.pricing_quantities)
   const minPrice = toRecord(pricingQuantities.min_price)
@@ -257,6 +264,18 @@ function normalizeProduct(payload: unknown): Product {
     available_locales: Array.isArray(product.available_locales)
       ? (product.available_locales as string[])
       : [],
+    supplierId: toString(
+      product.supplier_id ?? product.supplierId ?? supplier.id,
+      ""
+    ) || undefined,
+    supplierSlug: toString(
+      product.supplier_slug ?? product.supplierSlug ?? supplier.slug,
+      ""
+    ) || undefined,
+    supplierName: toString(
+      product.supplier_name ?? product.supplierName ?? supplier.name,
+      ""
+    ) || undefined,
     category: normalizeCategory(product.category),
     sub_category: normalizeSubCategory(product.sub_category),
     images: Array.isArray(product.images) ? (product.images as string[]) : [],

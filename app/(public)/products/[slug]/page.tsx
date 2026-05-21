@@ -43,11 +43,11 @@ export default function ProductPage() {
     addProductToFavorites, 
     removeProductFromFavorites, 
     isProductSaved,
-    addToCompare,
-    removeFromCompare,
-    isInCompare,
-    compareCount,
-    maxCompare
+    addProductToCompare,
+    removeProductFromCompare,
+    isProductInCompare,
+    productCompareCount,
+    maxProductCompare
   } = useFavorites()
   
   const [product, setProduct] = useState<Product | null>(null)
@@ -147,6 +147,16 @@ export default function ProductPage() {
   const minPrice = parseFloat(product.pricing_quantities.min_price.price.amount)
   const maxPrice = parseFloat(product.pricing_quantities.max_price.price.amount)
   const isSavedProduct = isSaved(product.id)
+  const productInCompare = isProductInCompare(product.slug)
+
+  const handleCompareClick = () => {
+    if (productInCompare) {
+      removeProductFromCompare(product.slug)
+      return
+    }
+
+    addProductToCompare(product)
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -320,20 +330,37 @@ export default function ProductPage() {
                         <TooltipTrigger asChild>
                           <Button
                             size="lg"
-                            variant="outline"
+                            variant={productInCompare ? "secondary" : "outline"}
                             className="flex-1 gap-2"
-                            disabled={true}
+                            onClick={handleCompareClick}
+                            disabled={!productInCompare && productCompareCount >= maxProductCompare}
                           >
                             <Scale className="h-4 w-4" />
-                            Compare
+                            {productInCompare ? "In Compare" : "Compare"}
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          Compare this product with others
+                          {productInCompare
+                            ? "Remove from comparison"
+                            : productCompareCount >= maxProductCompare
+                              ? `Maximum ${maxProductCompare} products`
+                              : "Add product to comparison"}
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </div>
+
+                  {productCompareCount >= 2 && (
+                    <Button
+                      size="lg"
+                      variant="default"
+                      className="w-full gap-2"
+                      onClick={() => router.push("/products/compare")}
+                    >
+                      <Scale className="h-4 w-4" />
+                      Compare Products ({productCompareCount})
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

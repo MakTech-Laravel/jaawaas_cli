@@ -23,11 +23,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { 
   DollarSign, 
   Edit, 
   Plus, 
   Trash2,
+  ChevronDown,
   Check,
   X,
   Save,
@@ -35,12 +41,14 @@ import {
   Package,
   Search
 } from "lucide-react"
-import { fetchPlans, createPlan, updatePlan, deletePlan as deleteApiPlan, fetchPlanFeatures, togglePopularPlan, type PricingPlan as BackendPricingPlan, type PlanFeature } from "@/lib/api/admin-pricing"
+import { fetchPlans, createPlan, updatePlan, deletePlan as deleteApiPlan, fetchPlanFeatures, togglePopularPlan, updatePlanFeature, type PricingPlan as BackendPricingPlan, type PlanFeature } from "@/lib/api/admin-pricing"
 
 interface PricingFeature {
+  rowId: string
   id: number
-  name: string
-  included: boolean
+  label?: string
+  inputType: "boolean" | "text"
+  value: string
 }
 
 interface PricingPlan {
@@ -55,7 +63,7 @@ interface PricingPlan {
   active: boolean
 }
 
-function transformBackendPlan(plan: BackendPricingPlan): PricingPlan {
+function transformBackendPlan(plan: BackendPricingPlan, featureCatalog: PlanFeature[] = []): PricingPlan {
   return {
     id: plan.id.toString(),
     name: plan.name,
@@ -63,14 +71,152 @@ function transformBackendPlan(plan: BackendPricingPlan): PricingPlan {
     monthlyPrice: parseFloat(plan.monthly_price?.amount || "0"),
     yearlyPrice: parseFloat(plan.yearly_price?.amount || "0"),
     features: plan.features?.map((feature) => ({
+      rowId: `${feature.id}-${feature.input_type}-${feature.value}`,
       id: feature.id,
-      name: feature.value,
-      included: true
+      label: featureCatalog.find((item) => Number(item.id) === Number(feature.id))?.name,
+      inputType: feature.input_type === "boolean" ? "boolean" : "text",
+      value: feature.value,
     })) || [],
     highlighted: plan.is_popular,
     buttonText: plan.button_text,
     active: plan.status === 1
   }
+}
+
+function createEditableFeatureRowId(id: number) {
+  return `${id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+function serializePlanFeatures(features: PricingFeature[]) {
+  return features.map((feature) => ({
+    id: feature.id,
+    input_type: feature.inputType,
+    value: feature.inputType === "boolean"
+      ? (feature.value === "1" ? "1" : "0")
+      : feature.value.trim(),
+  }))
+}
+
+function isFeatureEnabled(feature: PricingFeature) {
+  if (feature.inputType === "boolean") {
+    return feature.value === "1"
+  }
+
+  return feature.value.trim().length > 0
+}
+
+function EditableFeatureRow(props: {
+  feature: PricingFeature
+  onRemove: () => void
+  onChange: (feature: PricingFeature) => void
+  disabled?: boolean
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div className="rounded-lg border border-border bg-muted/20">
+        <div className="flex items-center gap-2 p-2">
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+              <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">{props.feature.label || `Feature ${props.feature.id}`}</p>
+            <p className="text-xs text-muted-foreground">
+              ID {props.feature.id} · {props.feature.inputType === "boolean"
+                ? `Boolean value: ${props.feature.value === "1" ? "1" : "0"}`
+                : `Text value: ${props.feature.value || "empty"}`}
+            </p>
+          </div>
+          <Badge variant="secondary" className="shrink-0">
+            {props.feature.inputType === "boolean" ? (props.feature.value === "1" ? "Yes" : "No") : "Text"}
+          </Badge>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={props.onRemove}
+            className="h-8 w-8 shrink-0"
+            disabled={props.disabled}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+
+        <CollapsibleContent className="px-2 pb-3">
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select
+                value={props.feature.inputType}
+                onValueChange={(value) =>
+                  props.onChange({
+                    ...props.feature,
+                    inputType: value as "boolean" | "text",
+                    value:
+                      value === "boolean"
+                        ? (props.feature.value === "0" ? "0" : "1")
+                                    : (props.feature.value === "1" || props.feature.value === "0" ? "" : props.feature.value.replace(/[^0-9]/g, "")),
+                  })
+                }
+                disabled={props.disabled}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="boolean">Boolean</SelectItem>
+                  <SelectItem value="text">Text</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {props.feature.inputType === "boolean" ? (
+              <div className="space-y-2">
+                <Label>Value</Label>
+                <Select
+                  value={props.feature.value === "1" ? "yes" : "no"}
+                  onValueChange={(value) =>
+                    props.onChange({
+                      ...props.feature,
+                      value: value === "yes" ? "1" : "0",
+                    })
+                  }
+                  disabled={props.disabled}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose yes or no" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-2 md:col-span-2">
+                <Label>Text Value</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={props.feature.value}
+                  onChange={(event) =>
+                    props.onChange({
+                      ...props.feature,
+                      value: event.target.value.replace(/[^0-9]/g, ""),
+                    })
+                  }
+                  placeholder="Enter numeric value"
+                  disabled={props.disabled}
+                />
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  )
 }
 
 export default function AdminPricingPage() {
@@ -86,10 +232,16 @@ export default function AdminPricingPage() {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [availableFeatures, setAvailableFeatures] = useState<PlanFeature[]>([])
+  const [featureCatalogFilter, setFeatureCatalogFilter] = useState("")
   const [featureSearchFilter, setFeatureSearchFilter] = useState("")
   const [showFeatureSelector, setShowFeatureSelector] = useState<"add" | "edit" | null>(null)
+  const [editingFeature, setEditingFeature] = useState<PlanFeature | null>(null)
+  const [showFeatureEditDialog, setShowFeatureEditDialog] = useState(false)
+  const [isFeatureUpdating, setIsFeatureUpdating] = useState(false)
+  const [featureUpdateError, setFeatureUpdateError] = useState<string | null>(null)
   const [togglingPlanId, setTogglingPlanId] = useState<string | null>(null)
   const [togglingPopularPlanId, setTogglingPopularPlanId] = useState<string | null>(null)
+  const [isFeatureCatalogOpen, setIsFeatureCatalogOpen] = useState(false)
 
   useEffect(() => {
     const loadPlans = async () => {
@@ -99,7 +251,7 @@ export default function AdminPricingPage() {
           fetchPlans(),
           fetchPlanFeatures()
         ])
-        const transformedPlans = backendPlans.map(transformBackendPlan)
+        const transformedPlans = backendPlans.map((plan) => transformBackendPlan(plan, features))
         setPlans(transformedPlans)
         setAvailableFeatures(features)
       } catch (error) {
@@ -119,7 +271,12 @@ export default function AdminPricingPage() {
     yearlyPrice: 0,
     buttonText: "",
     highlighted: false,
+    active: true,
     features: [] as PricingFeature[]
+  })
+
+  const [featureForm, setFeatureForm] = useState({
+    name: "",
   })
 
   const openEditDialog = (plan: PricingPlan) => {
@@ -131,9 +288,59 @@ export default function AdminPricingPage() {
       yearlyPrice: plan.yearlyPrice,
       buttonText: plan.buttonText,
       highlighted: plan.highlighted,
-      features: [...plan.features]
+      active: plan.active,
+      features: plan.features.map((feature, index) => ({
+        ...feature,
+        rowId: feature.rowId || createEditableFeatureRowId(feature.id + index),
+      }))
     })
     setShowEditDialog(true)
+  }
+
+  const openFeatureEditDialog = (feature: PlanFeature) => {
+    setEditingFeature(feature)
+    setFeatureForm({
+      name: feature.name,
+    })
+    setFeatureUpdateError(null)
+    setShowFeatureEditDialog(true)
+  }
+
+  const saveFeature = async () => {
+    if (!editingFeature) return
+
+    const trimmedName = featureForm.name.trim()
+
+    if (!trimmedName) {
+      setFeatureUpdateError("Feature name is required")
+      return
+    }
+
+    setIsFeatureUpdating(true)
+    setFeatureUpdateError(null)
+
+    try {
+      const result = await updatePlanFeature(editingFeature.id, {
+        name: trimmedName,
+      })
+
+      if (result.success) {
+        setAvailableFeatures(prev => prev.map(feature => (
+          feature.id === editingFeature.id
+            ? result.feature || { ...feature, name: trimmedName }
+            : feature
+        )))
+        setShowFeatureEditDialog(false)
+        setEditingFeature(null)
+      } else {
+        setFeatureUpdateError(result.message || "Failed to update feature")
+      }
+    } catch (error) {
+      console.error("Error updating feature:", error)
+      setFeatureUpdateError("An unexpected error occurred")
+    } finally {
+      setIsFeatureUpdating(false)
+    }
   }
 
   const savePlan = async () => {
@@ -143,12 +350,14 @@ export default function AdminPricingPage() {
     setUpdateError(null)
 
     try {
-      // Transform features to backend format with sequential IDs
-      const transformedFeatures = editForm.features.map((feature, index) => ({
-        id: index + 1,
-        input_type: "text",
-        value: feature.name
-      }))
+      const transformedFeatures = serializePlanFeatures(editForm.features)
+
+      const hasEmptyTextFeature = editForm.features.some(feature => feature.inputType === "text" && !feature.value.trim())
+      if (hasEmptyTextFeature) {
+        setUpdateError("Text features need a text value before saving.")
+        setIsUpdating(false)
+        return
+      }
 
       // Prepare the payload
       const payload = {
@@ -157,7 +366,7 @@ export default function AdminPricingPage() {
         button_text: editForm.buttonText,
         monthly_price: editForm.monthlyPrice,
         yearly_price: editForm.yearlyPrice,
-        status: editForm.highlighted,
+        status: editForm.active,
         is_popular: editForm.highlighted,
         features: transformedFeatures
       }
@@ -167,11 +376,19 @@ export default function AdminPricingPage() {
 
       if (result.success) {
         // Update local state
-        setPlans(prev => prev.map(p => 
-          p.id === editingPlan.id 
-            ? { ...p, ...editForm }
-            : p
-        ))
+        setPlans(prev => {
+          const updatedPlans = prev.map(p => 
+            p.id === editingPlan.id 
+              ? { ...p, ...editForm }
+              : p
+          )
+          if (editForm.highlighted) {
+            return updatedPlans.map(p => 
+              p.id === editingPlan.id ? p : { ...p, highlighted: false }
+            )
+          }
+          return updatedPlans
+        })
         setShowEditDialog(false)
         setEditingPlan(null)
       } else {
@@ -191,12 +408,7 @@ export default function AdminPricingPage() {
 
     setTogglingPlanId(planId)
     try {
-      // Get current plan features with sequential IDs
-      const features = plan.features.map((feature, index) => ({
-        id: index + 1,
-        input_type: "text",
-        value: feature.name
-      }))
+      const features = serializePlanFeatures(plan.features)
 
       // Prepare the payload with flipped active status
       const newActiveStatus = !plan.active
@@ -206,7 +418,7 @@ export default function AdminPricingPage() {
         button_text: plan.buttonText,
         monthly_price: plan.monthlyPrice,
         yearly_price: plan.yearlyPrice,
-        status: newActiveStatus ? 1 : 0,
+        status: newActiveStatus,
         is_popular: plan.highlighted,
         features: features
       }
@@ -256,24 +468,30 @@ export default function AdminPricingPage() {
     if (feature && !editForm.features.find(f => f.id === featureId)) {
       setEditForm(prev => ({
         ...prev,
-        features: [...prev.features, { id: feature.id, name: feature.name, included: true }]
+        features: [...prev.features, {
+          rowId: createEditableFeatureRowId(feature.id),
+          id: feature.id,
+          label: feature.name,
+          inputType: "boolean",
+          value: "1",
+        }]
       }))
       setFeatureSearchFilter("")
     }
   }
 
-  const removeFeature = (index: number) => {
+  const removeFeature = (rowId: string) => {
     setEditForm(prev => ({
       ...prev,
-      features: prev.features.filter((_, i) => i !== index)
+      features: prev.features.filter((feature) => feature.rowId !== rowId)
     }))
   }
 
-  const toggleFeatureIncluded = (index: number) => {
+  const updateFeature = (rowId: string, updatedFeature: PricingFeature) => {
     setEditForm(prev => ({
       ...prev,
-      features: prev.features.map((f, i) => 
-        i === index ? { ...f, included: !f.included } : f
+      features: prev.features.map((feature) =>
+        feature.rowId === rowId ? updatedFeature : feature
       )
     }))
   }
@@ -288,12 +506,14 @@ export default function AdminPricingPage() {
     setCreateError(null)
 
     try {
-      // Transform features to backend format with sequential IDs
-      const transformedFeatures = editForm.features.map((feature, index) => ({
-        id: index + 1,
-        input_type: "text",
-        value: feature.name
-      }))
+      const hasEmptyTextFeature = editForm.features.some(feature => feature.inputType === "text" && !feature.value.trim())
+      if (hasEmptyTextFeature) {
+        setCreateError("Text features need a text value before creating the plan.")
+        setIsCreating(false)
+        return
+      }
+
+      const transformedFeatures = serializePlanFeatures(editForm.features)
 
       // Prepare the payload
       const payload = {
@@ -338,6 +558,7 @@ export default function AdminPricingPage() {
           yearlyPrice: 0,
           buttonText: "",
           highlighted: false,
+          active: true,
           features: []
         })
       } else {
@@ -392,6 +613,7 @@ export default function AdminPricingPage() {
               yearlyPrice: 0,
               buttonText: "Get Started",
               highlighted: false,
+              active: true,
               features: []
             })
             setShowAddDialog(true)
@@ -435,6 +657,83 @@ export default function AdminPricingPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Feature Catalog */}
+      <Card>
+        <Collapsible open={isFeatureCatalogOpen} onOpenChange={setIsFeatureCatalogOpen}>
+          <CardHeader className="pb-4">
+            <CollapsibleTrigger asChild>
+              <button className="flex w-full items-start justify-between gap-4 text-left">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Feature Catalog
+                  </CardTitle>
+                  <CardDescription>
+                    Manage the feature records used across pricing plans and selectors.
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">{availableFeatures.length} features</Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {isFeatureCatalogOpen ? "Hide" : "Show"}
+                  </span>
+                </div>
+              </button>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="space-y-4 pt-0">
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search features by name or key..."
+                  value={featureCatalogFilter}
+                  onChange={(e) => setFeatureCatalogFilter(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {availableFeatures
+                  .filter((feature) => {
+                    const query = featureCatalogFilter.toLowerCase().trim()
+                    if (!query) return true
+                    return feature.name.toLowerCase().includes(query) || feature.key.toLowerCase().includes(query)
+                  })
+                  .map((feature) => (
+                    <div key={feature.id} className="rounded-lg border border-border bg-muted/20 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground">{feature.name}</p>
+                          <p className="mt-1 text-xs text-muted-foreground break-all">{feature.key}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0"
+                          onClick={() => openFeatureEditDialog(feature)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                {availableFeatures.filter((feature) => {
+                  const query = featureCatalogFilter.toLowerCase().trim()
+                  if (!query) return true
+                  return feature.name.toLowerCase().includes(query) || feature.key.toLowerCase().includes(query)
+                }).length === 0 && (
+                  <div className="col-span-full rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                    {featureCatalogFilter ? "No features match your search." : "No features loaded from the backend."}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
 
       {/* Plans Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -496,13 +795,13 @@ export default function AdminPricingPage() {
               <div className="space-y-2">
                 {plan.features.slice(0, 5).map((feature, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm">
-                    {feature.included ? (
+                    {isFeatureEnabled(feature) ? (
                       <Check className="h-4 w-4 text-emerald-500" />
                     ) : (
                       <X className="h-4 w-4 text-muted-foreground" />
                     )}
-                    <span className={!feature.included ? "text-muted-foreground" : ""}>
-                      {feature.name}
+                    <span className={!isFeatureEnabled(feature) ? "text-muted-foreground" : ""}>
+                      {feature.label || (feature.inputType === "boolean" ? (feature.value === "1" ? "Yes" : "No") : feature.value)}
                     </span>
                   </div>
                 ))}
@@ -621,24 +920,14 @@ export default function AdminPricingPage() {
                 {editForm.features.length === 0 ? (
                   <p className="text-sm text-muted-foreground p-2">No features selected. Click "Add Feature" to add.</p>
                 ) : (
-                  editForm.features.map((feature, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2 rounded border border-border bg-muted/30">
-                      {/* <Switch 
-                        checked={feature.included}
-                        onCheckedChange={() => toggleFeatureIncluded(i)}
-                        disabled={isUpdating}
-                      /> */}
-                      <span className="flex-1 text-sm font-medium">{feature.name}</span>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => removeFeature(i)}
-                        className="h-8 w-8"
-                        disabled={isUpdating}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+                  editForm.features.map((feature) => (
+                    <EditableFeatureRow
+                      key={feature.rowId}
+                      feature={feature}
+                      onRemove={() => removeFeature(feature.rowId)}
+                      onChange={(updatedFeature) => updateFeature(feature.rowId, updatedFeature)}
+                      disabled={isUpdating}
+                    />
                   ))
                 )}
               </div>
@@ -653,13 +942,25 @@ export default function AdminPricingPage() {
               </Button>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Switch 
-                checked={editForm.highlighted}
-                onCheckedChange={(checked) => setEditForm({ ...editForm, highlighted: checked })}
-                disabled={isUpdating}
-              />
-              <Label>Mark as Most Popular</Label>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6 border-t pt-4">
+              <div className="flex items-center gap-2">
+                <Switch 
+                  id="edit-plan-active"
+                  checked={editForm.active}
+                  onCheckedChange={(checked) => setEditForm({ ...editForm, active: checked })}
+                  disabled={isUpdating}
+                />
+                <Label htmlFor="edit-plan-active" className="cursor-pointer">Active Plan Status</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch 
+                  id="edit-plan-popular"
+                  checked={editForm.highlighted}
+                  onCheckedChange={(checked) => setEditForm({ ...editForm, highlighted: checked })}
+                  disabled={isUpdating}
+                />
+                <Label htmlFor="edit-plan-popular" className="cursor-pointer">Mark as Most Popular</Label>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -771,24 +1072,14 @@ export default function AdminPricingPage() {
                 {editForm.features.length === 0 ? (
                   <p className="text-sm text-muted-foreground p-2">No features selected. Click "Add Feature" to add.</p>
                 ) : (
-                  editForm.features.map((feature, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2 rounded border border-border bg-muted/30">
-                      {/* <Switch 
-                        checked={feature.included}
-                        onCheckedChange={() => toggleFeatureIncluded(i)}
-                        disabled={isCreating}
-                      /> */}
-                      <span className="flex-1 text-sm font-medium">{feature.name}</span>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => removeFeature(i)}
-                        className="h-8 w-8"
-                        disabled={isCreating}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+                  editForm.features.map((feature) => (
+                    <EditableFeatureRow
+                      key={feature.rowId}
+                      feature={feature}
+                      onRemove={() => removeFeature(feature.rowId)}
+                      onChange={(updatedFeature) => updateFeature(feature.rowId, updatedFeature)}
+                      disabled={isCreating}
+                    />
                   ))
                 )}
               </div>
@@ -824,6 +1115,72 @@ export default function AdminPricingPage() {
                 <>
                   <Plus className="mr-2 h-4 w-4" />
                   Create Plan
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Feature Dialog */}
+      <Dialog open={showFeatureEditDialog} onOpenChange={setShowFeatureEditDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Feature</DialogTitle>
+            <DialogDescription>
+              Update the feature label used by plan selectors.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {featureUpdateError && (
+              <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {featureUpdateError}
+              </div>
+            )}
+
+            <div>
+              <Label>Feature Name</Label>
+              <Input
+                value={featureForm.name}
+                onChange={(e) => setFeatureForm((prev) => ({ ...prev, name: e.target.value }))}
+                className="mt-2"
+                disabled={isFeatureUpdating}
+              />
+            </div>
+
+            <div>
+              <Label>Feature Key</Label>
+              <Input
+                value={editingFeature?.key || ""}
+                className="mt-2"
+                disabled
+              />
+            </div>
+
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowFeatureEditDialog(false)
+                setFeatureUpdateError(null)
+              }}
+              disabled={isFeatureUpdating}
+            >
+              Cancel
+            </Button>
+            <Button onClick={saveFeature} disabled={isFeatureUpdating}>
+              {isFeatureUpdating ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-foreground" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Feature
                 </>
               )}
             </Button>
@@ -868,13 +1225,13 @@ export default function AdminPricingPage() {
                   <div className="mt-6 space-y-3">
                     {plan.features.map((feature, i) => (
                       <div key={i} className="flex items-center gap-2 text-sm">
-                        {feature.included ? (
+                        {isFeatureEnabled(feature) ? (
                           <Check className="h-4 w-4 text-emerald-500" />
                         ) : (
                           <X className="h-4 w-4 text-muted-foreground" />
                         )}
-                        <span className={!feature.included ? "text-muted-foreground" : ""}>
-                          {feature.name}
+                        <span className={!isFeatureEnabled(feature) ? "text-muted-foreground" : ""}>
+                          {feature.label || (feature.inputType === "boolean" ? (feature.value === "1" ? "Yes" : "No") : feature.value)}
                         </span>
                       </div>
                     ))}

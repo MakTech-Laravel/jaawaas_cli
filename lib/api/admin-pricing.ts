@@ -15,6 +15,10 @@ export interface PlanFeature {
   key: string
 }
 
+export interface UpdatePlanFeaturePayload {
+  name: string
+}
+
 export interface PricingPlan {
   id: number
   name: string
@@ -197,5 +201,30 @@ export async function fetchPlanFeatures(): Promise<PlanFeature[]> {
   } catch (error) {
     console.error("Failed to fetch plan features:", getApiErrorMessage(error))
     return []
+  }
+}
+
+export async function updatePlanFeature(
+  featureId: number | string,
+  payload: UpdatePlanFeaturePayload
+): Promise<{ success: boolean; message: string; feature?: PlanFeature }> {
+  try {
+    const response = await apiClient.put<{ success: boolean; message: string; data?: PlanFeature }>(
+      `/admin/plans/features/${featureId}`,
+      payload
+    )
+
+    return {
+      success: response.data?.success || false,
+      message: response.data?.message || "Feature updated successfully",
+      feature: response.data?.data,
+    }
+  } catch (error) {
+    const errorMessage = getApiErrorMessage(error)
+    console.error("Failed to update plan feature:", errorMessage)
+    return {
+      success: false,
+      message: errorMessage || "Failed to update feature",
+    }
   }
 }
