@@ -251,6 +251,8 @@ const es = {
     adminAnalytics: "分析",
     adminContactPage: "联系页面",
     adminFAQManagement: "常见问题管理",
+    adminHelpCenter: "帮助中心",
+    adminReviewManagement: "评论管理",
     adminSiteSettings: "网站设置",
     adminSettings: "设置",
     adminViewSite: "查看网站",

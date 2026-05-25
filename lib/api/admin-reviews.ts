@@ -273,7 +273,7 @@ function delay(ms: number = 400): Promise<void> {
   return new Promise((r) => setTimeout(r, ms + Math.random() * 300))
 }
 
-// ─── API Functions (MOCK) ────────────────────────────────────────────────────
+// API Functions (MOCK)
 
 /**
  * Create a new review request for a manufacturer

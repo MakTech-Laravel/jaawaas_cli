@@ -251,6 +251,8 @@ const en = {
     adminAnalytics: "Analytics",
     adminContactPage: "Contact Page",
     adminFAQManagement: "FAQ Management",
+    adminHelpCenter: "Help Center",
+    adminReviewManagement: "Review Management",
     adminSiteSettings: "Site Settings",
     adminSettings: "Settings",
     adminViewSite: "View Site",
