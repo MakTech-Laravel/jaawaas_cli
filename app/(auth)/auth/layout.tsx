@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { CheckCircle2, Globe2, Shield, TrendingUp } from "lucide-react"
+import { CheckCircle2 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n"
 
 export default function AuthLayout({
@@ -13,72 +13,63 @@ export default function AuthLayout({
   const { t } = useTranslation()
   return (
     <div className="flex min-h-screen">
-      {/* Left Side - Branding */}
-      <div className="hidden w-1/2 bg-primary lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <Link href="/" className="flex items-center">
-          <Image
-            src="/images/logoFooter.png"
-            alt="SourceNest"
-            width={150}
-            height={50}
-            className="h-12 w-auto object-contain"
-          />
-        </Link>
-        
-        <div className="space-y-8">
-          <div>
-            <h2 className="font-serif text-3xl font-medium text-primary-foreground">
-              {t?.authLayout?.connectManufacturers || "Connect with reviewed manufacturers worldwide"}
-            </h2>
-            <p className="mt-4 text-primary-foreground/80">
-              {t?.authLayout?.joinBusinesses || "Join thousands of businesses finding reliable manufacturing partners through our curated network."}
-            </p>
+      {/* Left Side - Clean Brand Panel */}
+      <div className="hidden w-1/2 lg:flex lg:flex-col lg:p-20 bg-[#3A2B24]">
+        <div className="flex flex-col h-full max-w-2xl mx-auto">
+          <div className="mb-6">
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/images/logoFooter.png"
+                alt="SourceNest"
+                width={150}
+                height={50}
+                className="h-12 w-auto object-contain"
+              />
+            </Link>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <div className="text-3xl font-bold text-primary-foreground">50,000+</div>
-              <div className="text-sm text-primary-foreground/70">{t?.authLayout?.reviewedManufacturers || "Reviewed Manufacturers"}</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary-foreground">120+</div>
-              <div className="text-sm text-primary-foreground/70">{t?.authLayout?.countries || "Countries"}</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary-foreground">500+</div>
-              <div className="text-sm text-primary-foreground/70">{t?.authLayout?.productCategories || "Product Categories"}</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary-foreground">98%</div>
-              <div className="text-sm text-primary-foreground/70">{t?.authLayout?.clientSatisfaction || "Client Satisfaction"}</div>
-            </div>
-          </div>
+          <div className="flex-1 flex items-center">
+            <div className="w-full bg-[#402b22]/60 border border-[#4a372f] rounded-2xl p-8 shadow-xl">
+              <h2 className="font-serif text-4xl lg:text-5xl font-semibold leading-tight text-[#F7EDE0]">Your Global Sourcing Workspace</h2>
 
-          {/* Features */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 text-primary-foreground/90">
-              <CheckCircle2 className="h-5 w-5 text-primary-foreground" />
-              <span>{t?.authLayout?.allSuppliersReviewed || "All suppliers reviewed and audited"}</span>
-            </div>
-            <div className="flex items-center gap-3 text-primary-foreground/90">
-              <Globe2 className="h-5 w-5 text-primary-foreground" />
-              <span>{t?.authLayout?.globalNetwork || "Global network across 120+ countries"}</span>
-            </div>
-            <div className="flex items-center gap-3 text-primary-foreground/90">
-              <Shield className="h-5 w-5 text-primary-foreground" />
-              <span>{t?.authLayout?.secureMessaging || "Secure messaging and transactions"}</span>
-            </div>
-            <div className="flex items-center gap-3 text-primary-foreground/90">
-              <TrendingUp className="h-5 w-5 text-primary-foreground" />
-              <span>{t?.authLayout?.realtimeRFQ || "Real-time RFQ matching"}</span>
+              <div className="mt-4 h-0.5 w-20 bg-[#C9A84E]/60 rounded" />
+
+              <p className="mt-5 text-base leading-relaxed text-[#F7EDE0]/90 max-w-prose">
+                Access your SourceNest dashboard and manage your sourcing activity in one organized place — from reviewed manufacturer profiles to RFQs, quotations, messages, and business opportunities.
+              </p>
+
+              <ul className="mt-6 space-y-4">
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-1 h-5 w-5 text-[#C9A84E]" />
+                  <span className="text-sm leading-snug text-[#F7EDE0]">Explore reviewed manufacturers with clearer company information</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-1 h-5 w-5 text-[#C9A84E]" />
+                  <span className="text-sm leading-snug text-[#F7EDE0]">Send structured RFQs and keep requests organized</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-1 h-5 w-5 text-[#C9A84E]" />
+                  <span className="text-sm leading-snug text-[#F7EDE0]">Review quotations and compare supplier details more easily</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-1 h-5 w-5 text-[#C9A84E]" />
+                  <span className="text-sm leading-snug text-[#F7EDE0]">Communicate professionally with buyers and manufacturers</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-1 h-5 w-5 text-[#C9A84E]" />
+                  <span className="text-sm leading-snug text-[#F7EDE0]">Manage products, profiles, inquiries, and sourcing activity from one dashboard</span>
+                </li>
+              </ul>
+
+              <p className="mt-6 text-sm text-[#F7EDE0]/80">
+                SourceNest is designed to make global sourcing clearer, more structured, and more professional for both buyers and manufacturers.
+              </p>
             </div>
           </div>
 
+          <div className="mt-8 pt-8 text-sm text-[#F7EDE0]/70 border-t border-[#2C211B]">
+            &copy; {new Date().getFullYear()} SourceNest. All rights reserved.
           </div>
-
-        <div className="text-sm text-primary-foreground/60">
-          &copy; {new Date().getFullYear()} {t?.authLayout?.copyright || "SourceNest. All rights reserved."}
         </div>
       </div>
 
