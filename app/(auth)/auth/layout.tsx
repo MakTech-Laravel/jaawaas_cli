@@ -3,6 +3,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { CheckCircle2 } from "lucide-react"
+import { usePathname } from "next/navigation"
+import { useEffect } from "react"
 import { useTranslation } from "@/lib/i18n"
 
 export default function AuthLayout({
@@ -11,10 +13,43 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   const { t } = useTranslation()
+  const pathname = usePathname()
+  const isRegisterPage = pathname?.startsWith("/auth/signup")
+  const isSignInPage = pathname?.startsWith("/auth/signin")
+  const isConstrainedAuthPage = isRegisterPage || isSignInPage
+
+  useEffect(() => {
+    if (!isConstrainedAuthPage) return
+
+    const html = document.documentElement
+    const body = document.body
+
+    const prevHtmlOverflow = html.style.overflow
+    const prevBodyOverflow = body.style.overflow
+    const prevHtmlHeight = html.style.height
+    const prevBodyHeight = body.style.height
+
+    html.style.overflow = "hidden"
+    body.style.overflow = "hidden"
+    html.style.height = "100%"
+    body.style.height = "100%"
+
+    return () => {
+      html.style.overflow = prevHtmlOverflow
+      body.style.overflow = prevBodyOverflow
+      html.style.height = prevHtmlHeight
+      body.style.height = prevBodyHeight
+    }
+  }, [isConstrainedAuthPage])
+
   return (
-    <div className="flex min-h-screen">
+    <div className={`flex min-h-screen ${isConstrainedAuthPage ? "h-screen overflow-hidden" : ""}`}>
       {/* Left Side - Clean Brand Panel */}
-      <div className="hidden w-1/2 lg:flex lg:flex-col lg:p-20 bg-[#3A2B24]">
+      <div
+        className={`hidden w-1/2 bg-primary lg:flex lg:flex-col lg:p-20 ${
+          isRegisterPage ? "lg:fixed lg:inset-y-0 lg:left-0" : ""
+        }`}
+      >
         <div className="flex flex-col h-full max-w-2xl mx-auto">
           <div className="mb-6">
             <Link href="/" className="flex items-center">
@@ -74,7 +109,15 @@ export default function AuthLayout({
       </div>
 
       {/* Right Side - Auth Form */}
-      <div className="flex w-full flex-col lg:w-1/2">
+      <div
+        className={`flex w-full flex-col ${
+          isRegisterPage
+            ? "h-screen overflow-y-auto hide-scrollbar lg:ml-[50%] lg:w-1/2"
+            : isSignInPage
+              ? "h-screen overflow-y-auto hide-scrollbar lg:w-1/2"
+            : "lg:w-1/2"
+        }`}
+      >
         {/* Mobile Logo */}
         <div className="flex items-center justify-between p-6 lg:hidden">
           <Link href="/" className="flex items-center">
@@ -89,7 +132,11 @@ export default function AuthLayout({
         </div>
 
         {/* Form Container */}
-        <div className="flex flex-1 items-center justify-center p-6 lg:p-12">
+        <div
+          className={`flex justify-center p-6 lg:p-12 ${
+            isRegisterPage ? "items-start lg:py-8" : "flex-1 items-center"
+          }`}
+        >
           <div className="w-full max-w-md">
             {children}
           </div>

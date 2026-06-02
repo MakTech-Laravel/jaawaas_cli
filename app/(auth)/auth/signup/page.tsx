@@ -206,7 +206,7 @@ export default function SignUpPage() {
 
   if (step === "role") {
     return (
-      <div>
+      <div className="lg:flex lg:min-h-[calc(100vh-6rem)] lg:flex-col lg:justify-center">
         <div className="text-center lg:text-left">
           <h1 className="font-serif text-3xl font-medium text-foreground">
             {t?.auth?.createNewAccount || "Create your account"}
