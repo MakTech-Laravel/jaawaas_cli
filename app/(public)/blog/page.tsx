@@ -1,113 +1,88 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Calendar, User } from "lucide-react"
-import { apiClient } from "@/lib/api/client"
-import { getApiErrorMessage } from "@/lib/api/errors"
-
-interface Article {
-  id: number
-  title: string
-  slug: string
-  excerpt: string
-  content: string
-  category: { name: string }
-  tags: string[]
-  author: string
-  is_featured: boolean
-  status: string
-  published_at: string
-  views: number
-  image_url: string | null
-}
+import { ArrowRight, Calendar, User, Clock, Globe, BookOpen, ChevronRight } from "lucide-react"
+import {
+  STATIC_ARTICLES,
+  ARTICLE_CATEGORIES,
+  formatPublishedDate,
+} from "@/lib/static-articles"
 
 export default function BlogPage() {
-  const [articles, setArticles] = useState<Article[]>([])
-  const [categories, setCategories] = useState<string[]>(["All"])
   const [selectedCategory, setSelectedCategory] = useState("All")
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchArticles()
-  }, [])
+  const filteredArticles =
+    selectedCategory === "All"
+      ? STATIC_ARTICLES
+      : STATIC_ARTICLES.filter((a) => a.category === selectedCategory)
 
-  async function fetchArticles() {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await apiClient.get("/articles")
-      const list = Array.isArray(res.data?.data) ? res.data.data : []
-      
-      // Filter for published articles only
-      const published = list.filter((a: any) => a.status === "published")
-      
-      setArticles(published)
-      
-      // Extract unique categories
-      const cats = Array.from(new Set(
-        published
-          .map((a: any) => a.category?.name)
-          .filter((name: any) => name)
-      )) as string[]
-      
-      setCategories(["All", ...cats])
-    } catch (err: unknown) {
-      setError(getApiErrorMessage(err, "Failed to load articles"))
-    } finally {
-      setLoading(false)
-    }
-  }
+  const featuredArticle = filteredArticles.find((a) => a.isFeatured)
+  const regularArticles = filteredArticles.filter((a) => !a.isFeatured)
 
-  const filteredArticles = selectedCategory === "All"
-    ? articles
-    : articles.filter(a => a.category?.name === selectedCategory)
-
-  const featuredArticles = filteredArticles.filter(a => a.is_featured)
-  const regularArticles = filteredArticles.filter(a => !a.is_featured)
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", { 
-      year: "numeric", 
-      month: "long", 
-      day: "numeric" 
-    })
-  }
+  // Only show categories that have at least one article
+  const activeCategories = ARTICLE_CATEGORIES.filter((cat) => {
+    if (cat === "All") return true
+    return STATIC_ARTICLES.some((a) => a.category === cat)
+  })
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       <Header />
       <main className="flex-1">
-        {/* Hero */}
-        <section className="bg-primary py-16 lg:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+        {/* ─── Hero ─── */}
+        <section className="relative overflow-hidden bg-primary py-20 lg:py-28">
+          {/* Background grid pattern */}
+          <div
+            className="absolute inset-0 opacity-[0.06]"
+            style={{
+              backgroundImage:
+                "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
+              backgroundSize: "40px 40px",
+            }}
+          />
+          {/* Decorative orbs */}
+          <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-primary-foreground/5 blur-3xl" />
+          <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-secondary/20 blur-3xl" />
+
+          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center">
-              <h1 className="font-serif text-4xl font-medium tracking-tight text-primary-foreground sm:text-5xl">
-                Insights & Resources
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/15 bg-primary-foreground/8 px-4 py-2 text-xs font-medium uppercase tracking-widest text-primary-foreground/80 backdrop-blur-sm mb-6">
+                <Globe className="h-3.5 w-3.5" />
+                SourceNest Knowledge Center
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl lg:text-6xl">
+                Insights &amp; Resources
               </h1>
-              <p className="mt-4 text-lg text-primary-foreground/80">
-                Expert knowledge on global sourcing, manufacturing trends, supply chain strategies, and international trade best practices for procurement professionals.
+              <p className="mt-5 text-lg text-primary-foreground/75 leading-relaxed max-w-2xl mx-auto">
+                Professional knowledge on global sourcing, RFQs, manufacturer reviews, supplier comparison, import/export, and international trade — built for serious B2B buyers and manufacturers.
               </p>
+              <div className="mt-8 flex items-center justify-center gap-6 text-sm text-primary-foreground/60">
+                <span className="flex items-center gap-1.5"><BookOpen className="h-4 w-4" />{STATIC_ARTICLES.length} Articles</span>
+                <span className="h-1 w-1 rounded-full bg-primary-foreground/30" />
+                <span className="flex items-center gap-1.5"><User className="h-4 w-4" />SourceNest Editorial Team</span>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Categories */}
-        <section className="border-b border-border">
+        {/* ─── Category Filter ─── */}
+        <section className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur-sm">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex gap-2 overflow-x-auto py-4">
-              {categories.map((category) => (
+            <div className="flex gap-2 overflow-x-auto py-3 scrollbar-none">
+              {activeCategories.map((category) => (
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
                     category === selectedCategory
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"
                   }`}
                 >
                   {category}
@@ -117,125 +92,174 @@ export default function BlogPage() {
           </div>
         </section>
 
-        {loading ? (
-          <section className="py-20 lg:py-28">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-              <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gray-300 animate-spin mx-auto" />
-              <p className="mt-4 text-muted-foreground">Loading articles...</p>
-            </div>
-          </section>
-        ) : error ? (
-          <section className="py-20 lg:py-28">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-              <p className="text-destructive">{error}</p>
-            </div>
-          </section>
-        ) : filteredArticles.length === 0 ? (
-          <section className="py-20 lg:py-28">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+        {filteredArticles.length === 0 ? (
+          <section className="py-24">
+            <div className="mx-auto max-w-7xl px-4 text-center">
               <p className="text-muted-foreground">No articles found in this category.</p>
             </div>
           </section>
         ) : (
           <>
-            {/* Featured Post */}
-            {featuredArticles.length > 0 && (
+            {/* ─── Featured Article ─── */}
+            {featuredArticle && (
               <section className="py-12 lg:py-16">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                  {featuredArticles.map((featured) => (
-                    <Link
-                      key={featured.id}
-                      href={`/blog/${featured.slug}`}
-                      className="group block overflow-hidden rounded-2xl border border-border bg-card transition-all hover:shadow-lg"
-                    >
-                      <div className="grid lg:grid-cols-2">
-                        {featured.image_url && (
-                          <div className="relative h-64 sm:h-80 lg:h-96 overflow-hidden bg-muted">
-                            <img 
-                              src={featured.image_url} 
-                              alt={featured.title}
-                              className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          </div>
-                        )}
-                        <div className="p-8 lg:p-12">
-                          <Badge variant="secondary">{featured.category?.name}</Badge>
-                          <h2 className="mt-4 font-serif text-2xl font-medium text-foreground group-hover:text-secondary lg:text-3xl">
-                            {featured.title}
-                          </h2>
-                          <p className="mt-4 text-muted-foreground leading-relaxed">
-                            {featured.excerpt}
-                          </p>
-                          <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <User className="h-4 w-4" />
-                              {featured.author}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              {formatDate(featured.published_at)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              {featured.views.toLocaleString()} views
-                            </span>
-                          </div>
-                          <div className="mt-6 flex items-center gap-2 text-sm font-medium text-secondary">
-                            Read article
-                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                          </div>
+                  <div className="mb-6 flex items-center gap-2">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground px-3">Featured Article</span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+                  <Link
+                    href={`/blog/${featuredArticle.slug}`}
+                    className="group block overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:shadow-xl hover:border-primary/30"
+                  >
+                    <div className="grid lg:grid-cols-5">
+                      {/* Image */}
+                      <div className="relative lg:col-span-3 h-64 sm:h-80 lg:h-full min-h-[320px] overflow-hidden bg-muted">
+                        <Image
+                          src={featuredArticle.imageUrl}
+                          alt={featuredArticle.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          sizes="(max-width: 1024px) 100vw, 60vw"
+                          priority
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-card/20" />
+                      </div>
+                      {/* Content */}
+                      <div className="lg:col-span-2 flex flex-col justify-center p-8 lg:p-12">
+                        <Badge className="w-fit bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
+                          {featuredArticle.category}
+                        </Badge>
+                        <h2 className="mt-5 text-2xl font-bold text-foreground group-hover:text-primary transition-colors leading-tight lg:text-3xl">
+                          {featuredArticle.title}
+                        </h2>
+                        <p className="mt-4 text-muted-foreground leading-relaxed line-clamp-3">
+                          {featuredArticle.excerpt}
+                        </p>
+                        <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1.5">
+                            <User className="h-3.5 w-3.5" />
+                            {featuredArticle.author}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {formatPublishedDate(featuredArticle.publishedAt)}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5" />
+                            {featuredArticle.readTime}
+                          </span>
+                        </div>
+                        <div className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+                          Read Article
+                          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1.5" />
                         </div>
                       </div>
-                    </Link>
-                  ))}
+                    </div>
+                  </Link>
                 </div>
               </section>
             )}
 
-            {/* Posts Grid */}
+            {/* ─── Articles Grid ─── */}
             <section className="pb-20 lg:pb-28">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <h2 className="font-serif text-2xl font-medium text-foreground">
-                  {featuredArticles.length > 0 ? "More Articles" : "Latest Articles"}
-                </h2>
-                
-                <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {regularArticles.map((article) => (
-                    <Link
-                      key={article.id}
-                      href={`/blog/${article.slug}`}
-                      className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-lg"
-                    >
-                      {article.image_url && (
-                              <div className="relative h-48 sm:h-56 lg:h-64 overflow-hidden bg-muted">
-                                <img 
-                                  src={article.image_url} 
-                                  alt={article.title}
-                                  className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                              </div>
-                            )}
-                              {!article.image_url && <div className="h-48 sm:h-56 lg:h-64 bg-muted" />}
-                      <div className="flex flex-1 flex-col p-6">
-                        <Badge variant="outline" className="w-fit">{article.category?.name}</Badge>
-                        <h3 className="mt-3 font-semibold text-foreground group-hover:text-secondary line-clamp-2">
-                          {article.title}
-                        </h3>
-                        <p className="mt-2 flex-1 text-sm text-muted-foreground line-clamp-2">
-                          {article.excerpt}
-                        </p>
-                        <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
-                          <span>{article.author}</span>
-                          <span>•</span>
-                          <span>{article.views.toLocaleString()} views</span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-          </div>
-        </section>
+              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                {regularArticles.length > 0 && (
+                  <>
+                    <div className="mb-8 flex items-center justify-between">
+                      <h2 className="text-xl font-bold text-foreground">
+                        {featuredArticle ? "More Articles" : "All Articles"}
+                      </h2>
+                      <span className="text-sm text-muted-foreground">
+                        {regularArticles.length} article{regularArticles.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {regularArticles.map((article) => (
+                        <Link
+                          key={article.id}
+                          href={`/blog/${article.slug}`}
+                          className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-300 hover:shadow-lg hover:border-primary/30 hover:-translate-y-1"
+                        >
+                          {/* Card Image */}
+                          <div className="relative h-52 overflow-hidden bg-muted">
+                            <Image
+                              src={article.imageUrl}
+                              alt={article.title}
+                              fill
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          </div>
+
+                          {/* Card Content */}
+                          <div className="flex flex-1 flex-col p-6">
+                            <Badge
+                              variant="outline"
+                              className="w-fit text-xs border-primary/30 text-primary bg-primary/5"
+                            >
+                              {article.category}
+                            </Badge>
+                            <h3 className="mt-3 font-bold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
+                              {article.title}
+                            </h3>
+                            <p className="mt-2 flex-1 text-sm text-muted-foreground leading-relaxed line-clamp-3">
+                              {article.excerpt}
+                            </p>
+                            <div className="mt-5 flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-4">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatPublishedDate(article.publishedAt)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {article.readTime}
+                              </span>
+                            </div>
+                            <div className="mt-3 flex items-center gap-1 text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              Read Article <ChevronRight className="h-3 w-3" />
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </section>
           </>
         )}
+
+        {/* ─── CTA Banner ─── */}
+        <section className="border-t border-border bg-muted/30 py-16">
+          <div className="mx-auto max-w-4xl px-4 text-center">
+            <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
+              Ready to Start Sourcing?
+            </h2>
+            <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
+              Browse reviewed manufacturers, send structured RFQs, and make smarter sourcing decisions on SourceNest.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/suppliers"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md"
+              >
+                Browse Manufacturers
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/rfq"
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-6 py-3 text-sm font-semibold text-foreground transition-all hover:bg-muted hover:border-primary/30"
+              >
+                Submit an RFQ
+              </Link>
+            </div>
+          </div>
+        </section>
+
       </main>
       <Footer />
     </div>
