@@ -163,9 +163,9 @@ export default function RequestReviewDialog({
         className="flex max-h-[min(92dvh,52rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl"
       >
         {/* Header */}
-        <DialogHeader className="shrink-0 space-y-3 border-b border-border bg-gradient-to-r from-secondary/5 to-transparent px-5 pb-5 pt-5 text-left sm:px-6">
+        <DialogHeader className="shrink-0 space-y-3 border-b border-border bg-linear-to-r from-secondary/5 to-transparent px-5 pb-5 pt-5 text-left sm:px-6">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/10 shadow-sm">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-secondary/20 to-secondary/10 shadow-sm">
               <ScanEye className="h-5 w-5 text-secondary" />
             </div>
             <div className="min-w-0 flex-1">

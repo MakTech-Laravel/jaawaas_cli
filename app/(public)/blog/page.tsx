@@ -124,7 +124,7 @@ export default function BlogPage() {
                           sizes="(max-width: 1024px) 100vw, 60vw"
                           priority
                         />
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-card/20" />
+                        <div className="absolute inset-0 bg-linear-to-r from-transparent to-card/20" />
                       </div>
                       {/* Content */}
                       <div className="lg:col-span-2 flex flex-col justify-center p-8 lg:p-12">
@@ -192,7 +192,7 @@ export default function BlogPage() {
                               className="object-cover transition-transform duration-500 group-hover:scale-105"
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                           </div>
 
                           {/* Card Content */}

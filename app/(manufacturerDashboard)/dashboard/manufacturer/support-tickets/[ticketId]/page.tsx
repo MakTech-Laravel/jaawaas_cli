@@ -1,5 +1,14 @@
-import { CustomerSupportTicketDetailPage } from "@/components/support/customer-support-ticket-detail-page"
+"use client"
+
+import { useParams } from "next/navigation"
+import { CustomerSupportChatView } from "@/components/support/customer-support-chat-view"
 
 export default function ManufacturerSupportTicketDetailPage() {
-  return <CustomerSupportTicketDetailPage basePath="/dashboard/manufacturer/support-tickets" />
+  const params = useParams()
+  return (
+    <CustomerSupportChatView 
+      basePath="/dashboard/manufacturer/support-tickets" 
+      initialTicketId={params.ticketId as string} 
+    />
+  )
 }

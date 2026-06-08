@@ -84,7 +84,7 @@ export default function HelpArticlePage({ params }: { params: Promise<{ category
                   <ol className="space-y-3">
                     {articleData.steps.map((step, index) => (
                       <li key={index} className="flex items-start gap-3">
-                        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">
                           {index + 1}
                         </span>
                         <span className="text-foreground">{step}</span>

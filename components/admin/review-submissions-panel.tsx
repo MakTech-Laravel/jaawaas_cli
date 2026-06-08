@@ -89,7 +89,7 @@ function CaptureLightbox({
   if (!current) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/90 p-4">
       <button
         onClick={onClose}
         className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
@@ -106,7 +106,7 @@ function CaptureLightbox({
             className="max-h-[80dvh] max-w-[90vw] object-contain"
           />
           {/* Metadata overlay */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-4 pt-10">
+          <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/80 to-transparent px-4 pb-4 pt-10">
             <p className="text-sm font-semibold text-white">{current.area_name}</p>
             {current.captured_at && (
               <p className="mt-0.5 text-xs text-white/70">
@@ -229,7 +229,7 @@ export default function ReviewSubmissionsPanel({
           className="flex max-h-[min(92dvh,56rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
         >
           {/* Header */}
-          <DialogHeader className="shrink-0 space-y-3 border-b border-border bg-gradient-to-r from-secondary/5 to-transparent px-5 pb-5 pt-5 text-left sm:px-6">
+          <DialogHeader className="shrink-0 space-y-3 border-b border-border bg-linear-to-r from-secondary/5 to-transparent px-5 pb-5 pt-5 text-left sm:px-6">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <DialogTitle className="text-lg font-semibold">
@@ -261,7 +261,7 @@ export default function ReviewSubmissionsPanel({
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
             <div className="space-y-5">
               {/* Requested Areas */}
-              <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background to-muted/30 p-4 shadow-sm">
+              <div className="rounded-xl border border-border/60 bg-linear-to-br from-background to-muted/30 p-4 shadow-sm">
                 <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Requested Areas
                 </h4>
@@ -276,7 +276,7 @@ export default function ReviewSubmissionsPanel({
 
               {/* Instructions */}
               {review.additional_instructions && (
-                <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background to-muted/30 p-4 shadow-sm">
+                <div className="rounded-xl border border-border/60 bg-linear-to-br from-background to-muted/30 p-4 shadow-sm">
                   <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Instructions
                   </h4>
@@ -315,7 +315,7 @@ export default function ReviewSubmissionsPanel({
                           className="h-full w-full object-cover transition-transform group-hover:scale-105"
                           loading="lazy"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                        <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                         <div className="absolute bottom-0 left-0 right-0 translate-y-2 px-2.5 pb-2.5 opacity-0 transition-all group-hover:translate-y-0 group-hover:opacity-100">
                           <p className="truncate text-xs font-medium text-white">
                             {capture.area_name}
