@@ -265,7 +265,7 @@ export default function LiveCapture({
   // Camera error state
   if (cameraError) {
     return (
-      <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black p-6">
+      <div className="fixed inset-0 z-90 flex items-center justify-center bg-black p-6">
         <div className="max-w-sm text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20">
             <AlertTriangle className="h-8 w-8 text-red-400" />
@@ -287,12 +287,12 @@ export default function LiveCapture({
   }
 
   return (
-    <div className="fixed inset-0 z-[90] flex flex-col bg-black">
+    <div className="fixed inset-0 z-90 flex flex-col bg-black">
       {/* Hidden canvas for capturing */}
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Top bar */}
-      <div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent px-4 pb-10 pt-4">
+      <div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-between bg-linear-to-b from-black/80 to-transparent px-4 pb-10 pt-4">
         <Button
           size="sm"
           variant="ghost"
@@ -358,7 +358,7 @@ export default function LiveCapture({
       </div>
 
       {/* Bottom controls */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 to-transparent px-4 pb-8 pt-16">
+      <div className="absolute bottom-0 left-0 right-0 z-20 bg-linear-to-t from-black/90 to-transparent px-4 pb-8 pt-16">
         {/* Thumbnail strip for current area */}
         {currentAreaCaptures.length > 0 && (
           <div className="mb-4 flex gap-2 overflow-x-auto pb-1">

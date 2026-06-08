@@ -1,10 +1,5 @@
-import { CustomerSupportTicketsPage } from "@/components/support/customer-support-tickets-page"
+import { CustomerSupportChatView } from "@/components/support/customer-support-chat-view"
 
 export default function BuyerSupportTicketsPage() {
-  return (
-    <CustomerSupportTicketsPage
-      title="Support Tickets"
-      basePath="/dashboard/buyer/support-tickets"
-    />
-  )
+  return <CustomerSupportChatView basePath="/dashboard/buyer/support-tickets" />
 }
