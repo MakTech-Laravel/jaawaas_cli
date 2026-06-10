@@ -82,16 +82,17 @@ function NewRFQForm() {
       const response = await getProduct(productSlug)
       
       if (response.success && response.data) {
-        setProduct(response.data)
-        if (response.data.supplierName) {
-          const found = suppliers.find(s => s.slug === response.data.supplierSlug || s.id === response.data.supplierId)
+        const productData = response.data;
+        setProduct(productData)
+        if (productData.supplierName) {
+          const found = suppliers.find(s => s.slug === productData.supplierSlug || s.id === productData.supplierId)
           if (found) {
             setSelectedSupplier(found)
           } else {
             setSelectedSupplier({
-              id: response.data.supplierId || "custom",
-              name: response.data.supplierName,
-              slug: response.data.supplierSlug || "custom-supplier",
+              id: productData.supplierId || "custom",
+              name: productData.supplierName,
+              slug: productData.supplierSlug || "custom-supplier",
               description: "",
               shortDescription: "",
               industry: "General",

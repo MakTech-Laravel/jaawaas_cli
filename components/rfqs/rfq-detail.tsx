@@ -373,7 +373,7 @@ export function RfqDetail({ rfqId, config }: { rfqId: string; config: RfqDetailC
 
           {rfq.quotedPrice && (
             <div className="rounded-xl border border-border bg-card p-5">
-              <h2 className="font-medium text-foreground text-emerald-600">Quote Submitted</h2>
+              <h2 className="font-medium text-emerald-600">Quote Submitted</h2>
               <dl className="mt-3 space-y-3 text-sm">
                 <Row label="Quoted Price" value={formatCurrency(rfq.quotedPrice, rfq.quoteCurrencyCode || "USD")} />
                 <Row label="Min. Order" value={`${rfq.minimumOrderQuantity?.toLocaleString()}`} />
