@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, Suspense } from "react"
+import { useState, Suspense, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/layout/header"
@@ -10,25 +10,87 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { suppliers, getSupplierBySlug } from "@/lib/data/suppliers"
+import { getProduct, type Product } from "@/lib/api/products"
 import { 
   ArrowLeft,
   Factory,
   CheckCircle,
   Send,
-  Star
+  Star,
+  Loader2
 } from "lucide-react"
 
 function NewMessageForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const supplierSlug = searchParams.get('supplier')
+  const productSlug = searchParams.get('product')
   const supplier = supplierSlug ? getSupplierBySlug(supplierSlug) : null
-
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
   const [selectedSupplier, setSelectedSupplier] = useState(supplier)
   const [searchQuery, setSearchQuery] = useState("")
   const [showSupplierSearch, setShowSupplierSearch] = useState(!supplier)
+  const [loadingProduct, setLoadingProduct] = useState(!!productSlug)
+
+  useEffect(() => {
+    if (productSlug) {
+      const fetchProduct = async () => {
+        setLoadingProduct(true)
+        const response = await getProduct(productSlug)
+        if (response.success && response.data) {
+          const product = response.data
+          setSubject(`Inquiry about ${product.name}`)
+          setMessage(`Hello,
+
+I am interested in your product "${product.name}" (Product ID: ${product.id}).
+Could you please provide more details regarding pricing, minimum order quantity, and available shipping options?
+
+I look forward to hearing from you soon.
+
+Best regards.`)
+
+          if (product.supplierName && !supplier) {
+            const found = suppliers.find(s => s.slug === product.supplierSlug || s.id === product.supplierId)
+            if (found) {
+              setSelectedSupplier(found)
+            } else {
+              setSelectedSupplier({
+                id: product.supplierId || "custom",
+                name: product.supplierName,
+                slug: product.supplierSlug || "custom-supplier",
+                description: "",
+                shortDescription: "",
+                industry: "General",
+                industrySlug: "general",
+                categories: [],
+                location: {
+                  city: "Global",
+                  country: "International",
+                  countryCode: "INT"
+                },
+                reviewed: true,
+                reviewedLevel: "basic",
+                yearEstablished: new Date().getFullYear(),
+                employeeCount: "Unknown",
+                productCount: 0,
+                rating: 5.0,
+                reviewCount: 0,
+                responseRate: 100,
+                responseTime: "Usually responds within 24h",
+                onTimeDelivery: 100,
+                certifications: [],
+                mainProducts: [],
+                exportMarkets: []
+              })
+            }
+          }
+        }
+        setLoadingProduct(false)
+      }
+      fetchProduct()
+    }
+  }, [productSlug, supplier])
 
   const filteredSuppliers = suppliers.filter(s => 
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -59,6 +121,13 @@ function NewMessageForm() {
           Start a conversation with a supplier
         </p>
       </div>
+
+      {loadingProduct && (
+        <div className="mb-6 flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-4 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading product details to prepare your message...
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Supplier Selection */}

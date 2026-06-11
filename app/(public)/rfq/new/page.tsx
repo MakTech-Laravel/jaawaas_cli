@@ -38,6 +38,9 @@ function NewRFQForm() {
   const router = useRouter()
   const { toast } = useToast()
   const productSlug = searchParams.get('product') || searchParams.get('product_id')
+  const supplierSlug = searchParams.get('supplier')
+  
+  const initialSupplier = supplierSlug ? suppliers.find(s => s.slug === supplierSlug) : null
   
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(!!productSlug)
@@ -45,7 +48,7 @@ function NewRFQForm() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   
-  const [selectedSupplier, setSelectedSupplier] = useState<typeof suppliers[0] | null>(null)
+  const [selectedSupplier, setSelectedSupplier] = useState<typeof suppliers[0] | null>(initialSupplier || null)
   const [manufacturerSearch, setManufacturerSearch] = useState("")
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false)
   
@@ -86,36 +89,38 @@ function NewRFQForm() {
         if (productData.supplierName) {
           const found = suppliers.find(s => s.slug === productData.supplierSlug || s.id === productData.supplierId)
           if (found) {
-            setSelectedSupplier(found)
+            if (!initialSupplier) setSelectedSupplier(found)
           } else {
-            setSelectedSupplier({
-              id: productData.supplierId || "custom",
-              name: productData.supplierName,
-              slug: productData.supplierSlug || "custom-supplier",
-              description: "",
-              shortDescription: "",
-              industry: "General",
-              industrySlug: "general",
-              categories: [],
-              location: {
-                city: "Global",
-                country: "International",
-                countryCode: "INT"
-              },
-              reviewed: true,
-              reviewedLevel: "basic",
-              yearEstablished: new Date().getFullYear(),
-              employeeCount: "Unknown",
-              productCount: 0,
-              rating: 5.0,
-              reviewCount: 0,
-              responseRate: 100,
-              responseTime: "Usually responds within 24h",
-              onTimeDelivery: 100,
-              certifications: [],
-              mainProducts: [],
-              exportMarkets: []
-            })
+            if (!initialSupplier) {
+              setSelectedSupplier({
+                id: productData.supplierId || "custom",
+                name: productData.supplierName,
+                slug: productData.supplierSlug || "custom-supplier",
+                description: "",
+                shortDescription: "",
+                industry: "General",
+                industrySlug: "general",
+                categories: [],
+                location: {
+                  city: "Global",
+                  country: "International",
+                  countryCode: "INT"
+                },
+                reviewed: true,
+                reviewedLevel: "basic",
+                yearEstablished: new Date().getFullYear(),
+                employeeCount: "Unknown",
+                productCount: 0,
+                rating: 5.0,
+                reviewCount: 0,
+                responseRate: 100,
+                responseTime: "Usually responds within 24h",
+                onTimeDelivery: 100,
+                certifications: [],
+                mainProducts: [],
+                exportMarkets: []
+              })
+            }
           }
         }
       } else {
@@ -127,6 +132,7 @@ function NewRFQForm() {
 
     fetchProduct()
   }, [productSlug])
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -243,10 +249,10 @@ function NewRFQForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Manufacturer Search */}
+        {/* Supplier */}
         <div className="rounded-xl border border-border bg-card p-6">
           <label className="text-sm font-medium text-foreground">
-            Search Manufacturer / Industry
+            Supplier
           </label>
           
           {selectedSupplier ? (
@@ -272,16 +278,17 @@ function NewRFQForm() {
                   </div>
                 </div>
               </div>
-              <button
+              <Button 
                 type="button"
+                variant="ghost" 
+                size="sm"
                 onClick={() => {
                   setSelectedSupplier(null)
                   setManufacturerSearch("")
                 }}
-                className="text-muted-foreground hover:text-foreground"
               >
-                <X className="h-5 w-5" />
-              </button>
+                Change
+              </Button>
             </div>
           ) : (
             <div className="mt-3 relative">

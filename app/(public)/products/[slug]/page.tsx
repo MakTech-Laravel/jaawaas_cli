@@ -291,13 +291,13 @@ export default function ProductPage() {
                     <Button 
                       className="flex-1" 
                       size="lg"
-                      onClick={() => router.push(`/rfq/new?product_id=${product.id}`)}
+                      onClick={() => router.push(`/rfq/new?product=${product.slug}&supplier=${product.supplierSlug}`)}
                     >
                       <FileText className="mr-2 h-4 w-4" />
                       Request Quote
                     </Button>
                     <Button variant="outline" size="lg" className="flex-1" asChild>
-                      <Link href={`/messages/new?product=${product.slug}`}>
+                      <Link href={`/messages/new?supplier=${product.supplierSlug}&product=${product.slug}`}>
                         <MessageSquare className="mr-2 h-4 w-4" />
                         Contact Supplier
                       </Link>
