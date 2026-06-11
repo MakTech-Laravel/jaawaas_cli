@@ -61,7 +61,7 @@ export function ProductPageActions({ product }: ProductPageActionsProps) {
           </Link>
         </Button>
         <Button size="lg" variant="outline" className="flex-1 gap-2" asChild>
-          <Link href={`/dashboard/buyer/messages?supplier=${product.supplierSlug}&product=${product.slug}&auto_message=1`}>
+          <Link href={`/messages/new?supplier=${product.supplierSlug}&product=${product.slug}`}>
             <MessageSquare className="h-4 w-4" />
             Contact Supplier
           </Link>
