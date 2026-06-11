@@ -90,128 +90,119 @@ function normalizeConversation(conv: ApiConversation): ChatConversation {
   }
 }
 
+// In-memory dummy data for the Inbox Design Mockup
+let dummyConversations: ChatConversation[] = [
+  {
+    id: "conv-1",
+    participants: [
+      { id: "1", name: "TechVision Electronics", role: "manufacturer", company: "TechVision Electronics Co., Ltd." },
+      { id: "buyer-1", name: "Current Buyer", role: "buyer" }
+    ],
+    unreadCount: 0,
+    updatedAt: "2 hours ago",
+    lastMessage: {
+      id: "msg-1",
+      senderId: "1",
+      text: "Hello! We have received your inquiry. How can we help?",
+      timestamp: "2 hours ago",
+      isRead: true
+    }
+  }
+];
+
+let dummyMessages: Record<string, ChatMessage[]> = {
+  "conv-1": [
+    {
+      id: "msg-1",
+      senderId: "1",
+      text: "Hello! We have received your inquiry. How can we help?",
+      timestamp: "2 hours ago",
+      isRead: true
+    }
+  ]
+};
+
 /**
  * Fetch all conversations for the current user
  */
 export async function getConversations(params?: Record<string, any>): Promise<ChatConversation[]> {
-  try {
-    const response = await apiClient.get("/conversations", { 
-      params: {
-        per_page: 50,
-        ...params
-      }
-    })
-    
-    const rawData = response.data?.data
-    
-    if (Array.isArray(rawData)) {
-      return rawData.map(normalizeConversation)
-    }
-    
-    return []
-  } catch (error) {
-    console.error("Failed to fetch conversations:", error)
-    return []
-  }
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 300));
+  return [...dummyConversations].sort((a, b) => {
+    // Basic sorting so newest is first
+    return a.updatedAt === "Just now" ? -1 : 1;
+  });
 }
 
 /**
  * Create a new conversation
  */
-export async function createConversation(participantIds: number[], name?: string): Promise<ChatConversation | null> {
-  try {
-    const response = await apiClient.post("/conversations", {
-      participant_ids: participantIds,
-      name
-    })
-    const data = response.data?.data
-    return data ? normalizeConversation(data) : null
-  } catch (error) {
-    console.error("Failed to create conversation:", error)
-    return null
-  }
+export async function createConversation(participantIds: (string|number)[], name?: string): Promise<ChatConversation | null> {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const id = `conv-${Date.now()}`;
+  const conv: ChatConversation = {
+    id,
+    participants: participantIds.map(pid => ({
+      id: pid.toString(),
+      name: `User ${pid}`,
+      role: pid.toString() === "buyer-1" ? "buyer" : "manufacturer"
+    })),
+    unreadCount: 0,
+    updatedAt: "Just now",
+  };
+  
+  dummyConversations = [conv, ...dummyConversations];
+  dummyMessages[id] = [];
+  
+  return conv;
 }
 
 /**
  * Fetch messages for a specific conversation
  */
 export async function getMessages(conversationId: string): Promise<ChatMessage[]> {
-  try {
-    const response = await apiClient.get(`/conversations/${conversationId}/messages`)
-    const rawMessages = response.data?.data || []
-    
-    if (Array.isArray(rawMessages)) {
-      return rawMessages
-        .slice()
-        .sort((a: any, b: any) => {
-          const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0
-          const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0
-          return aTime - bTime
-        })
-        .map((m: any) => ({
-        id: m.id.toString(),
-        senderId: m.sender_id.toString(),
-        text: m.body || m.content || m.message || "",
-        timestamp: m.created_at ? formatDistanceToNow(new Date(m.created_at), { addSuffix: true }) : "",
-        isRead: !!m.read_at,
-        attachments: m.attachments
-      }))
-    }
-    
-    return []
-  } catch (error) {
-    console.error("Failed to fetch messages:", error)
-    return []
-  }
+  await new Promise(resolve => setTimeout(resolve, 300));
+  return dummyMessages[conversationId] || [];
 }
 
 /**
  * Send a message in a conversation
  */
 export async function sendMessage(conversationId: string, text: string, files?: File[]): Promise<ChatMessage | null> {
-  try {
-    const formData = new FormData()
-    formData.append("body", text)
-    
-    if (files && files.length > 0) {
-      files.forEach((file, index) => {
-        formData.append(`attachments[${index}]`, file)
-      })
-    }
-
-    const response = await apiClient.post(`/conversations/${conversationId}/messages`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data"
-      }
-    })
-    
-    const m = response.data?.data
-    if (m) {
-      return {
-        id: m.id.toString(),
-        senderId: m.sender_id.toString(),
-        text: m.body || m.content || m.message || "",
-        timestamp: "Just now",
-        isRead: true,
-        attachments: m.attachments
-      }
-    }
-    return null
-  } catch (error) {
-    console.error("Failed to send message:", error)
-    return null
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const msg: ChatMessage = {
+    id: `msg-${Date.now()}`,
+    senderId: "buyer-1", // Assume current user is sending
+    text,
+    timestamp: "Just now",
+    isRead: true,
+  };
+  
+  if (!dummyMessages[conversationId]) {
+    dummyMessages[conversationId] = [];
   }
+  
+  dummyMessages[conversationId] = [...dummyMessages[conversationId], msg];
+  
+  // Update conversation
+  dummyConversations = dummyConversations.map(c => {
+    if (c.id === conversationId) {
+      return { ...c, lastMessage: msg, updatedAt: "Just now" };
+    }
+    return c;
+  });
+  
+  return msg;
 }
 
 /**
  * Mark a conversation as read
  */
 export async function markAsRead(conversationId: string): Promise<boolean> {
-  try {
-    await apiClient.post(`/conversations/${conversationId}/read`)
-    return true
-  } catch (error) {
-    console.error("Failed to mark as read:", error)
-    return false
-  }
+  dummyConversations = dummyConversations.map(c => 
+    c.id === conversationId ? { ...c, unreadCount: 0 } : c
+  );
+  return true;
 }

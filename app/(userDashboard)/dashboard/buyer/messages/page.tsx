@@ -1,19 +1,23 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { ChatView, ChatConversation, ChatMessage, ChatParticipant } from "@/components/chat/chat-view"
 import { useAuth } from "@/lib/auth-context"
-import { getConversations, getMessages, sendMessage, markAsRead } from "@/lib/api/messages"
+import { getConversations, getMessages, sendMessage, markAsRead, createConversation } from "@/lib/api/messages"
 import { getEcho } from "@/lib/echo"
 import { Loader2 } from "lucide-react"
 
 export default function BuyerMessagesPage() {
   const { user, isAuthenticated } = useAuth()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [selectedConvId, setSelectedConvId] = useState<string | undefined>()
   const [conversations, setConversations] = useState<ChatConversation[]>([])
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isMessagesLoading, setIsMessagesLoading] = useState(false)
+  const [hasProcessedAutoMessage, setHasProcessedAutoMessage] = useState(false)
 
   const buildIncomingMessage = (data: any): ChatMessage | null => {
     const msg = data?.message
@@ -47,7 +51,61 @@ export default function BuyerMessagesPage() {
     }
 
     loadConversations()
-  }, [isAuthenticated, selectedConvId])
+  }, [isAuthenticated])
+
+  // Handle Auto Message
+  useEffect(() => {
+    async function processAutoMessage() {
+      if (!isAuthenticated || hasProcessedAutoMessage || conversations.length === 0) return
+      
+      const autoMessage = searchParams.get('auto_message')
+      const supplierSlug = searchParams.get('supplier')
+      const productSlug = searchParams.get('product')
+      
+      if (autoMessage === '1' && supplierSlug && productSlug) {
+        setHasProcessedAutoMessage(true)
+        
+        // Remove query params to avoid duplicate sending on refresh
+        router.replace('/dashboard/buyer/messages')
+        
+        setIsMessagesLoading(true)
+        try {
+          // In a real app, we'd lookup the supplier ID. For dummy data, use a static ID or slug
+          let conv = conversations.find(c => c.participants.some(p => p.id === supplierSlug || p.name.toLowerCase().includes(supplierSlug.split('-')[0])))
+          
+          if (!conv) {
+            conv = await createConversation([supplierSlug, "buyer-1"], `Inquiry about ${productSlug}`) || undefined;
+            if (conv) {
+              setConversations(prev => [conv!, ...prev])
+            }
+          }
+          
+          if (conv) {
+            setSelectedConvId(conv.id)
+            const defaultText = `Hello,\n\nI am interested in your product "${productSlug}".\nCould you please provide more details regarding pricing, minimum order quantity, and available shipping options?\n\nI look forward to hearing from you soon.\n\nBest regards.`
+            
+            // Send the message
+            const sentMsg = await sendMessage(conv.id, defaultText)
+            if (sentMsg) {
+              setMessages(prev => [...prev, sentMsg])
+              setConversations(prev => prev.map(c => 
+                c.id === conv!.id 
+                  ? { ...c, lastMessage: sentMsg, updatedAt: "Just now" } 
+                  : c
+              ))
+            }
+          }
+        } catch (error) {
+          console.error("Auto message failed:", error)
+        } finally {
+          setIsMessagesLoading(false)
+        }
+      } else if (!selectedConvId && conversations.length > 0) {
+        setSelectedConvId(conversations[0].id)
+      }
+    }
+    processAutoMessage()
+  }, [isAuthenticated, searchParams, hasProcessedAutoMessage, conversations, selectedConvId, router])
 
   // Fetch messages
   useEffect(() => {

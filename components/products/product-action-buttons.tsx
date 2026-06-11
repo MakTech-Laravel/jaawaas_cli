@@ -66,8 +66,8 @@ export function ProductActionButtons({
   if (variant === "full") {
     return (
       <div className={cn("flex flex-col gap-3", className)}>
-        <Button size="lg" className="gap-2" asChild>
-          <Link href={`/messages/new?supplier=${product.supplierSlug}&product=${product.slug}`}>
+        <Button variant="outline" className="flex-1 gap-2 border-primary/20 text-primary hover:bg-primary/5" asChild>
+          <Link href={`/dashboard/buyer/messages?supplier=${product.supplierSlug}&product=${product.slug}&auto_message=1`}>
             <MessageSquare className="h-4 w-4" />
             Contact Supplier
           </Link>
