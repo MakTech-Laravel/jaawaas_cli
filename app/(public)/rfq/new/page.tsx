@@ -68,7 +68,6 @@ function NewRFQForm() {
     s.industry.toLowerCase().includes(manufacturerSearch.toLowerCase())
   ).slice(0, 8)
 
-  // Fetch product if product provided
   useEffect(() => {
     if (!productSlug) {
       setLoading(false)
