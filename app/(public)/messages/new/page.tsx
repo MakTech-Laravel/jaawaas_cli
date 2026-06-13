@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { suppliers, getSupplierBySlug } from "@/lib/data/suppliers"
 import { getProduct, type Product } from "@/lib/api/products"
+import { useAuth } from "@/lib/auth-context"
+import { createConversation, sendMessage } from "@/lib/api/messages"
 import { 
   ArrowLeft,
   Factory,
@@ -97,10 +99,32 @@ Best regards.`)
     s.industry.toLowerCase().includes(searchQuery.toLowerCase())
   ).slice(0, 5)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSending, setIsSending] = useState(false)
+
+  const { user, isAuthenticated } = useAuth()
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // In a real app, this would send the message via API
-    router.push('/messages')
+    if (!isAuthenticated) {
+      // If not logged in, redirect to login
+      router.push('/auth/signin?callbackUrl=/messages/new')
+      return
+    }
+    
+    if (!selectedSupplier || !subject || !message) return
+
+    setIsSending(true)
+    try {
+      const currentUserId = user?.id?.toString() || "buyer-1"
+      const conv = await createConversation([selectedSupplier.id, currentUserId], subject)
+      if (conv) {
+        await sendMessage(conv.id, message)
+      }
+      router.push('/messages')
+    } catch (error) {
+      console.error("Failed to send message:", error)
+      setIsSending(false)
+    }
   }
 
   return (
@@ -271,10 +295,10 @@ Best regards.`)
           <Button 
             type="submit" 
             className="gap-2"
-            disabled={!selectedSupplier || !subject || !message}
+            disabled={!selectedSupplier || !subject || !message || isSending}
           >
-            <Send className="h-4 w-4" />
-            Send Message
+            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {isSending ? "Sending..." : "Send Message"}
           </Button>
         </div>
       </form>

@@ -104,7 +104,7 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-start gap-3 py-3">
-      <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0">
@@ -123,7 +123,7 @@ function UpdateEntry({ update, isLast }: { update: OrderUpdate; isLast: boolean 
       {!isLast && <div className="absolute left-[15px] top-9 h-full w-0.5 bg-border" />}
       <div
         className={cn(
-          "relative z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full",
+          "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
           statusStyles[update.status].color,
         )}
       >
@@ -166,9 +166,9 @@ function UpdateEntry({ update, isLast }: { update: OrderUpdate; isLast: boolean 
                 key={file.id}
                 className="flex w-full items-center gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2 text-left transition-colors hover:bg-muted"
               >
-                <FileText className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="flex-1 truncate text-sm text-foreground">{file.name}</span>
-                <Download className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                <Download className="h-4 w-4 shrink-0 text-muted-foreground" />
               </button>
             ))}
           </div>
@@ -279,7 +279,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </div>
             {order.notes && (
               <div className="mt-3 flex items-start gap-3 rounded-lg bg-muted/40 p-3">
-                <StickyNote className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">Notes</p>
                   <p className="text-sm text-foreground">{order.notes}</p>
@@ -301,14 +301,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     key={doc.id}
                     className="flex w-full items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
                   >
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                       <FileText className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-foreground">{doc.name}</p>
                       <p className="text-xs text-muted-foreground">{ORDER_DOCUMENT_LABELS[doc.type]}</p>
                     </div>
-                    <Download className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                    <Download className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </button>
                 ))
               ) : (

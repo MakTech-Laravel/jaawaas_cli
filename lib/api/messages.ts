@@ -90,37 +90,67 @@ function normalizeConversation(conv: ApiConversation): ChatConversation {
   }
 }
 
-// In-memory dummy data for the Inbox Design Mockup
-let dummyConversations: ChatConversation[] = [
-  {
-    id: "conv-1",
-    participants: [
-      { id: "1", name: "TechVision Electronics", role: "manufacturer", company: "TechVision Electronics Co., Ltd." },
-      { id: "buyer-1", name: "Current Buyer", role: "buyer" }
-    ],
-    unreadCount: 0,
-    updatedAt: "2 hours ago",
-    lastMessage: {
-      id: "msg-1",
-      senderId: "1",
-      text: "Hello! We have received your inquiry. How can we help?",
-      timestamp: "2 hours ago",
-      isRead: true
+// Initialize from localStorage if available
+function getStoredConversations(): ChatConversation[] {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('mock_conversations')
+      if (stored) return JSON.parse(stored)
+    } catch (e) {
+      console.error(e)
     }
   }
-];
-
-let dummyMessages: Record<string, ChatMessage[]> = {
-  "conv-1": [
+  return [
     {
-      id: "msg-1",
-      senderId: "1",
-      text: "Hello! We have received your inquiry. How can we help?",
-      timestamp: "2 hours ago",
-      isRead: true
+      id: "conv-1",
+      participants: [
+        { id: "1", name: "TechVision Electronics", role: "manufacturer", company: "TechVision Electronics Co., Ltd." },
+        { id: "buyer-1", name: "Current Buyer", role: "buyer" }
+      ],
+      unreadCount: 0,
+      updatedAt: "2 hours ago",
+      lastMessage: {
+        id: "msg-1",
+        senderId: "1",
+        text: "Hello! We have received your inquiry. How can we help?",
+        timestamp: "2 hours ago",
+        isRead: true
+      }
     }
   ]
-};
+}
+
+function getStoredMessages(): Record<string, ChatMessage[]> {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('mock_messages')
+      if (stored) return JSON.parse(stored)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+  return {
+    "conv-1": [
+      {
+        id: "msg-1",
+        senderId: "1",
+        text: "Hello! We have received your inquiry. How can we help?",
+        timestamp: "2 hours ago",
+        isRead: true
+      }
+    ]
+  }
+}
+
+let dummyConversations: ChatConversation[] = getStoredConversations();
+let dummyMessages: Record<string, ChatMessage[]> = getStoredMessages();
+
+function saveToStorage() {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('mock_conversations', JSON.stringify(dummyConversations))
+    localStorage.setItem('mock_messages', JSON.stringify(dummyMessages))
+  }
+}
 
 /**
  * Fetch all conversations for the current user
@@ -154,6 +184,7 @@ export async function createConversation(participantIds: (string|number)[], name
   
   dummyConversations = [conv, ...dummyConversations];
   dummyMessages[id] = [];
+  saveToStorage();
   
   return conv;
 }
@@ -194,6 +225,8 @@ export async function sendMessage(conversationId: string, text: string, files?: 
     return c;
   });
   
+  saveToStorage();
+  
   return msg;
 }
 
@@ -204,5 +237,6 @@ export async function markAsRead(conversationId: string): Promise<boolean> {
   dummyConversations = dummyConversations.map(c => 
     c.id === conversationId ? { ...c, unreadCount: 0 } : c
   );
+  saveToStorage();
   return true;
 }

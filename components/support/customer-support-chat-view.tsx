@@ -143,18 +143,19 @@ function StatusPill({ status, className }: { status: CustomerTicketStatus | "unk
 }
 
 interface CustomerSupportChatViewProps {
-  title: string
+  title?: string
   basePath: string
+  initialTicketId?: string
 }
 
-export function CustomerSupportChatView({ title, basePath }: CustomerSupportChatViewProps) {
+export function CustomerSupportChatView({ title, basePath, initialTicketId }: CustomerSupportChatViewProps) {
   const { user } = useAuth()
   const { toast } = useToast()
 
   const [tickets, setTickets] = useState<CustomerTicket[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const [activeId, setActiveId] = useState<number | null>(null)
+  const [activeId, setActiveId] = useState<number | null>(initialTicketId ? parseInt(initialTicketId, 10) : null)
   const [activeDetail, setActiveDetail] = useState<CustomerTicketDetail | null>(null)
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
 
