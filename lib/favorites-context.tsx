@@ -169,7 +169,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         supplier: product.supplierName,
         supplierSlug: product.supplierSlug,
         price: product.price ? `${product.price.currency} ${product.price.min} - ${product.price.max}` : "N/A",
-        moq: String(product.moq),
+        moq: product.moq ? `${product.moq} ${product.moqUnit}` : "N/A",
         savedAt: new Date().toISOString()
       }
       setSavedProducts(prev => [newSaved, ...prev])

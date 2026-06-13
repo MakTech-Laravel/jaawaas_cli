@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { suppliers, getSupplierBySlug } from "@/lib/data/suppliers"
 import { getProduct, type Product } from "@/lib/api/products"
+import { useAuth } from "@/lib/auth-context"
 import { createConversation, sendMessage } from "@/lib/api/messages"
 import { 
   ArrowLeft,
@@ -100,13 +101,22 @@ Best regards.`)
 
   const [isSending, setIsSending] = useState(false)
 
+  const { user, isAuthenticated } = useAuth()
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isAuthenticated) {
+      // If not logged in, redirect to login
+      router.push('/auth/signin?callbackUrl=/messages/new')
+      return
+    }
+    
     if (!selectedSupplier || !subject || !message) return
 
     setIsSending(true)
     try {
-      const conv = await createConversation([selectedSupplier.id, "buyer-1"], subject)
+      const currentUserId = user?.id?.toString() || "buyer-1"
+      const conv = await createConversation([selectedSupplier.id, currentUserId], subject)
       if (conv) {
         await sendMessage(conv.id, message)
       }
@@ -159,6 +169,9 @@ Best regards.`)
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground">{selectedSupplier.name}</span>
+                    {selectedSupplier.verified && (
+                      <CheckCircle className="h-4 w-4 text-secondary" />
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>{selectedSupplier.location.city}, {selectedSupplier.location.country}</span>
@@ -219,6 +232,9 @@ Best regards.`)
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-foreground">{s.name}</span>
+                            {s.verified && (
+                              <CheckCircle className="h-3 w-3 text-secondary" />
+                            )}
                           </div>
                           <span className="text-sm text-muted-foreground">
                             {s.industry} • {s.location.country}

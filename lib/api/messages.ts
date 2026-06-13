@@ -158,15 +158,6 @@ function saveToStorage() {
 export async function getConversations(params?: Record<string, any>): Promise<ChatConversation[]> {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 300));
-  
-  // Actively sync from localStorage to avoid SSR/HMR stale state
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem('mock_conversations')
-      if (stored) dummyConversations = JSON.parse(stored)
-    } catch (e) {}
-  }
-
   return [...dummyConversations].sort((a, b) => {
     // Basic sorting so newest is first
     return a.updatedAt === "Just now" ? -1 : 1;
@@ -203,14 +194,6 @@ export async function createConversation(participantIds: (string|number)[], name
  */
 export async function getMessages(conversationId: string): Promise<ChatMessage[]> {
   await new Promise(resolve => setTimeout(resolve, 300));
-
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem('mock_messages')
-      if (stored) dummyMessages = JSON.parse(stored)
-    } catch (e) {}
-  }
-
   return dummyMessages[conversationId] || [];
 }
 

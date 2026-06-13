@@ -235,27 +235,23 @@ export function ManufacturerApplicationDetailDialog({
                     Factory Photos <Badge variant="outline" className="ml-auto font-semibold">{factoryImages.length}</Badge>
                   </h3>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {factoryImages.map((img, i) => {
-                      const id = typeof img === 'string' ? i : img.id
-                      const url = typeof img === 'string' ? img : img.url
-                      return (
-                        <a
-                          key={`${id}-${i}`}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group relative aspect-4/3 overflow-hidden rounded-lg border border-border/60 bg-muted shadow-sm hover:shadow-md transition-shadow"
-                        >
-                          <img
-                            src={url}
-                            alt={`Factory ${i + 1}`}
-                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                            loading="lazy"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                        </a>
-                      )
-                    })}
+                    {factoryImages.map((img, i) => (
+                      <a
+                        key={`${img.id}-${i}`}
+                        href={img.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group relative aspect-4/3 overflow-hidden rounded-lg border border-border/60 bg-muted shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <img
+                          src={img.url}
+                          alt={`Factory ${i + 1}`}
+                          className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                      </a>
+                    ))}
                   </div>
                 </div>
               )}

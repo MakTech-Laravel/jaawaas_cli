@@ -145,7 +145,7 @@ function StatusPill({ status, className }: { status: CustomerTicketStatus | "unk
 interface CustomerSupportChatViewProps {
   title?: string
   basePath: string
-  initialTicketId?: string | number
+  initialTicketId?: string
 }
 
 export function CustomerSupportChatView({ title, basePath, initialTicketId }: CustomerSupportChatViewProps) {
@@ -155,7 +155,7 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
   const [tickets, setTickets] = useState<CustomerTicket[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const [activeId, setActiveId] = useState<number | null>(initialTicketId ? Number(initialTicketId) : null)
+  const [activeId, setActiveId] = useState<number | null>(initialTicketId ? parseInt(initialTicketId, 10) : null)
   const [activeDetail, setActiveDetail] = useState<CustomerTicketDetail | null>(null)
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
 
@@ -193,11 +193,8 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
 
   useEffect(() => {
     loadTickets()
-    if (initialTicketId) {
-      openConversation(Number(initialTicketId))
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialTicketId])
+  }, [])
 
   const openConversation = async (id: number) => {
     setActiveId(id)

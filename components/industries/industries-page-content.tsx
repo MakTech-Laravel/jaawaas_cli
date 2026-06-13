@@ -15,12 +15,12 @@ interface Industry {
   slug: string
   description: string
   icon: string
+  icon_color?: string
   supplierCount: number
   productCount: number
   featured?: boolean
   /** Sub-industry rows from API `sub_categories`, shown as tag chips. */
   categories: { id: string; name: string }[]
-  icon_color?: string
 }
 
 function slugify(value: string) {
