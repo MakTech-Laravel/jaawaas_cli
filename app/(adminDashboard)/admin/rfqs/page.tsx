@@ -11,7 +11,7 @@ const config: RfqListConfig = {
 
 export default function AdminRfqsPage() {
   return (
-    <div className="py-6">
+    <div className="space-y-6">
       <RfqList config={config} />
     </div>
   )

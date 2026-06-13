@@ -95,7 +95,7 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="w-full">
       <Button asChild variant="ghost" size="sm" className="mb-4 gap-1.5 text-muted-foreground">
         <Link href={config.basePath}>
           <ArrowLeft className="h-4 w-4" />

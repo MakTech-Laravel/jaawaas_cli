@@ -167,7 +167,7 @@ export default function BuyerOrdersPage() {
   ).length
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       {/* Header */}
       <div className="mb-6">
         <h1 className="font-serif text-2xl font-medium text-foreground">Orders</h1>

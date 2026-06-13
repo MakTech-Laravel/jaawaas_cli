@@ -155,7 +155,7 @@ export default function ManufacturerInquiriesPage() {
     return true
   })
 
-  const aiSourcedCount = inquiries.filter(i => i.source === "AI Sourcing").length
+
 
   return (
     <div className="space-y-6">
@@ -168,7 +168,7 @@ export default function ManufacturerInquiriesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-4">
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="text-2xl font-bold text-foreground">{inquiries.length}</div>
           <p className="text-sm text-muted-foreground">Total Inquiries</p>
@@ -184,13 +184,6 @@ export default function ManufacturerInquiriesPage() {
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="text-2xl font-bold text-blue-600">{inquiries.filter(i => i.status === "In Progress").length}</div>
           <p className="text-sm text-muted-foreground">In Progress</p>
-        </div>
-        <div className="rounded-lg border border-secondary/30 bg-secondary/5 p-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-secondary" />
-            <div className="text-2xl font-bold text-secondary">{aiSourcedCount}</div>
-          </div>
-          <p className="text-sm text-muted-foreground">AI Sourced</p>
         </div>
       </div>
 
@@ -238,13 +231,7 @@ export default function ManufacturerInquiriesPage() {
               key={inquiry.id} 
               className="rounded-xl border border-border bg-card overflow-hidden transition-all hover:shadow-md"
             >
-              {/* AI Sourced Banner */}
-              {inquiry.source === "AI Sourcing" && (
-                <div className="flex items-center gap-2 bg-secondary/10 px-5 py-2 border-b border-secondary/20">
-                  <Sparkles className="h-4 w-4 text-secondary" />
-                  <span className="text-xs font-medium text-secondary">AI Sourced Request</span>
-                </div>
-              )}
+
               
               <div className="p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
