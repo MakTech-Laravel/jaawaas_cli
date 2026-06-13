@@ -143,7 +143,7 @@ export default function SignUpPage() {
         sessionStorage.setItem(REGISTER_SUCCESS_STORAGE_KEY, JSON.stringify(payload))
         router.push("/auth/register-success")
       } else {
-        setError(result.message || (t?.auth?.registrationFailed || "Registration failed. Please try again."))
+        setError(result.message || ((t?.auth as any)?.registrationFailed || "Registration failed. Please try again."))
       }
     } catch {
       setError(t?.auth?.errorOccurred || "An error occurred. Please try again.")
@@ -233,15 +233,15 @@ export default function SignUpPage() {
                 <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-secondary" />
-                    {t?.auth?.free || "Free forever"}
+                    {(t?.auth as any)?.free || "Free forever"}
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-secondary" />
-                    {t?.auth?.directMessaging || "Direct messaging"}
+                    {(t?.auth as any)?.directMessaging || "Direct messaging"}
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-secondary" />
-                    {t?.auth?.unlimitedRFQs || "Unlimited RFQs"}
+                    {(t?.auth as any)?.unlimitedRFQs || "Unlimited RFQs"}
                   </li>
                 </ul>
               </div>
@@ -264,15 +264,15 @@ export default function SignUpPage() {
                 <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-secondary" />
-                    {t?.auth?.globalVisibility || "Global visibility"}
+                    {(t?.auth as any)?.globalVisibility || "Global visibility"}
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-secondary" />
-                    {t?.auth?.reviewedBadge || "Reviewed badge"}
+                    {(t?.auth as any)?.reviewedBadge || "Reviewed badge"}
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-secondary" />
-                    {t?.auth?.noCommissionFees || "No commission fees"}
+                    {(t?.auth as any)?.noCommissionFees || "No commission fees"}
                   </li>
                 </ul>
               </div>
@@ -297,15 +297,15 @@ export default function SignUpPage() {
           onClick={() => setStep("role")}
           className="mb-4 text-sm text-muted-foreground hover:text-foreground"
         >
-          ← {t?.auth?.backToRoleSelection || "Back to role selection"}
+          ← {(t?.auth as any)?.backToRoleSelection || "Back to role selection"}
         </button>
         <h1 className="font-serif text-3xl font-medium text-foreground">
           {t?.auth?.createNewAccount || "Create your account"}
         </h1>
         <p className="mt-2 text-muted-foreground">
           {formData.role === "buyer"
-            ? (t?.auth?.startSourcing || "Start sourcing from reviewed suppliers worldwide")
-            : (t?.auth?.completeRegistration || "Complete registration, then choose a plan to get started")}
+            ? ((t?.auth as any)?.startSourcing || "Start sourcing from reviewed suppliers worldwide")
+            : ((t?.auth as any)?.completeRegistration || "Complete registration, then choose a plan to get started")}
         </p>
       </div>
 
@@ -414,7 +414,7 @@ export default function SignUpPage() {
                 )}
               </button>
             </div>
-            <p className="text-xs text-muted-foreground">{t?.auth?.passwordMinLength || "Must be at least 8 characters"}</p>
+            <p className="text-xs text-muted-foreground">{(t?.auth as any)?.passwordMinLength || "Must be at least 8 characters"}</p>
           </div>
 
           {/* Manufacturer Review Section */}
@@ -426,9 +426,9 @@ export default function SignUpPage() {
                 <div className="flex items-start gap-3">
                   <Info className="h-5 w-5 text-secondary mt-0.5" />
                   <div>
-                    <h3 className="font-medium text-foreground">{t?.auth?.reviewDocsRequired || "Review Documents Required"}</h3>
+                    <h3 className="font-medium text-foreground">{(t?.auth as any)?.reviewDocsRequired || "Review Documents Required"}</h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {t?.auth?.reviewDocsDescription || "To ensure quality and trust on our platform, we require basic review documents. Your account will be reviewed by our team before activation."}
+                      {(t?.auth as any)?.reviewDocsDescription || "To ensure quality and trust on our platform, we require basic review documents. Your account will be reviewed by our team before activation."}
                     </p>
                   </div>
                 </div>
@@ -506,7 +506,7 @@ export default function SignUpPage() {
                   disabled={isLoading}
                 />
                 <p className="text-xs text-muted-foreground">
-                  {t?.auth?.cityDescription || "Combined with country above, this forms your company address"}
+                  {(t?.auth as any)?.cityDescription || "Combined with country above, this forms your company address"}
                 </p>
               </div>
 
@@ -533,7 +533,7 @@ export default function SignUpPage() {
                   {t?.auth?.factoryPhotos || "Factory Photos"} <span className="text-destructive">*</span> <span className="text-muted-foreground text-xs">(max 5)</span>
                 </Label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  {t?.auth?.uploadFactoryDesc || "Upload photos of your production line or factory building to support your application"}
+                  {(t?.auth as any)?.uploadFactoryDesc || "Upload photos of your production line or factory building to support your application"}
                 </p>
                 <input
                   ref={factoryPhotosRef}
@@ -578,7 +578,7 @@ export default function SignUpPage() {
                     disabled={isLoading}
                   >
                     <Upload className="mr-2 h-4 w-4" />
-                    {t?.auth?.addFactoryPhotos || `Add Factory Photos (${formData.factoryPhotos.length}/5)`}
+                    {(t?.auth as any)?.addFactoryPhotos || `Add Factory Photos (${formData.factoryPhotos.length}/5)`}
                   </Button>
                 )}
               </div>
@@ -616,11 +616,11 @@ export default function SignUpPage() {
               {t?.auth?.agreeToTerms || "I agree to the"}
               {" "}
               <Link href="/terms" className="text-secondary hover:underline">
-                {t?.auth?.termsOfService || "Terms of Service"}
+                {(t?.auth as any)?.termsOfService || "Terms of Service"}
               </Link>
               {" and "}
               <Link href="/privacy" className="text-secondary hover:underline">
-                {t?.auth?.privacyPolicy || "Privacy Policy"}
+                {(t?.auth as any)?.privacyPolicy || "Privacy Policy"}
               </Link>
             </Label>
           </div>
@@ -642,12 +642,12 @@ export default function SignUpPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t?.auth?.creatingAccount || "Creating account..."}
+                    {(t?.auth as any)?.creatingAccount || "Creating account..."}
                   </>
                 ) : formData.role === "buyer" ? (
-                  t?.auth?.createFreeAccount || "Create free account"
+                  (t?.auth as any)?.createFreeAccount || "Create free account"
                 ) : (
-                  t?.auth?.submitForReview || "Submit for Review"
+                  (t?.auth as any)?.submitForReview || "Submit for Review"
                 )}
               </Button>
 
@@ -668,7 +668,7 @@ export default function SignUpPage() {
       </form>
 
       <p className="mt-8 text-center text-sm text-muted-foreground">
-        {t?.auth?.alreadyHaveAccount || "Already have an account?"}{" "}
+        {(t?.auth as any)?.alreadyHaveAccount || "Already have an account?"}{" "}
         <Link href="/auth/signin" className="font-medium text-secondary hover:underline">
           {t?.auth?.signIn || "Sign in"}
         </Link>

@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { suppliers, getSupplierBySlug } from "@/lib/data/suppliers"
 import { getProduct, type Product } from "@/lib/api/products"
+import { createConversation, sendMessage } from "@/lib/api/messages"
 import { 
   ArrowLeft,
   Factory,
@@ -97,10 +98,23 @@ Best regards.`)
     s.industry.toLowerCase().includes(searchQuery.toLowerCase())
   ).slice(0, 5)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSending, setIsSending] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // In a real app, this would send the message via API
-    router.push('/messages')
+    if (!selectedSupplier || !subject || !message) return
+
+    setIsSending(true)
+    try {
+      const conv = await createConversation([selectedSupplier.id, "buyer-1"], subject)
+      if (conv) {
+        await sendMessage(conv.id, message)
+      }
+      router.push('/messages')
+    } catch (error) {
+      console.error("Failed to send message:", error)
+      setIsSending(false)
+    }
   }
 
   return (
@@ -145,9 +159,6 @@ Best regards.`)
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground">{selectedSupplier.name}</span>
-                    {selectedSupplier.verified && (
-                      <CheckCircle className="h-4 w-4 text-secondary" />
-                    )}
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>{selectedSupplier.location.city}, {selectedSupplier.location.country}</span>
@@ -208,9 +219,6 @@ Best regards.`)
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-foreground">{s.name}</span>
-                            {s.verified && (
-                              <CheckCircle className="h-3 w-3 text-secondary" />
-                            )}
                           </div>
                           <span className="text-sm text-muted-foreground">
                             {s.industry} • {s.location.country}
@@ -271,10 +279,10 @@ Best regards.`)
           <Button 
             type="submit" 
             className="gap-2"
-            disabled={!selectedSupplier || !subject || !message}
+            disabled={!selectedSupplier || !subject || !message || isSending}
           >
-            <Send className="h-4 w-4" />
-            Send Message
+            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {isSending ? "Sending..." : "Send Message"}
           </Button>
         </div>
       </form>

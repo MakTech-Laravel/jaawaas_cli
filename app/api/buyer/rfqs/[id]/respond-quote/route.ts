@@ -69,11 +69,12 @@ function validateRfqId(id: unknown): { valid: boolean; error?: string; id?: numb
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ): Promise<NextResponse<RespondQuoteResponse>> {
   try {
+    const params = await Promise.resolve(context.params)
     // Validate RFQ ID
-    const idValidation = validateRfqId(params.id)
+    const idValidation = validateRfqId(params?.id)
     if (!idValidation.valid) {
       return NextResponse.json(
         {

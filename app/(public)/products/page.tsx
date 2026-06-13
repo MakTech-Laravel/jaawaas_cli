@@ -186,13 +186,13 @@ function ProductsPageContent() {
               <aside className={`w-full lg:w-64 lg:shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
                 <div className="sticky top-24 rounded-xl border border-border bg-card p-5">
                   <div className="flex items-center justify-between">
-                    <h2 className="font-semibold text-foreground">{t?.landing?.products?.filters || "Filters"}</h2>
+                    <h2 className="font-semibold text-foreground">{(t?.landing?.products as any)?.filters || "Filters"}</h2>
                     {hasActiveFilters && (
                       <button 
                         onClick={clearFilters}
                         className="text-sm text-secondary hover:underline"
                       >
-                        {t?.landing?.products?.clearAll || "Clear all"}
+                        {(t?.landing?.products as any)?.clearAll || "Clear all"}
                       </button>
                     )}
                   </div>
@@ -221,10 +221,10 @@ function ProductsPageContent() {
                       <label className="text-sm font-medium text-foreground">{t?.landing?.products?.sortLabel || "Sort By"}</label>
                       <Select value={sortBy} onValueChange={setSortBy}>
                         <SelectTrigger className="mt-2">
-                          <SelectValue placeholder={t?.landing?.products?.sortBy || "Sort by"} />
+                          <SelectValue placeholder={(t?.landing?.products as any)?.sortBy || "Sort by"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="relevance">{t?.landing?.products?.relevance || "Relevance"}</SelectItem>
+                          <SelectItem value="relevance">{(t?.landing?.products as any)?.relevance || "Relevance"}</SelectItem>
                           <SelectItem value="price-low">{t?.landing?.products?.priceLow || "Price: Low to High"}</SelectItem>
                           <SelectItem value="price-high">{t?.landing?.products?.priceHigh || "Price: High to Low"}</SelectItem>
                           <SelectItem value="moq-low">{t?.landing?.products?.lowestMOQ || "Lowest MOQ"}</SelectItem>

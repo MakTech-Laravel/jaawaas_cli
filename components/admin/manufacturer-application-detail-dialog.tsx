@@ -98,9 +98,9 @@ export function ManufacturerApplicationDetailDialog({
         showCloseButton
         className="flex max-h-[min(92dvh,56rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
       >
-        <DialogHeader className="shrink-0 space-y-4 border-b border-border bg-gradient-to-r from-secondary/5 to-transparent px-4 pb-6 pt-6 text-left sm:px-6">
+        <DialogHeader className="shrink-0 space-y-4 border-b border-border bg-linear-to-r from-secondary/5 to-transparent px-4 pb-6 pt-6 text-left sm:px-6">
           <div className="flex gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-secondary/20 to-secondary/10 shadow-sm">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-secondary/20 to-secondary/10 shadow-sm">
               <Building2 className="h-7 w-7 text-secondary" />
             </div>
             <div className="min-w-0 flex-1 pt-1">
@@ -134,7 +134,7 @@ export function ManufacturerApplicationDetailDialog({
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-6">
             <div className="space-y-5">
               {/* Contact Information Section */}
-              <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background to-muted/30 p-5 shadow-sm hover:border-border/80 transition-colors">
+              <div className="rounded-xl border border-border/60 bg-linear-to-br from-background to-muted/30 p-5 shadow-sm hover:border-border/80 transition-colors">
                 <h3 className="mb-4 flex items-center gap-2.5 text-sm font-semibold text-foreground">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
                     <IdCard className="h-4 w-4 text-blue-600" />
@@ -167,7 +167,7 @@ export function ManufacturerApplicationDetailDialog({
               </div>
 
               {/* Company Information Section */}
-              <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background to-muted/30 p-5 shadow-sm hover:border-border/80 transition-colors">
+              <div className="rounded-xl border border-border/60 bg-linear-to-br from-background to-muted/30 p-5 shadow-sm hover:border-border/80 transition-colors">
                 <h3 className="mb-4 flex items-center gap-2.5 text-sm font-semibold text-foreground">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
                     <Building2 className="h-4 w-4 text-purple-600" />
@@ -201,7 +201,7 @@ export function ManufacturerApplicationDetailDialog({
               </div>
 
               {/* Verification Documents Section */}
-              <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background to-muted/30 p-5 shadow-sm hover:border-border/80 transition-colors">
+              <div className="rounded-xl border border-border/60 bg-linear-to-br from-background to-muted/30 p-5 shadow-sm hover:border-border/80 transition-colors">
                 <h3 className="mb-4 flex items-center gap-2.5 text-sm font-semibold text-foreground">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
                     <FileText className="h-4 w-4 text-amber-600" />
@@ -227,7 +227,7 @@ export function ManufacturerApplicationDetailDialog({
 
               {/* Factory Photos Section */}
               {factoryImages && factoryImages.length > 0 && (
-                <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background to-muted/30 p-5 shadow-sm hover:border-border/80 transition-colors">
+                <div className="rounded-xl border border-border/60 bg-linear-to-br from-background to-muted/30 p-5 shadow-sm hover:border-border/80 transition-colors">
                   <h3 className="mb-4 flex items-center gap-2.5 text-sm font-semibold text-foreground">
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-500/10">
                       <ImageIcon className="h-4 w-4 text-pink-600" />
@@ -235,23 +235,27 @@ export function ManufacturerApplicationDetailDialog({
                     Factory Photos <Badge variant="outline" className="ml-auto font-semibold">{factoryImages.length}</Badge>
                   </h3>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {factoryImages.map((img, i) => (
-                      <a
-                        key={`${img.id}-${i}`}
-                        href={img.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group relative aspect-4/3 overflow-hidden rounded-lg border border-border/60 bg-muted shadow-sm hover:shadow-md transition-shadow"
-                      >
-                        <img
-                          src={img.url}
-                          alt={`Factory ${i + 1}`}
-                          className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                      </a>
-                    ))}
+                    {factoryImages.map((img, i) => {
+                      const id = typeof img === 'string' ? i : img.id
+                      const url = typeof img === 'string' ? img : img.url
+                      return (
+                        <a
+                          key={`${id}-${i}`}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group relative aspect-4/3 overflow-hidden rounded-lg border border-border/60 bg-muted shadow-sm hover:shadow-md transition-shadow"
+                        >
+                          <img
+                            src={url}
+                            alt={`Factory ${i + 1}`}
+                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                        </a>
+                      )
+                    })}
                   </div>
                 </div>
               )}

@@ -8,7 +8,7 @@ import { getEcho } from "@/lib/echo"
 import { Loader2 } from "lucide-react"
 
 export default function ManufacturerMessagesPage() {
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth()
   const [selectedConvId, setSelectedConvId] = useState<string | undefined>()
   const [conversations, setConversations] = useState<ChatConversation[]>([])
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -150,7 +150,7 @@ export default function ManufacturerMessagesPage() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || isAuthLoading) {
     return (
       <div className="flex h-[calc(100dvh-120px)] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-secondary" />

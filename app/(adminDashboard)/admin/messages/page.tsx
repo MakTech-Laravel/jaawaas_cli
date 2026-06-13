@@ -121,11 +121,11 @@ export default function AdminMessagesPage() {
     // Diagnostic bindings to help debug live updates
     try {
       // Log subscription success / errors
-      channel.bind && channel.bind("pusher:subscription_succeeded", () => {
+      (channel as any).bind && (channel as any).bind("pusher:subscription_succeeded", () => {
         // eslint-disable-next-line no-console
         console.log(`Subscribed to chat.room.${selectedConvId}`)
       })
-      channel.bind && channel.bind("pusher:subscription_error", (err: any) => {
+      (channel as any).bind && (channel as any).bind("pusher:subscription_error", (err: any) => {
         // eslint-disable-next-line no-console
         console.error(`Pusher subscription error for chat.room.${selectedConvId}:`, err)
       })
