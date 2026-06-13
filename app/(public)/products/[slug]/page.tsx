@@ -212,12 +212,6 @@ export default function ProductPage() {
                   {product.customization_options && product.customization_options.length > 0 && (
                     <Badge variant="outline">Customizable</Badge>
                   )}
-                  {product.is_approved && (
-                    <Badge variant="secondary">
-                      <CheckCircle className="mr-1 h-3 w-3" />
-                      Verified
-                    </Badge>
-                  )}
                 </div>
 
                 <h1 className="mt-4 font-serif text-2xl font-medium text-foreground sm:text-3xl">
