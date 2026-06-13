@@ -191,7 +191,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const reversedUpdates = [...order.updates].reverse()
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="w-full">
       {/* Back */}
       <Link
         href="/dashboard/buyer/orders"
