@@ -322,7 +322,7 @@ export default function PricingPage() {
                         {planIsFree ? (
                           <div className="flex items-baseline">
                             <span className="text-4xl font-bold text-foreground">
-                              {t?.pricing?.paidPlans?.free || "Free"}
+                              {(t?.pricing?.paidPlans as any)?.free || "Free"}
                             </span>
                           </div>
                         ) : (
@@ -385,7 +385,7 @@ export default function PricingPage() {
             {/* Empty state if no plans */}
             {!plansLoading && plans.length === 0 && (
               <div className="mt-12 rounded-xl border border-dashed border-border py-16 text-center">
-                <p className="text-muted-foreground">{t?.pricing?.paidPlans?.noPlans || "No pricing plans available at this time."}</p>
+                <p className="text-muted-foreground">{(t?.pricing?.paidPlans as any)?.noPlans || "No pricing plans available at this time."}</p>
               </div>
             )}
 
