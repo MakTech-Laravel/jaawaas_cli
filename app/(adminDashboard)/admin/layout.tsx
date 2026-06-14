@@ -60,7 +60,7 @@ export default function AdminLayout({
     { name: t?.nav?.adminCreateManufacturer || "Create Manufacturer", href: "/admin/manufacturers/create", icon: UserPlus },
     { name: t?.nav?.adminMfgRegistrations || "Mfg registrations", href: "/admin/manufacturer-registrations", icon: ClipboardList },
     { name: t?.nav?.adminReviewManagement || "Review Management", href: "/admin/review-management", icon: ScanEye },
-    { name: t?.nav?.adminSuppliers || "Suppliers", href: "/admin/suppliers", icon: Factory, badge: "12" },
+    { name: t?.nav?.adminSuppliers || "Suppliers", href: "/admin/suppliers", icon: Factory },
     { name: t?.nav?.adminProducts || "Products", href: "/admin/products", icon: Package },
     { name: t?.nav?.adminIndustries || "Industries", href: "/admin/industries", icon: Layers },
     // { name: t?.nav?.adminQuickFilters || "Quick Filters", href: "/admin/filters", icon: Filter },
@@ -78,8 +78,8 @@ export default function AdminLayout({
     { name: t?.nav?.adminAnalytics || "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { name: t?.nav?.adminContactPage || "Contact Page", href: "/admin/contact", icon: Mail },
     { name: t?.nav?.adminFAQManagement || "FAQ Management", href: "/admin/faq", icon: HelpCircle },
-    { name: t?.nav?.adminHelpCenter || "Help Center", href: "/admin/help-center", icon: HelpCircle },
-    { name: t?.nav?.adminSiteSettings || "Site Settings", href: "/admin/site-settings", icon: FileText },
+    // { name: t?.nav?.adminHelpCenter || "Help Center", href: "/admin/help-center", icon: HelpCircle },
+    // { name: t?.nav?.adminSiteSettings || "Site Settings", href: "/admin/site-settings", icon: FileText },
     { name: t?.nav?.adminSettings || "Settings", href: "/admin/settings", icon: Settings },
   ]
 
@@ -157,9 +157,9 @@ export default function AdminLayout({
                     <item.icon className="h-5 w-5" />
                     {item.name}
                   </div>
-                  {item.badge && (
+                  {("badge" in item) && (item as any).badge && (
                     <Badge variant="secondary" className="bg-sidebar-primary/20 text-sidebar-primary-foreground text-xs">
-                      {item.badge}
+                      {(item as any).badge}
                     </Badge>
                   )}
                 </Link>
