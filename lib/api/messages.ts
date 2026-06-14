@@ -168,25 +168,35 @@ export async function getConversations(params?: Record<string, any>): Promise<Ch
  * Create a new conversation
  */
 export async function createConversation(participantIds: (string|number)[], name?: string): Promise<ChatConversation | null> {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  const id = `conv-${Date.now()}`;
-  const conv: ChatConversation = {
-    id,
-    participants: participantIds.map(pid => ({
-      id: pid.toString(),
-      name: `User ${pid}`,
-      role: pid.toString() === "buyer-1" ? "buyer" : "manufacturer"
-    })),
-    unreadCount: 0,
-    updatedAt: "Just now",
-  };
-  
-  dummyConversations = [conv, ...dummyConversations];
-  dummyMessages[id] = [];
-  saveToStorage();
-  
-  return conv;
+  try {
+    const response = await apiClient.post("/conversations", {
+      participant_ids: participantIds.map(id => Number(id))
+    });
+
+    const apiData = response.data?.data || response.data;
+    
+    // Fallback/normalization for UI since we might not have a GET /conversations yet
+    const id = apiData?.id ? apiData.id.toString() : `conv-${Date.now()}`;
+    const conv: ChatConversation = {
+      id,
+      participants: participantIds.map(pid => ({
+        id: pid.toString(),
+        name: `User ${pid}`,
+        role: pid.toString() === "buyer-1" ? "buyer" : "manufacturer"
+      })),
+      unreadCount: 0,
+      updatedAt: "Just now",
+    };
+    
+    dummyConversations = [conv, ...dummyConversations];
+    dummyMessages[id] = [];
+    saveToStorage();
+    
+    return conv;
+  } catch (error) {
+    console.error("Failed to create conversation:", error);
+    return null;
+  }
 }
 
 /**
