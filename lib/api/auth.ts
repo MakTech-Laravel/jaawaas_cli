@@ -92,6 +92,18 @@ export async function register(formData: FormData): Promise<LoginResponse> {
     },
   });
 
+  // Automatically create a conversation with the admin (ID 1)
+  const userId = response.data?.data?.user?.id;
+  if (userId) {
+    try {
+      await apiClient.post("/conversations", {
+        participant_ids: [1, userId]
+      });
+    } catch (err) {
+      console.error("Auto-creating admin conversation failed", err);
+    }
+  }
+
   return response.data;
 }
 
@@ -187,6 +199,18 @@ export async function completeSocialProfile(input: SocialCompleteProfileInput): 
       "Content-Type": "multipart/form-data",
     },
   })
+
+  // Automatically create a conversation with the admin (ID 1)
+  const userId = response.data?.data?.user?.id;
+  if (userId) {
+    try {
+      await apiClient.post("/conversations", {
+        participant_ids: [1, userId]
+      });
+    } catch (err) {
+      console.error("Auto-creating admin conversation failed", err);
+    }
+  }
 
   return response.data
 }
