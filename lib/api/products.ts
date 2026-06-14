@@ -1,4 +1,4 @@
-import { apiClient } from "./client"
+import { apiClient, publicApiClient } from "./client"
 import { getApiErrorMessage } from "./errors"
 
 // Types based on backend response
@@ -288,37 +288,47 @@ export async function getProducts(
   page = 1,
   filters?: Record<string, unknown>
 ): Promise<GetProductsResponse> {
-  // Use static dummy data
-  const data = dummyProducts.map(dummy => normalizeProduct(dummyToApiPayload(dummy)))
-  return {
-    success: true,
-    message: "Success",
-    data: data,
-    meta: {
-      current_page: 1,
-      last_page: 1,
-      per_page: 50,
-      total: data.length,
-      from: 1,
-      to: data.length
+  try {
+    const params = { page, ...filters }
+    const response = await publicApiClient.get<GetProductsResponse>("/products", { params })
+    
+    if (response.data && Array.isArray(response.data.data)) {
+      response.data.data = response.data.data.map(item => normalizeProduct(item))
+      
+      // Ensure meta is correctly formatted if present
+      if (response.data.meta) {
+        response.data.meta = normalizeMeta(response.data.meta)
+      }
+    }
+    
+    return response.data
+  } catch (error) {
+    console.error("Error fetching products:", error)
+    return {
+      success: false,
+      message: getApiErrorMessage(error) || "Failed to fetch products",
+      data: []
     }
   }
 }
 
 // Fetch single product
 export async function getProduct(slug: string): Promise<GetProductResponse> {
-  const dummy = dummyProducts.find(p => p.slug === slug || p.id === slug)
-  if (dummy) {
-    return {
-      success: true,
-      message: "Success",
-      data: normalizeProduct(dummyToApiPayload(dummy))
+  try {
+    const response = await publicApiClient.get<GetProductResponse>(`/products/${slug}`)
+    
+    if (response.data && response.data.data) {
+      response.data.data = normalizeProduct(response.data.data)
     }
-  }
-  return {
-    success: false,
-    message: "Product not found.",
-    data: null,
+    
+    return response.data
+  } catch (error) {
+    console.error(`Error fetching product ${slug}:`, error)
+    return {
+      success: false,
+      message: getApiErrorMessage(error) || "Product not found.",
+      data: null
+    }
   }
 }
 
