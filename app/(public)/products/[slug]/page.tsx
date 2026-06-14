@@ -34,6 +34,8 @@ import {
   Scale
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getReviewsByProduct, getProductRatingSummary } from "@/lib/data/reviews"
+import { ProductReviewsSection } from "@/components/products/product-reviews-section"
 
 export default function ProductPage() {
   const params = useParams()
@@ -476,6 +478,27 @@ export default function ProductPage() {
                 </div>
               </div>
             )}
+          </div>
+        </section>
+
+        {/* Product Reviews Section */}
+        <section className="border-t border-border bg-muted/30 py-12 lg:py-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-8 max-w-2xl">
+              <h2 className="font-serif text-2xl font-medium text-foreground sm:text-3xl">
+                Product Reviews
+              </h2>
+              <p className="mt-2 text-muted-foreground">
+                Read what other buyers have to say about their experience with this product.
+              </p>
+            </div>
+            
+            <ProductReviewsSection
+              productId={product.id.toString()}
+              productName={product.name}
+              reviews={getReviewsByProduct(product.id.toString())}
+              ratingSummary={getProductRatingSummary(product.id.toString())}
+            />
           </div>
         </section>
       </main>
