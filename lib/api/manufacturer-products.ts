@@ -842,10 +842,10 @@ export function buildManufacturerProductCreateFormData(
   const feats = p.keyFeatures.map((f) => f.trim()).filter(Boolean)
   if (feats.length > 0) {
     feats.forEach((feat, i) => {
-      fd.append(`key_features[${i}]`, feat)
+      fd.append(`key_feature[${i}]`, feat)
     })
   } else {
-    fd.append("key_features[0]", p.name.trim().slice(0, 120) || "Key feature")
+    fd.append("key_feature[0]", p.name.trim().slice(0, 120) || "Key feature")
   }
 
   const specs = p.specifications.filter((s) => s.title.trim() && s.value.trim())
@@ -863,11 +863,11 @@ export function buildManufacturerProductCreateFormData(
   }
 
   p.imageFiles.forEach((file, i) => {
-    fd.append(`product_images[${i}]`, file)
+    fd.append(`product_image[${i}]`, file)
   })
 
   if (p.brochureFile) {
-    fd.append("product_broschure", p.brochureFile)
+    fd.append("product_brochure", p.brochureFile)
   }
 
   return fd
