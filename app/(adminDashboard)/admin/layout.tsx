@@ -78,8 +78,8 @@ export default function AdminLayout({
     { name: t?.nav?.adminAnalytics || "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { name: t?.nav?.adminContactPage || "Contact Page", href: "/admin/contact", icon: Mail },
     { name: t?.nav?.adminFAQManagement || "FAQ Management", href: "/admin/faq", icon: HelpCircle },
-    { name: t?.nav?.adminHelpCenter || "Help Center", href: "/admin/help-center", icon: HelpCircle },
-    { name: t?.nav?.adminSiteSettings || "Site Settings", href: "/admin/site-settings", icon: FileText },
+    // { name: t?.nav?.adminHelpCenter || "Help Center", href: "/admin/help-center", icon: HelpCircle },
+    // { name: t?.nav?.adminSiteSettings || "Site Settings", href: "/admin/site-settings", icon: FileText },
     { name: t?.nav?.adminSettings || "Settings", href: "/admin/settings", icon: Settings },
   ]
 
