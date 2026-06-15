@@ -77,60 +77,74 @@ function NewRFQForm() {
       return
     }
 
-    const fetchProduct = async () => {
+    const setDummyProduct = () => {
       setLoading(true)
-      setError(null)
       
-      const response = await getProduct(productSlug)
+      // Static dummy product for UI flow
+      const mockProduct = {
+        id: productSlug,
+        name: "Static Product Example",
+        description: "This is a static product used to demonstrate the RFQ flow.",
+        slug: productSlug,
+        supplierId: "supplier-1",
+        supplierName: "Demo Supplier",
+        supplierSlug: "demo-supplier",
+        category: { id: "cat-1", name: "Sample Category", slug: "sample", icon: "Package", productCount: 0 },
+        categoryId: "cat-1",
+        images: [],
+        pricing_quantities: {
+          unit: "pieces",
+          min_order_quantity: 100,
+          min_price: { price: { amount: "10.00", currencyCode: "USD" }, quantity: 1000 },
+          max_price: { price: { amount: "15.00", currencyCode: "USD" }, quantity: 100 }
+        },
+        certifications: [],
+        specifications: [],
+        tags: [],
+        rating: 5,
+        reviewsCount: 10,
+        status: "published",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      } as any;
       
-      if (response.success && response.data) {
-        const productData = response.data;
-        setProduct(productData)
-        if (productData.supplierName) {
-          const found = suppliers.find(s => s.slug === productData.supplierSlug || s.id === productData.supplierId)
-          if (found) {
-            if (!initialSupplier) setSelectedSupplier(found)
-          } else {
-            if (!initialSupplier) {
-              setSelectedSupplier({
-                id: productData.supplierId || "custom",
-                name: productData.supplierName,
-                slug: productData.supplierSlug || "custom-supplier",
-                description: "",
-                shortDescription: "",
-                industry: "General",
-                industrySlug: "general",
-                categories: [],
-                location: {
-                  city: "Global",
-                  country: "International",
-                  countryCode: "INT"
-                },
-                reviewed: true,
-                reviewedLevel: "basic",
-                yearEstablished: new Date().getFullYear(),
-                employeeCount: "Unknown",
-                productCount: 0,
-                rating: 5.0,
-                reviewCount: 0,
-                responseRate: 100,
-                responseTime: "Usually responds within 24h",
-                onTimeDelivery: 100,
-                certifications: [],
-                mainProducts: [],
-                exportMarkets: []
-              })
-            }
-          }
-        }
-      } else {
-        setError(response.message || "Product not found")
+      setProduct(mockProduct)
+      
+      if (!initialSupplier) {
+        setSelectedSupplier({
+          id: "custom",
+          name: mockProduct.supplierName,
+          slug: mockProduct.supplierSlug,
+          description: "",
+          shortDescription: "",
+          industry: "General",
+          industrySlug: "general",
+          categories: [],
+          location: {
+            city: "Global",
+            country: "International",
+            countryCode: "INT"
+          },
+          reviewed: true,
+          reviewedLevel: "basic",
+          yearEstablished: new Date().getFullYear(),
+          employeeCount: "Unknown",
+          productCount: 0,
+          rating: 5.0,
+          reviewCount: 0,
+          responseRate: 100,
+          responseTime: "Usually responds within 24h",
+          onTimeDelivery: 100,
+          certifications: [],
+          mainProducts: [],
+          exportMarkets: []
+        })
       }
       
       setLoading(false)
     }
 
-    fetchProduct()
+    setDummyProduct()
   }, [productSlug])
 
 
@@ -158,43 +172,19 @@ function NewRFQForm() {
     setSubmitting(true)
     setSubmitError(null)
 
-    const rfqPayload = {
-      product_id: product.id,
-      quantity: parseInt(formData.quantity),
-      quantity_unit: formData.quantity_unit,
-      target_price: formData.target_price ? parseFloat(formData.target_price) : 0,
-      target_currency_code: formData.target_currency_code,
-      required_delivery_date: formData.required_delivery_date,
-      shipping_terms: formData.shipping_terms,
-      destination_country: formData.destination_country,
-      destination_port_city: formData.destination_port_city,
-      packaging_details: formData.packaging_details,
-      additional_requirements: formData.additional_requirements || undefined,
-    }
-
-    const response = await createRFQ(rfqPayload)
+    // Simulate network delay for static flow
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    if (response.success) {
-      // Show success toast
-      toast({
-        title: "Success! 🎉",
-        description: `Your RFQ for "${product.name}" has been sent successfully. Suppliers will review your request shortly.`,
-      })
-      
-      // Redirect after short delay to let user see the toast
-      setTimeout(() => {
-        router.push('/dashboard/buyer/rfqs')
-      }, 1500)
-    } else {
-      const errorMsg = response.message || "Failed to submit RFQ"
-      setSubmitError(errorMsg)
-      toast({
-        title: "Submission Failed",
-        description: errorMsg,
-        variant: "destructive",
-      })
-      setSubmitting(false)
-    }
+    // Show success toast statically
+    toast({
+      title: "Success! 🎉",
+      description: `Your RFQ for "${product.name}" has been sent successfully. Suppliers will review your request shortly.`,
+    })
+    
+    // Redirect after short delay to let user see the toast
+    setTimeout(() => {
+      router.push('/dashboard/buyer/rfqs')
+    }, 1500)
   }
 
   if (loading) {

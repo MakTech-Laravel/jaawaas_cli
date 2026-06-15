@@ -147,7 +147,7 @@ export function RfqDetail({ rfqId, config }: { rfqId: string; config: RfqDetailC
   }
 
   return (
-    <div className={cn("mx-auto", config.role === "admin" ? "w-full" : "max-w-5xl")}>
+    <div className="mx-auto w-full">
       <Button asChild variant="ghost" size="sm" className="mb-4 gap-1.5 text-muted-foreground">
         <Link href={config.basePath}>
           <ArrowLeft className="h-4 w-4" />
