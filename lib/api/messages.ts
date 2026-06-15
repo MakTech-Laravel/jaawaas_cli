@@ -175,7 +175,15 @@ export async function getMessages(conversationId: string): Promise<ChatMessage[]
     const data = response.data?.data || response.data || []
     if (!Array.isArray(data)) return []
     
-    return data.map((msg: any) => normalizeMessage(msg))
+    // Sort messages ascending (oldest first, newest last)
+    const sortedData = [...data].sort((a: any, b: any) => {
+      if (a.created_at && b.created_at) {
+        return new Date(a.created_at.replace(' ', 'T')).getTime() - new Date(b.created_at.replace(' ', 'T')).getTime()
+      }
+      return Number(a.id) - Number(b.id)
+    })
+    
+    return sortedData.map((msg: any) => normalizeMessage(msg))
   } catch (error) {
     console.error("Failed to fetch messages:", error)
     return []
