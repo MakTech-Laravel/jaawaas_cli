@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { ChatView, ChatConversation, ChatMessage, ChatParticipant } from "@/components/chat/chat-view"
 import { useAuth } from "@/lib/auth-context"
-import { getConversations, getMessages, sendMessage, markAsRead } from "@/lib/api/messages"
+import { getConversations, getMessages, sendMessage, markAsRead, createConversation } from "@/lib/api/messages"
 import { getEcho } from "@/lib/echo"
 import { Loader2 } from "lucide-react"
 
@@ -29,25 +29,40 @@ export default function ManufacturerMessagesPage() {
 
   // Fetch conversations
   useEffect(() => {
+    let isMounted = true;
     async function loadConversations() {
-      if (!isAuthenticated) return
+      if (!isAuthenticated || !user) return
       
       setIsLoading(true)
       try {
         const data = await getConversations()
-        setConversations(data)
-        if (data.length > 0 && !selectedConvId) {
-          setSelectedConvId(data[0].id)
+        
+        let finalConversations = data;
+        const hasAdmin = data.some(c => c.participants.some(p => p.id === "1" || p.role === "admin"));
+        
+        if (!hasAdmin && user.id) {
+          const newConv = await createConversation([1, user.id]);
+          if (newConv) {
+            finalConversations = [newConv, ...data];
+          }
+        }
+
+        if (isMounted) {
+          setConversations(finalConversations)
+          if (finalConversations.length > 0 && !selectedConvId) {
+            setSelectedConvId(finalConversations[0].id)
+          }
         }
       } catch (error) {
         console.error("Failed to load manufacturer conversations:", error)
       } finally {
-        setIsLoading(false)
+        if (isMounted) setIsLoading(false)
       }
     }
 
     loadConversations()
-  }, [isAuthenticated, selectedConvId])
+    return () => { isMounted = false; }
+  }, [isAuthenticated, user])
 
   // Fetch messages
   useEffect(() => {

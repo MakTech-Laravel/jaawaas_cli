@@ -39,6 +39,20 @@ interface ApiUser {
   role: string
   company_name?: string
   country?: string
+  avatar?: string
+}
+
+interface ApiMessage {
+  id: number | string
+  conversation_id?: number | string
+  user_id?: number | string
+  sender_id?: number | string
+  message?: string
+  body?: string
+  content?: string
+  is_read?: boolean | number
+  created_at?: string
+  updated_at?: string
 }
 
 interface ApiConversation {
@@ -51,6 +65,7 @@ interface ApiConversation {
   last_message_sent_at: string | null
   creator: ApiUser
   participants: ApiUser[]
+  last_message?: ApiMessage
 }
 
 /**
@@ -59,10 +74,33 @@ interface ApiConversation {
 function normalizeParticipant(user: ApiUser): ChatParticipant {
   return {
     id: user.id.toString(),
-    name: `${user.first_name} ${user.last_name}`.trim(),
+    name: `${user.first_name || ""} ${user.last_name || ""}`.trim() || 'Unknown User',
     role: user.role as any,
     company: user.company_name,
-    country: user.country
+    country: user.country,
+    avatar: user.avatar
+  }
+}
+
+function normalizeMessage(msg: ApiMessage): ChatMessage {
+  let formattedTime = "Recently"
+  try {
+    if (msg.created_at) {
+      formattedTime = formatDistanceToNow(new Date(msg.created_at.replace(' ', 'T')), { addSuffix: true })
+    }
+  } catch (e) {
+    console.error("Date formatting error:", e)
+  }
+
+  const senderId = msg.sender_id || msg.user_id || "";
+  const text = msg.body || msg.content || msg.message || "";
+
+  return {
+    id: msg.id ? msg.id.toString() : `msg-${Date.now()}`,
+    senderId: senderId.toString(),
+    text: text,
+    timestamp: formattedTime,
+    isRead: !!msg.is_read
   }
 }
 
@@ -70,7 +108,7 @@ function normalizeParticipant(user: ApiUser): ChatParticipant {
  * Normalizes an API conversation to the frontend ChatConversation type
  */
 function normalizeConversation(conv: ApiConversation): ChatConversation {
-  const lastActivity = conv.last_message_sent_at || conv.updated_at
+  const lastActivity = conv.last_message_sent_at || conv.updated_at || conv.created_at
   let formattedTime = "Recently"
   
   try {
@@ -86,69 +124,7 @@ function normalizeConversation(conv: ApiConversation): ChatConversation {
     participants: (conv.participants || []).map(normalizeParticipant),
     unreadCount: conv.is_unread ? 1 : 0,
     updatedAt: formattedTime,
-    lastMessage: undefined 
-  }
-}
-
-// Initialize from localStorage if available
-function getStoredConversations(): ChatConversation[] {
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem('mock_conversations')
-      if (stored) return JSON.parse(stored)
-    } catch (e) {
-      console.error(e)
-    }
-  }
-  return [
-    {
-      id: "conv-1",
-      participants: [
-        { id: "1", name: "TechVision Electronics", role: "manufacturer", company: "TechVision Electronics Co., Ltd." },
-        { id: "buyer-1", name: "Current Buyer", role: "buyer" }
-      ],
-      unreadCount: 0,
-      updatedAt: "2 hours ago",
-      lastMessage: {
-        id: "msg-1",
-        senderId: "1",
-        text: "Hello! We have received your inquiry. How can we help?",
-        timestamp: "2 hours ago",
-        isRead: true
-      }
-    }
-  ]
-}
-
-function getStoredMessages(): Record<string, ChatMessage[]> {
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem('mock_messages')
-      if (stored) return JSON.parse(stored)
-    } catch (e) {
-      console.error(e)
-    }
-  }
-  return {
-    "conv-1": [
-      {
-        id: "msg-1",
-        senderId: "1",
-        text: "Hello! We have received your inquiry. How can we help?",
-        timestamp: "2 hours ago",
-        isRead: true
-      }
-    ]
-  }
-}
-
-let dummyConversations: ChatConversation[] = getStoredConversations();
-let dummyMessages: Record<string, ChatMessage[]> = getStoredMessages();
-
-function saveToStorage() {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('mock_conversations', JSON.stringify(dummyConversations))
-    localStorage.setItem('mock_messages', JSON.stringify(dummyMessages))
+    lastMessage: conv.last_message ? normalizeMessage(conv.last_message) : undefined 
   }
 }
 
@@ -156,12 +132,16 @@ function saveToStorage() {
  * Fetch all conversations for the current user
  */
 export async function getConversations(params?: Record<string, any>): Promise<ChatConversation[]> {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 300));
-  return [...dummyConversations].sort((a, b) => {
-    // Basic sorting so newest is first
-    return a.updatedAt === "Just now" ? -1 : 1;
-  });
+  try {
+    const response = await apiClient.get("/conversations", { params })
+    const data = response.data?.data || response.data || []
+    if (!Array.isArray(data)) return []
+    
+    return data.map(normalizeConversation)
+  } catch (error) {
+    console.error("Failed to fetch conversations:", error)
+    return []
+  }
 }
 
 /**
@@ -175,24 +155,11 @@ export async function createConversation(participantIds: (string|number)[], name
 
     const apiData = response.data?.data || response.data;
     
-    // Fallback/normalization for UI since we might not have a GET /conversations yet
-    const id = apiData?.id ? apiData.id.toString() : `conv-${Date.now()}`;
-    const conv: ChatConversation = {
-      id,
-      participants: participantIds.map(pid => ({
-        id: pid.toString(),
-        name: `User ${pid}`,
-        role: pid.toString() === "buyer-1" ? "buyer" : "manufacturer"
-      })),
-      unreadCount: 0,
-      updatedAt: "Just now",
-    };
+    if (apiData && apiData.id) {
+      return normalizeConversation(apiData);
+    }
     
-    dummyConversations = [conv, ...dummyConversations];
-    dummyMessages[id] = [];
-    saveToStorage();
-    
-    return conv;
+    return null;
   } catch (error) {
     console.error("Failed to create conversation:", error);
     return null;
@@ -203,50 +170,58 @@ export async function createConversation(participantIds: (string|number)[], name
  * Fetch messages for a specific conversation
  */
 export async function getMessages(conversationId: string): Promise<ChatMessage[]> {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  return dummyMessages[conversationId] || [];
+  try {
+    const response = await apiClient.get(`/conversations/${conversationId}/messages`)
+    const data = response.data?.data || response.data || []
+    if (!Array.isArray(data)) return []
+    
+    return data.map((msg: any) => normalizeMessage(msg))
+  } catch (error) {
+    console.error("Failed to fetch messages:", error)
+    return []
+  }
 }
 
 /**
  * Send a message in a conversation
  */
 export async function sendMessage(conversationId: string, text: string, files?: File[]): Promise<ChatMessage | null> {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  const msg: ChatMessage = {
-    id: `msg-${Date.now()}`,
-    senderId: "buyer-1", // Assume current user is sending
-    text,
-    timestamp: "Just now",
-    isRead: true,
-  };
-  
-  if (!dummyMessages[conversationId]) {
-    dummyMessages[conversationId] = [];
-  }
-  
-  dummyMessages[conversationId] = [...dummyMessages[conversationId], msg];
-  
-  // Update conversation
-  dummyConversations = dummyConversations.map(c => {
-    if (c.id === conversationId) {
-      return { ...c, lastMessage: msg, updatedAt: "Just now" };
+  try {
+    let response;
+    
+    if (files && files.length) {
+      const formData = new FormData()
+      formData.append("body", text)
+      files.forEach((f, idx) => {
+        formData.append(`attachments[${idx}]`, f)
+      })
+      response = await apiClient.post(`/conversations/${conversationId}/messages`, formData)
+    } else {
+      response = await apiClient.post(`/conversations/${conversationId}/messages`, { body: text })
     }
-    return c;
-  });
-  
-  saveToStorage();
-  
-  return msg;
+    
+    const data = response.data?.data || response.data
+    
+    if (data && data.id) {
+      return normalizeMessage(data)
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Failed to send message:", error)
+    return null;
+  }
 }
 
 /**
  * Mark a conversation as read
  */
 export async function markAsRead(conversationId: string): Promise<boolean> {
-  dummyConversations = dummyConversations.map(c => 
-    c.id === conversationId ? { ...c, unreadCount: 0 } : c
-  );
-  saveToStorage();
-  return true;
+  try {
+    await apiClient.put(`/conversations/${conversationId}/read`);
+    return true;
+  } catch (e) {
+    // Ignore if endpoint doesn't exist
+    return false;
+  }
 }
