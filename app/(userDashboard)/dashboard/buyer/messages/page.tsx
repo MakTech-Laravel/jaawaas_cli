@@ -33,25 +33,40 @@ export default function BuyerMessagesPage() {
 
   // Fetch conversations
   useEffect(() => {
+    let isMounted = true;
     async function loadConversations() {
-      if (!isAuthenticated) return
+      if (!isAuthenticated || !user) return
       
       setIsLoading(true)
       try {
         const data = await getConversations()
-        setConversations(data)
-        if (data.length > 0 && !selectedConvId) {
-          setSelectedConvId(data[0].id)
+        
+        let finalConversations = data;
+        const hasAdmin = data.some(c => c.participants.some(p => p.id === "1" || p.role === "admin"));
+        
+        if (!hasAdmin && user.id) {
+          const newConv = await createConversation([1, user.id], "Admin Support");
+          if (newConv) {
+            finalConversations = [newConv, ...data];
+          }
+        }
+
+        if (isMounted) {
+          setConversations(finalConversations)
+          if (finalConversations.length > 0 && !selectedConvId) {
+            setSelectedConvId(finalConversations[0].id)
+          }
         }
       } catch (error) {
         console.error("Failed to load buyer conversations:", error)
       } finally {
-        setIsLoading(false)
+        if (isMounted) setIsLoading(false)
       }
     }
 
     loadConversations()
-  }, [isAuthenticated])
+    return () => { isMounted = false; }
+  }, [isAuthenticated, user])
 
   // Handle Auto Message
   useEffect(() => {
