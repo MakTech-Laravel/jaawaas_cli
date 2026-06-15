@@ -231,9 +231,6 @@ export function ChatView({
                     )}>
                       {msg.text}
                     </div>
-                    <span className="mt-1 text-[10px] text-muted-foreground px-1">
-                      {msg.timestamp}
-                    </span>
                   </div>
                 )
               })}

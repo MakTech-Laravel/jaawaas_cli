@@ -33,11 +33,20 @@ import {
   HelpCircle,
   X,
   User,
-  ShoppingBag
+  ShoppingBag,
+  LucideIcon
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const sidebarItems = [
+type SidebarItem = {
+  title: string
+  href: string
+  icon: LucideIcon
+  badge?: string
+  exact?: boolean
+}
+
+const sidebarItems: SidebarItem[] = [
   {
     title: "Overview",
     href: "/dashboard/buyer",
@@ -66,7 +75,6 @@ const sidebarItems = [
     title: "Messages",
     href: "/dashboard/buyer/messages",
     icon: MessageSquare,
-    badge: "5",
     exact: true
   },
   {
