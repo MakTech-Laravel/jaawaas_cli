@@ -1,18 +1,17 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
-  useOrders,
   formatCurrency,
   formatOrderDate,
   getStatusLabel,
   ORDER_STATUS_FLOW,
   type OrderStatus,
-  type OrderKind,
 } from "@/lib/orders-context"
+import { getAdminOrders, getAdminOrderStats, type ApiOrder, type OrderStats } from "@/lib/api/orders"
 import {
   PackageCheck,
   Package,
@@ -24,9 +23,10 @@ import {
   Layers,
   CheckCircle2,
   Clock,
+  Loader2,
 } from "lucide-react"
 
-const statusColors: Record<OrderStatus, string> = {
+const statusColors: Record<string, string> = {
   created: "bg-blue-100 text-blue-700",
   "in-production": "bg-amber-100 text-amber-700",
   ready: "bg-purple-100 text-purple-700",
@@ -35,60 +35,87 @@ const statusColors: Record<OrderStatus, string> = {
   cancelled: "bg-red-100 text-red-700",
 }
 
-type KindFilter = "all" | OrderKind
-type StatusFilter = "all" | OrderStatus
-
 export default function AdminOrdersPage() {
-  const { orders } = useOrders()
+  const [orders, setOrders] = useState<ApiOrder[]>([])
+  const [stats, setStats] = useState<OrderStats | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState("")
-  const [kindFilter, setKindFilter] = useState<KindFilter>("all")
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(false)
+  
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500)
+    return () => clearTimeout(timer)
+  }, [search])
 
-  const stats = useMemo(() => {
-    const totalValue = orders.reduce((sum, o) => sum + o.totalAmount, 0)
-    const active = orders.filter((o) => o.status !== "completed" && o.status !== "cancelled").length
-    const completed = orders.filter((o) => o.status === "completed").length
-    return {
-      total: orders.length,
-      products: orders.filter((o) => o.kind === "product").length,
-      services: orders.filter((o) => o.kind === "service").length,
-      active,
-      completed,
-      totalValue,
+  useEffect(() => {
+    async function fetchStats() {
+      const res = await getAdminOrderStats()
+      if (res.success && res.data) {
+        setStats(res.data)
+      }
     }
-  }, [orders])
+    fetchStats()
+  }, [])
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    return orders
-      .filter((o) => (kindFilter === "all" ? true : o.kind === kindFilter))
-      .filter((o) => (statusFilter === "all" ? true : o.status === statusFilter))
-      .filter((o) => {
-        if (!q) return true
-        const seller = o.kind === "service" ? o.providerName ?? o.manufacturerName : o.manufacturerName
-        return [o.id, o.title, o.buyerCompany, o.buyerName, seller]
-          .filter(Boolean)
-          .some((v) => v!.toLowerCase().includes(q))
+  useEffect(() => {
+    async function fetchOrders() {
+      setIsLoading(true)
+      const res = await getAdminOrders({
+        page: 1,
+        per_page: 20,
+        search: debouncedSearch || undefined,
+        status: statusFilter === "all" ? undefined : statusFilter,
       })
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  }, [orders, search, kindFilter, statusFilter])
+      
+      if (res.success) {
+        setOrders(res.data)
+        setHasMore(res.meta ? res.meta.currentPage < res.meta.lastPage : false)
+        setPage(1)
+      }
+      setIsLoading(false)
+    }
+    
+    fetchOrders()
+  }, [debouncedSearch, statusFilter])
+
+  const loadMore = async () => {
+    const nextPage = page + 1
+    const res = await getAdminOrders({
+      page: nextPage,
+      per_page: 20,
+      search: debouncedSearch || undefined,
+      status: statusFilter === "all" ? undefined : statusFilter,
+    })
+    
+    if (res.success) {
+      setOrders(prev => [...prev, ...res.data])
+      setHasMore(res.meta ? res.meta.currentPage < res.meta.lastPage : false)
+      setPage(nextPage)
+    }
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-serif text-2xl font-medium text-foreground">Orders &amp; Engagements</h1>
+        <h1 className="font-serif text-2xl font-medium text-foreground">Orders</h1>
         <p className="mt-1 text-muted-foreground">
-          Monitor all product orders and service engagements across the platform
+          Monitor all product orders across the platform
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard icon={Layers} label="Total" value={String(stats.total)} hint={`${stats.products} products · ${stats.services} services`} />
-        <StatCard icon={Clock} label="Active" value={String(stats.active)} hint="In progress" />
-        <StatCard icon={CheckCircle2} label="Completed" value={String(stats.completed)} hint="Closed out" />
-        <StatCard icon={DollarSign} label="Total Value" value={formatCurrency(stats.totalValue, "USD")} hint="Across all records" />
-      </div>
+      {stats && (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatCard icon={Layers} label="Total" value={String(stats.total)} hint="All orders" />
+          <StatCard icon={Clock} label="Active" value={String(stats.active)} hint="In progress" />
+          <StatCard icon={CheckCircle2} label="Completed" value={String(stats.completed)} hint="Closed out" />
+          <StatCard icon={DollarSign} label="Total Value" value={formatCurrency(stats.totalValue, "USD")} hint="Across all records" />
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -103,13 +130,9 @@ export default function AdminOrdersPage() {
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <FilterChip active={kindFilter === "all"} onClick={() => setKindFilter("all")}>All types</FilterChip>
-          <FilterChip active={kindFilter === "product"} onClick={() => setKindFilter("product")}>Products</FilterChip>
-          <FilterChip active={kindFilter === "service"} onClick={() => setKindFilter("service")}>Services</FilterChip>
-          <span className="mx-1 hidden h-5 w-px bg-border sm:block" />
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            onChange={(e) => setStatusFilter(e.target.value)}
             className="h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="all">All statuses</option>
@@ -139,81 +162,82 @@ export default function AdminOrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((o) => {
-                const isService = o.kind === "service"
-                const seller = isService ? o.providerName ?? o.manufacturerName : o.manufacturerName
-                return (
-                  <tr key={o.id} className="border-t border-border hover:bg-muted/50">
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-sm text-foreground">{o.id}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
-                            isService ? "bg-secondary/10 text-secondary" : "bg-primary/10 text-primary",
-                          )}
-                        >
-                          {isService ? <Briefcase className="h-4 w-4" /> : <Package className="h-4 w-4" />}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="truncate font-medium text-foreground">{o.title}</p>
-                          <p className="text-xs text-muted-foreground">{isService ? "Service engagement" : "Product order"}</p>
+              {isLoading && page === 1 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center">
+                    <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                  </td>
+                </tr>
+              ) : orders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <PackageCheck className="h-8 w-8 text-muted-foreground/50" />
+                      <p className="mt-2 text-sm text-muted-foreground">No matching orders found</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                orders.map((o) => {
+                  return (
+                    <tr key={o.id} className="border-t border-border hover:bg-muted/50">
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-sm text-foreground">{o.orderNumber}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+                              "bg-primary/10 text-primary",
+                            )}
+                          >
+                            <Package className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-foreground">{o.title}</p>
+                            <p className="text-xs text-muted-foreground">Product order</p>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <User className="h-3 w-3" />
-                        <span className="truncate">{o.buyerCompany}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        {isService ? <Briefcase className="h-3 w-3" /> : <Factory className="h-3 w-3" />}
-                        <span className="truncate">{seller}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm font-medium text-foreground hidden sm:table-cell">
-                      {formatCurrency(o.totalAmount, o.currency)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge className={statusColors[o.status]} variant="secondary">
-                        {getStatusLabel(o.status, o.kind)}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground hidden xl:table-cell">
-                      {formatOrderDate(o.createdAt)}
-                    </td>
-                  </tr>
-                )
-              })}
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <User className="h-3 w-3" />
+                          <span className="truncate" title={o.buyerEmail}>{o.buyerCompany || o.buyerName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Factory className="h-3 w-3" />
+                          <span className="truncate">{o.manufacturerName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm font-medium text-foreground hidden sm:table-cell">
+                        {formatCurrency(o.totalAmount, o.currencyCode)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge className={statusColors[o.status] || statusColors.created} variant="secondary">
+                          {getStatusLabel(o.status)}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground hidden xl:table-cell">
+                        {formatOrderDate(o.createdAt)}
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
             </tbody>
           </table>
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <PackageCheck className="h-10 w-10 text-muted-foreground/50" />
-            <p className="mt-3 font-medium text-foreground">No matching records</p>
-            <p className="mt-1 text-sm text-muted-foreground">Try adjusting your search or filters.</p>
-            {(search || kindFilter !== "all" || statusFilter !== "all") && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4 bg-transparent"
-                onClick={() => {
-                  setSearch("")
-                  setKindFilter("all")
-                  setStatusFilter("all")
-                }}
-              >
-                Clear filters
+          
+          {hasMore && !isLoading && (
+            <div className="border-t border-border p-4 text-center">
+              <Button variant="outline" size="sm" onClick={loadMore}>
+                Load More Orders
               </Button>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -239,30 +263,5 @@ function StatCard({
       <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
       <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>
-  )
-}
-
-function FilterChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-background text-muted-foreground hover:text-foreground",
-      )}
-    >
-      {children}
-    </button>
   )
 }

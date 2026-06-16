@@ -160,8 +160,11 @@ export async function createConversation(participantIds: (string|number)[], name
     }
     
     return null;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to create conversation:", error);
+    if (error.response) {
+      console.error("API Response Error:", error.response.data);
+    }
     return null;
   }
 }

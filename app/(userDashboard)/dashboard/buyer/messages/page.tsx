@@ -18,6 +18,7 @@ export default function BuyerMessagesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isMessagesLoading, setIsMessagesLoading] = useState(false)
   const [hasProcessedAutoMessage, setHasProcessedAutoMessage] = useState(false)
+  const [prefillMessage, setPrefillMessage] = useState("")
 
   const buildIncomingMessage = (data: any): ChatMessage | null => {
     const msg = data?.message
@@ -74,11 +75,15 @@ export default function BuyerMessagesPage() {
       if (!isAuthenticated || hasProcessedAutoMessage || conversations.length === 0) return
       
       const autoMessage = searchParams.get('auto_message')
+      const prefill = searchParams.get('prefill')
       const supplierSlug = searchParams.get('supplier')
       const productSlug = searchParams.get('product')
+      const productName = searchParams.get('productName') || productSlug
       
-      if (autoMessage === '1' && supplierSlug && productSlug) {
+      if ((autoMessage === '1' || prefill === '1') && supplierSlug && productSlug) {
         setHasProcessedAutoMessage(true)
+        
+        const isAutoSend = autoMessage === '1'
         
         // Remove query params to avoid duplicate sending on refresh
         router.replace('/dashboard/buyer/messages')
@@ -86,28 +91,41 @@ export default function BuyerMessagesPage() {
         setIsMessagesLoading(true)
         try {
           // In a real app, we'd lookup the supplier ID. For dummy data, use a static ID or slug
-          let conv = conversations.find(c => c.participants.some(p => p.id === supplierSlug || p.name.toLowerCase().includes(supplierSlug.split('-')[0])))
+          let conv = conversations.find(c => c.participants.some(p => 
+            p.id === supplierSlug || 
+            (supplierSlug === "admin" && (p.id === "1" || p.role === "admin")) ||
+            p.name.toLowerCase().includes(supplierSlug.split('-')[0])
+          ))
           
           if (!conv) {
-            conv = await createConversation([supplierSlug, "buyer-1"], `Inquiry about ${productSlug}`) || undefined;
+            const supplierIdNum = supplierSlug === "admin" ? 1 : supplierSlug;
+            conv = await createConversation([supplierIdNum, user?.id?.toString() || "buyer-1"], `Inquiry about ${productSlug}`) || undefined;
             if (conv) {
               setConversations(prev => [conv!, ...prev])
+            } else {
+              console.error("Failed to create conversation with supplier:", supplierSlug)
+              // Optionally show a toast error here
             }
           }
           
           if (conv) {
             setSelectedConvId(conv.id)
-            const defaultText = `Hello,\n\nI am interested in your product "${productSlug}".\nCould you please provide more details regarding pricing, minimum order quantity, and available shipping options?\n\nI look forward to hearing from you soon.\n\nBest regards.`
+            const defaultText = `Hello,\n\nI am interested in your product "${productName}".\n\nProduct Link: ${window.location.origin}/products/${productSlug}\n\n\nCould you please provide more details regarding pricing, minimum order quantity, and available shipping options?\n\nI look forward to hearing from you soon.\n\nBest regards.`
             
-            // Send the message
-            const sentMsg = await sendMessage(conv.id, defaultText)
-            if (sentMsg) {
-              setMessages(prev => [...prev, sentMsg])
-              setConversations(prev => prev.map(c => 
-                c.id === conv!.id 
-                  ? { ...c, lastMessage: sentMsg, updatedAt: "Just now" } 
-                  : c
-              ))
+            if (isAutoSend) {
+              // Send the message
+              const sentMsg = await sendMessage(conv.id, defaultText)
+              if (sentMsg) {
+                setMessages(prev => [...prev, sentMsg])
+                setConversations(prev => prev.map(c => 
+                  c.id === conv!.id 
+                    ? { ...c, lastMessage: sentMsg, updatedAt: "Just now" } 
+                    : c
+                ))
+              }
+            } else {
+              // Just prefill the text box for the user
+              setPrefillMessage(defaultText)
             }
           }
         } catch (error) {
@@ -241,6 +259,7 @@ export default function BuyerMessagesPage() {
         onSendMessage={handleSendMessage}
         selectedConversationId={selectedConvId}
         isLoading={isMessagesLoading}
+        initialMessage={prefillMessage}
       />
     </div>
   )
