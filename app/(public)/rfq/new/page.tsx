@@ -175,8 +175,9 @@ function NewRFQForm() {
         title: 'Success! 🎉',
         text: `Your RFQ for "${product.name}" has been sent successfully. Suppliers will review your request shortly.`,
         icon: 'success',
-        confirmButtonColor: 'hsl(var(--primary))',
-        confirmButtonText: 'View My RFQs'
+        confirmButtonColor: '#503322',
+        confirmButtonText: 'View My RFQs',
+        customClass: { confirmButton: 'text-white' }
       }).then(() => {
         router.push('/dashboard/buyer/rfqs')
       })

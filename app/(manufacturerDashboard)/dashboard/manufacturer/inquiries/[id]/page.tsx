@@ -97,13 +97,14 @@ export default function InquiryDetailPage() {
   })
   
   // File upload state
-  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; type: string; size: string }[]>([])
-  const [uploadedImages, setUploadedImages] = useState<{ name: string; preview: string }[]>([])
+  const [uploadedFiles, setUploadedFiles] = useState<{ file: File, name: string; type: string; size: string }[]>([])
+  const [uploadedImages, setUploadedImages] = useState<{ file: File, name: string; preview: string }[]>([])
   
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files) {
       const newFiles = Array.from(files).map(file => ({
+        file,
         name: file.name,
         type: file.type.includes('pdf') ? 'PDF' : file.type.includes('doc') ? 'DOC' : 'File',
         size: `${(file.size / 1024).toFixed(1)} KB`
@@ -118,7 +119,7 @@ export default function InquiryDetailPage() {
       Array.from(files).forEach(file => {
         const reader = new FileReader()
         reader.onloadend = () => {
-          setUploadedImages(prev => [...prev, { name: file.name, preview: reader.result as string }])
+          setUploadedImages(prev => [...prev, { file, name: file.name, preview: reader.result as string }])
         }
         reader.readAsDataURL(file)
       })
@@ -171,28 +172,36 @@ export default function InquiryDetailPage() {
     const minimum_order_quantity = parseInt(quoteData.moq.replace(/[^0-9]/g, ''), 10) || 0
     const lead_time_days = parseInt(quoteData.leadTime.replace(/[^0-9]/g, ''), 10) || 0
     
-    // Construct manufacturer_reply from all the extra fields
-    const replyParts = []
-    if (quoteData.notes) replyParts.push(`Notes: ${quoteData.notes}`)
-    if (quoteData.shippingTerms) replyParts.push(`Shipping Terms: ${quoteData.shippingTerms}`)
-    if (quoteData.paymentTerms) replyParts.push(`Payment Terms: ${quoteData.paymentTerms}`)
-    if (quoteData.sampleCost) replyParts.push(`Sample Cost: ${quoteData.sampleCost}`)
-    if (quoteData.sampleLeadTime) replyParts.push(`Sample Lead Time: ${quoteData.sampleLeadTime}`)
-    if (quoteData.packagingDetails) replyParts.push(`Packaging Details: ${quoteData.packagingDetails}`)
-    if (quoteData.certifications.length > 0) replyParts.push(`Certifications: ${quoteData.certifications.join(", ")}`)
+    const formData = new FormData()
+    formData.append('quoted_price', quoted_price.toString())
+    formData.append('quote_currency_code', 'USD') // Assuming USD for now
+    formData.append('minimum_order_quantity', minimum_order_quantity.toString())
+    formData.append('lead_time_days', lead_time_days.toString())
+    formData.append('lead_time', quoteData.leadTime)
+    formData.append('quote_valid_until', quoteData.validUntil || new Date().toISOString().split('T')[0])
+    formData.append('quote_shipping_terms', quoteData.shippingTerms)
+    formData.append('quote_payment_terms', quoteData.paymentTerms)
+    formData.append('sample_cost', quoteData.sampleCost)
+    formData.append('sample_lead_time', quoteData.sampleLeadTime)
+    formData.append('quote_packaging_details', quoteData.packagingDetails)
     
-    const manufacturer_reply = replyParts.join("\n")
+    quoteData.certifications.forEach(cert => {
+      formData.append('quote_certifications[]', cert)
+    })
+    
+    formData.append('quote_notes', quoteData.notes)
+
+    uploadedImages.forEach((img, index) => {
+      formData.append(`photos[${index}]`, img.file)
+    })
+
+    uploadedFiles.forEach((doc, index) => {
+      formData.append(`attachments[${index}]`, doc.file)
+    })
 
     try {
       const { submitManufacturerQuote } = await import("@/lib/api/rfqs")
-      const response = await submitManufacturerQuote(id, {
-        quoted_price,
-        quote_currency_code: "USD", // Assuming USD for now or extract from target
-        minimum_order_quantity,
-        lead_time_days,
-        quote_valid_until: quoteData.validUntil || new Date().toISOString().split('T')[0],
-        manufacturer_reply,
-      })
+      const response = await submitManufacturerQuote(id, formData)
 
       if (response.success) {
         setShowQuoteDialog(false)

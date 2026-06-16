@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -20,79 +21,62 @@ import {
   Clock,
   AlertCircle,
   Eye,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from "lucide-react"
+import { getBuyerRFQs, type BuyerRFQ } from "@/lib/api/rfqs"
+import { format } from "date-fns"
 
-const rfqs = [
-  { 
-    id: "RFQ-001", 
-    product: "TWS Wireless Earbuds Pro", 
-    supplier: "TechVision Electronics", 
-    quantity: "5,000 units",
-    status: "Quoted", 
-    date: "Mar 12, 2026",
-    quotedPrice: "$14.50/unit"
-  },
-  { 
-    id: "RFQ-002", 
-    product: "Organic Cotton Jersey Fabric", 
-    supplier: "EcoThread Textiles", 
-    quantity: "2,000 meters",
-    status: "Pending", 
-    date: "Mar 10, 2026",
-    quotedPrice: null
-  },
-  { 
-    id: "RFQ-003", 
-    product: "CNC Vertical Machining Center", 
-    supplier: "GlobalFab Machinery", 
-    quantity: "2 sets",
-    status: "In Review", 
-    date: "Mar 8, 2026",
-    quotedPrice: null
-  },
-  { 
-    id: "RFQ-004", 
-    product: "Modern Solid Oak Dining Table", 
-    supplier: "LuxHome Furniture", 
-    quantity: "100 pieces",
-    status: "Quoted", 
-    date: "Mar 5, 2026",
-    quotedPrice: "$225/piece"
-  },
-  { 
-    id: "RFQ-005", 
-    product: "Vitamin C Brightening Serum", 
-    supplier: "PureGlow Cosmetics", 
-    quantity: "10,000 units",
-    status: "Expired", 
-    date: "Feb 28, 2026",
-    quotedPrice: null
-  },
-]
-
-const statusConfig: Record<string, { color: string; icon: typeof CheckCircle }> = {
-  "Quoted": { color: "bg-emerald-100 text-emerald-700", icon: CheckCircle },
-  "Pending": { color: "bg-amber-100 text-amber-700", icon: Clock },
-  "In Review": { color: "bg-blue-100 text-blue-700", icon: Eye },
-  "Expired": { color: "bg-gray-100 text-gray-700", icon: AlertCircle },
+const statusConfig: Record<string, { color: string; icon: typeof CheckCircle; label: string }> = {
+  "quoted": { color: "bg-emerald-100 text-emerald-700", icon: CheckCircle, label: "Quoted" },
+  "pending": { color: "bg-amber-100 text-amber-700", icon: Clock, label: "Pending" },
+  "in review": { color: "bg-blue-100 text-blue-700", icon: Eye, label: "In Review" },
+  "expired": { color: "bg-gray-100 text-gray-700", icon: AlertCircle, label: "Expired" },
+  "accepted": { color: "bg-green-100 text-green-700", icon: CheckCircle, label: "Accepted" },
+  "rejected": { color: "bg-red-100 text-red-700", icon: AlertCircle, label: "Rejected" },
 }
 
 export default function BuyerRFQsPage() {
+  const router = useRouter()
+  const [rfqs, setRfqs] = useState<BuyerRFQ[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
 
+  useEffect(() => {
+    async function loadRFQs() {
+      const response = await getBuyerRFQs()
+      if (response.success && response.data) {
+        setRfqs(response.data)
+      }
+      setLoading(false)
+    }
+    loadRFQs()
+  }, [])
+
   const filteredRFQs = rfqs.filter(rfq => {
-    if (searchQuery && !rfq.product.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !rfq.supplier.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !rfq.id.toLowerCase().includes(searchQuery.toLowerCase())) {
+    const productName = rfq.product?.name || ""
+    const supplierName = rfq.supplier?.company_name || ""
+    const rfqNumber = rfq.rfq_number || ""
+    
+    if (searchQuery && !productName.toLowerCase().includes(searchQuery.toLowerCase()) && 
+        !supplierName.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !rfqNumber.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false
     }
-    if (statusFilter && statusFilter !== "all" && rfq.status !== statusFilter) {
+    if (statusFilter && statusFilter !== "all" && rfq.status.toLowerCase() !== statusFilter.toLowerCase()) {
       return false
     }
     return true
   })
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -119,15 +103,15 @@ export default function BuyerRFQsPage() {
           <p className="text-sm text-muted-foreground">Total RFQs</p>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-emerald-600">{rfqs.filter(r => r.status === "Quoted").length}</div>
+          <div className="text-2xl font-bold text-emerald-600">{rfqs.filter(r => r.status.toLowerCase() === "quoted").length}</div>
           <p className="text-sm text-muted-foreground">Quoted</p>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-amber-600">{rfqs.filter(r => r.status === "Pending").length}</div>
+          <div className="text-2xl font-bold text-amber-600">{rfqs.filter(r => r.status.toLowerCase() === "pending").length}</div>
           <p className="text-sm text-muted-foreground">Pending</p>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-blue-600">{rfqs.filter(r => r.status === "In Review").length}</div>
+          <div className="text-2xl font-bold text-blue-600">{rfqs.filter(r => r.status.toLowerCase() === "in review").length}</div>
           <p className="text-sm text-muted-foreground">In Review</p>
         </div>
       </div>
@@ -150,10 +134,12 @@ export default function BuyerRFQsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="Quoted">Quoted</SelectItem>
-            <SelectItem value="Pending">Pending</SelectItem>
-            <SelectItem value="In Review">In Review</SelectItem>
-            <SelectItem value="Expired">Expired</SelectItem>
+            <SelectItem value="quoted">Quoted</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="in review">In Review</SelectItem>
+            <SelectItem value="expired">Expired</SelectItem>
+            <SelectItem value="accepted">Accepted</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -176,36 +162,40 @@ export default function BuyerRFQsPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {filteredRFQs.map((rfq) => {
-                const StatusIcon = statusConfig[rfq.status]?.icon || Clock
+                const statusKey = rfq.status.toLowerCase()
+                const StatusIcon = statusConfig[statusKey]?.icon || Clock
+                const statusColor = statusConfig[statusKey]?.color || "bg-gray-100 text-gray-700"
+                const statusLabel = statusConfig[statusKey]?.label || rfq.status
+                
                 return (
-                  <tr key={rfq.id} className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => window.location.href = `/dashboard/buyer/rfqs/${rfq.id}`}>
-                    <td className="px-5 py-4 text-sm font-medium text-foreground">{rfq.id}</td>
-                    <td className="px-5 py-4 text-sm text-foreground">{rfq.product}</td>
-                    <td className="px-5 py-4 text-sm text-muted-foreground">{rfq.supplier}</td>
-                    <td className="px-5 py-4 text-sm text-muted-foreground">{rfq.quantity}</td>
+                  <tr key={rfq.id} className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/buyer/rfqs/${rfq.id}`)}>
+                    <td className="px-5 py-4 text-sm font-medium text-foreground">{rfq.rfq_number}</td>
+                    <td className="px-5 py-4 text-sm text-foreground">{rfq.product?.name || 'Unknown'}</td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">{rfq.supplier?.company_name || 'No supplier'}</td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">{rfq.quantity} {rfq.quantity_unit}</td>
                     <td className="px-5 py-4">
-                      <Badge className={statusConfig[rfq.status]?.color}>
+                      <Badge className={statusColor}>
                         <StatusIcon className="mr-1 h-3 w-3" />
-                        {rfq.status}
+                        {statusLabel}
                       </Badge>
                     </td>
                     <td className="px-5 py-4 text-sm">
-                      {rfq.quotedPrice ? (
-                        <span className="font-semibold text-foreground">{rfq.quotedPrice}</span>
+                      {rfq.quoted_price ? (
+                        <span className="font-semibold text-foreground">{rfq.quoted_price} {rfq.quote_currency_code}</span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-sm text-muted-foreground">{rfq.date}</td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">{format(new Date(rfq.created_at), 'MMM d, yyyy')}</td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild onClick={(e) => e.stopPropagation()}>
                           <Link href={`/dashboard/buyer/rfqs/${rfq.id}`}>
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                          <Link href="/dashboard/buyer/messages">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild onClick={(e) => e.stopPropagation()}>
+                          <Link href={`/dashboard/buyer/messages?conversation=${rfq.conversation_id || ''}`}>
                             <MessageSquare className="h-4 w-4" />
                           </Link>
                         </Button>
