@@ -1,18 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useAuth } from "@/lib/auth-context"
 import {
-  useOrders,
-  formatCurrency,
-  formatOrderDate,
   ORDER_STATUS_LABELS,
   ORDER_STATUS_FLOW,
   getStatusLabel,
-  type Order,
+  formatCurrency,
+  formatOrderDate,
   type OrderStatus,
 } from "@/lib/orders-context"
+import { getBuyerOrders, getBuyerOrderStats, type ApiOrder, type OrderStats } from "@/lib/api/orders"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
@@ -22,11 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
 import {
   Package,
   Search,
   Factory,
-  Briefcase,
   MapPin,
   ChevronRight,
   FileText,
@@ -36,12 +34,11 @@ import {
   Hammer,
   PackageCheck,
   XCircle,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const DEMO_BUYER_EMAIL = "buyer@demo.com"
-
-const statusStyles: Record<OrderStatus, { color: string; icon: typeof Clock }> = {
+const statusStyles: Record<string, { color: string; icon: typeof Clock }> = {
   created: { color: "bg-blue-100 text-blue-700", icon: Clock },
   "in-production": { color: "bg-amber-100 text-amber-700", icon: Hammer },
   ready: { color: "bg-violet-100 text-violet-700", icon: PackageCheck },
@@ -50,7 +47,7 @@ const statusStyles: Record<OrderStatus, { color: string; icon: typeof Clock }> =
   cancelled: { color: "bg-gray-100 text-gray-600", icon: XCircle },
 }
 
-function OrderProgress({ status }: { status: OrderStatus }) {
+function OrderProgress({ status }: { status: string }) {
   if (status === "cancelled") {
     return (
       <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
@@ -59,7 +56,7 @@ function OrderProgress({ status }: { status: OrderStatus }) {
       </div>
     )
   }
-  const currentIndex = ORDER_STATUS_FLOW.indexOf(status)
+  const currentIndex = ORDER_STATUS_FLOW.indexOf(status as OrderStatus)
   return (
     <div className="flex items-center gap-1.5">
       {ORDER_STATUS_FLOW.map((s, i) => (
@@ -67,7 +64,7 @@ function OrderProgress({ status }: { status: OrderStatus }) {
           key={s}
           className={cn(
             "h-1.5 flex-1 rounded-full transition-colors",
-            i <= currentIndex ? "bg-secondary" : "bg-muted",
+            currentIndex >= 0 && i <= currentIndex ? "bg-secondary" : "bg-muted",
           )}
           title={ORDER_STATUS_LABELS[s]}
         />
@@ -76,11 +73,10 @@ function OrderProgress({ status }: { status: OrderStatus }) {
   )
 }
 
-function OrderCard({ order }: { order: Order }) {
-  const StatusIcon = statusStyles[order.status].icon
-  const isService = order.kind === "service"
-  const SellerIcon = isService ? Briefcase : Factory
-  const sellerName = isService ? order.providerName ?? order.manufacturerName : order.manufacturerName
+function OrderCard({ order }: { order: ApiOrder }) {
+  const style = statusStyles[order.status] || { color: "bg-gray-100 text-gray-700", icon: Clock }
+  const StatusIcon = style.icon
+
   return (
     <Link
       href={`/dashboard/buyer/orders/${order.id}`}
@@ -89,33 +85,37 @@ function OrderCard({ order }: { order: Order }) {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-muted-foreground">{order.id}</span>
-            <Badge className={cn("gap-1 text-xs", statusStyles[order.status].color)}>
+            <span className="text-xs font-medium text-muted-foreground">{order.orderNumber}</span>
+            <Badge className={cn("gap-1 text-xs", style.color)}>
               <StatusIcon className="h-3 w-3" />
-              {getStatusLabel(order.status, order.kind)}
+              {getStatusLabel(order.status)}
             </Badge>
           </div>
           <h3 className="mt-1.5 truncate font-medium text-foreground">{order.title}</h3>
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
-              <SellerIcon className="h-3.5 w-3.5" />
-              {sellerName}
+              <Factory className="h-3.5 w-3.5" />
+              {order.manufacturerName}
             </span>
             <span className="flex items-center gap-1.5">
-              {isService ? <Briefcase className="h-3.5 w-3.5" /> : <Package className="h-3.5 w-3.5" />}
-              {order.quantity}
+              <Package className="h-3.5 w-3.5" />
+              {order.quantity} {order.quantityUnit}
             </span>
-            <span className="flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5" />
-              {order.destination}
-            </span>
+            {order.destination && (
+              <span className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5" />
+                {order.destination}
+              </span>
+            )}
           </div>
         </div>
         <div className="flex flex-col items-end gap-1 text-right">
           <span className="font-serif text-lg font-medium text-foreground">
-            {formatCurrency(order.totalAmount, order.currency)}
+            {formatCurrency(order.totalAmount, order.currencyCode)}
           </span>
-          <span className="text-xs text-muted-foreground">Est. {formatOrderDate(order.estimatedDelivery)}</span>
+          {order.estimatedDeliveryAt && (
+            <span className="text-xs text-muted-foreground">Est. {formatOrderDate(order.estimatedDeliveryAt)}</span>
+          )}
         </div>
       </div>
 
@@ -126,8 +126,8 @@ function OrderCard({ order }: { order: Order }) {
       <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <FileText className="h-3.5 w-3.5" />
-          {order.documents.length} document{order.documents.length === 1 ? "" : "s"}
-          {order.updates.length > 0 && ` · ${order.updates.length} update${order.updates.length === 1 ? "" : "s"}`}
+          {order.attachments.length} document{order.attachments.length === 1 ? "" : "s"}
+          {order.statusUpdates.length > 0 && ` · ${order.statusUpdates.length} update${order.statusUpdates.length === 1 ? "" : "s"}`}
         </span>
         <span className="flex items-center gap-1 font-medium text-secondary opacity-0 transition-opacity group-hover:opacity-100">
           View details
@@ -139,32 +139,67 @@ function OrderCard({ order }: { order: Order }) {
 }
 
 export default function BuyerOrdersPage() {
-  const { user } = useAuth()
-  const { orders } = useOrders()
+  const [orders, setOrders] = useState<ApiOrder[]>([])
+  const [stats, setStats] = useState<OrderStats | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(false)
+  
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
-  const buyerEmail = user?.email ?? DEMO_BUYER_EMAIL
-  const myOrders = orders.filter(
-    (o) => o.buyerEmail === buyerEmail || o.buyerEmail === DEMO_BUYER_EMAIL,
-  )
-
-  const filtered = myOrders.filter((o) => {
-    if (statusFilter !== "all" && o.status !== statusFilter) return false
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      return (
-        o.title.toLowerCase().includes(q) ||
-        o.id.toLowerCase().includes(q) ||
-        o.manufacturerName.toLowerCase().includes(q)
-      )
+  useEffect(() => {
+    async function fetchStats() {
+      const res = await getBuyerOrderStats()
+      if (res.success && res.data) {
+        setStats(res.data)
+      }
     }
-    return true
-  })
+    fetchStats()
+  }, [])
 
-  const activeCount = myOrders.filter(
-    (o) => o.status !== "completed" && o.status !== "cancelled",
-  ).length
+  useEffect(() => {
+    async function fetchOrders() {
+      setIsLoading(true)
+      const res = await getBuyerOrders({
+        page: 1,
+        per_page: 15,
+        search: debouncedSearch || undefined,
+        status: statusFilter === "all" ? undefined : statusFilter,
+      })
+      
+      if (res.success) {
+        setOrders(res.data)
+        setHasMore(res.meta ? res.meta.currentPage < res.meta.lastPage : false)
+        setPage(1)
+      }
+      setIsLoading(false)
+    }
+    
+    fetchOrders()
+  }, [debouncedSearch, statusFilter])
+
+  const loadMore = async () => {
+    const nextPage = page + 1
+    const res = await getBuyerOrders({
+      page: nextPage,
+      per_page: 15,
+      search: debouncedSearch || undefined,
+      status: statusFilter === "all" ? undefined : statusFilter,
+    })
+    
+    if (res.success) {
+      setOrders(prev => [...prev, ...res.data])
+      setHasMore(res.meta ? res.meta.currentPage < res.meta.lastPage : false)
+      setPage(nextPage)
+    }
+  }
 
   return (
     <div className="w-full">
@@ -177,25 +212,24 @@ export default function BuyerOrdersPage() {
       </div>
 
       {/* Summary */}
-      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Total orders</p>
-          <p className="mt-1 font-serif text-2xl font-medium text-foreground">{myOrders.length}</p>
+      {stats && (
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Total orders</p>
+            <p className="mt-1 font-serif text-2xl font-medium text-foreground">{stats.total}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">In progress</p>
+            <p className="mt-1 font-serif text-2xl font-medium text-foreground">{stats.active}</p>
+          </div>
+          <div className="col-span-2 rounded-xl border border-border bg-card p-4 sm:col-span-1">
+            <p className="text-xs text-muted-foreground">Total value</p>
+            <p className="mt-1 font-serif text-2xl font-medium text-foreground">
+              {formatCurrency(stats.totalValue, "USD")}
+            </p>
+          </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">In progress</p>
-          <p className="mt-1 font-serif text-2xl font-medium text-foreground">{activeCount}</p>
-        </div>
-        <div className="col-span-2 rounded-xl border border-border bg-card p-4 sm:col-span-1">
-          <p className="text-xs text-muted-foreground">Total value</p>
-          <p className="mt-1 font-serif text-2xl font-medium text-foreground">
-            {formatCurrency(
-              myOrders.reduce((sum, o) => sum + o.totalAmount, 0),
-              myOrders[0]?.currency ?? "USD",
-            )}
-          </p>
-        </div>
-      </div>
+      )}
 
       {/* Filters */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row">
@@ -214,21 +248,34 @@ export default function BuyerOrdersPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
-            {(Object.keys(ORDER_STATUS_LABELS) as OrderStatus[]).map((s) => (
+            {ORDER_STATUS_FLOW.map((s) => (
               <SelectItem key={s} value={s}>
                 {ORDER_STATUS_LABELS[s]}
               </SelectItem>
             ))}
+            <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* List */}
-      {filtered.length > 0 ? (
+      {isLoading && page === 1 ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : orders.length > 0 ? (
         <div className="space-y-3">
-          {filtered.map((order) => (
+          {orders.map((order) => (
             <OrderCard key={order.id} order={order} />
           ))}
+          
+          {hasMore && (
+            <div className="pt-4 text-center">
+              <Button variant="outline" onClick={loadMore}>
+                Load More
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-16 text-center">
@@ -236,12 +283,10 @@ export default function BuyerOrdersPage() {
             <Package className="h-6 w-6 text-muted-foreground" />
           </div>
           <h3 className="mt-4 font-medium text-foreground">
-            {myOrders.length === 0 ? "No orders yet" : "No orders match your filters"}
+            No orders match your filters
           </h3>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            {myOrders.length === 0
-              ? "Once you and a manufacturer agree to proceed on a quotation, your order will appear here for tracking."
-              : "Try adjusting your search or status filter."}
+            Try adjusting your search or status filter.
           </p>
         </div>
       )}

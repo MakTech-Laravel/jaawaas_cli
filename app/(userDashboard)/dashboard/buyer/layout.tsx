@@ -109,7 +109,8 @@ export default function BuyerDashboardLayout({
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/auth/signin")
+      const currentUrl = `${pathname}${window.location.search}`
+      router.push(`/auth/signin?callbackUrl=${encodeURIComponent(currentUrl)}`)
     }
     if (!isLoading && isAuthenticated && user?.role !== "buyer") {
       router.push(user?.role === "admin" ? "/admin" : "/dashboard/manufacturer")

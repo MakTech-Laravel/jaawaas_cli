@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/tooltip"
 import { getProduct, type Product } from "@/lib/api/products"
 import { useFavorites } from "@/lib/favorites-context"
+import { useAuth } from "@/lib/auth-context"
 import { 
   Package,
   ChevronRight,
@@ -41,6 +42,13 @@ export default function ProductPage() {
   const params = useParams()
   const router = useRouter()
   const slug = params.slug as string // This is the product ID in the URL
+  const { user } = useAuth()
+  
+  const dashboardPath = user?.role === 'manufacturer' 
+    ? '/dashboard/manufacturer/messages'
+    : user?.role === 'admin'
+    ? '/admin/messages'
+    : '/dashboard/buyer/messages'
   const { 
     addProductToFavorites, 
     removeProductFromFavorites, 
@@ -311,13 +319,13 @@ export default function ProductPage() {
                     <Button 
                       className="flex-1" 
                       size="lg"
-                      onClick={() => router.push(`/rfq/new?product=${product.slug}&supplier=${product.supplierSlug}`)}
+                      onClick={() => router.push(`/rfq/new?product=${product.slug}&supplier=${product.supplierId || product.supplierSlug || ""}`)}
                     >
                       <FileText className="mr-2 h-4 w-4" />
                       Request Quote
                     </Button>
                     <Button variant="outline" size="lg" className="flex-1" asChild>
-                      <Link href={`/messages/new?supplier=${product.supplierSlug}&product=${product.slug}`}>
+                      <Link href={`${dashboardPath}?supplier=${product.supplierId || product.supplierSlug || "admin"}&product=${product.slug}&productName=${encodeURIComponent(product.name)}&prefill=1`}>
                         <MessageSquare className="mr-2 h-4 w-4" />
                         Contact Supplier
                       </Link>

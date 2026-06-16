@@ -1,22 +1,19 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
-  useOrders,
   formatCurrency,
   formatOrderDate,
   getStatusLabel,
   ORDER_STATUS_FLOW,
   type OrderStatus,
-  type OrderActor,
-  type OrderKind,
 } from "@/lib/orders-context"
 import { useMessages } from "@/lib/messages-context"
+import { getManufacturerOrder, updateManufacturerOrderStatus, type ApiOrder, type OrderStatusUpdate } from "@/lib/api/orders"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -41,10 +38,11 @@ import {
   ImageIcon,
   Send,
   Download,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const statusStyles: Record<OrderStatus, { color: string; icon: typeof Clock }> = {
+const statusStyles: Record<string, { color: string; icon: typeof Clock }> = {
   created: { color: "bg-blue-100 text-blue-700", icon: Clock },
   "in-production": { color: "bg-amber-100 text-amber-700", icon: Hammer },
   ready: { color: "bg-violet-100 text-violet-700", icon: PackageCheck },
@@ -54,27 +52,63 @@ const statusStyles: Record<OrderStatus, { color: string; icon: typeof Clock }> =
 }
 
 interface DetailConfig {
-  kind: OrderKind
+  kind: string
   basePath: string
-  author: OrderActor
+  author: string
 }
 
 export function SellerOrderDetail({ orderId, config }: { orderId: string; config: DetailConfig }) {
   const router = useRouter()
-  const { getOrderById, addOrderUpdate } = useOrders()
   const { postOrderUpdate } = useMessages()
-  const order = getOrderById(orderId)
+  
+  const [order, setOrder] = useState<ApiOrder | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const [showForm, setShowForm] = useState(false)
-  const [newStatus, setNewStatus] = useState<OrderStatus>("in-production")
+  const [newStatus, setNewStatus] = useState<string>("in-production")
   const [note, setNote] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Lightweight attachment simulation since we can't upload actual files easily without a file input component
   const [photoNames, setPhotoNames] = useState<string[]>([])
   const [fileNames, setFileNames] = useState<string[]>([])
 
-  if (!order) {
+  useEffect(() => {
+    async function fetchOrder() {
+      setIsLoading(true)
+      const numericId = parseInt(orderId, 10)
+      if (isNaN(numericId)) {
+        setError("Invalid order ID")
+        setIsLoading(false)
+        return
+      }
+
+      const res = await getManufacturerOrder(numericId)
+      if (res.success && res.data) {
+        setOrder(res.data)
+        setNewStatus(res.data.status)
+      } else {
+        setError(res.message || "Failed to load order details")
+      }
+      setIsLoading(false)
+    }
+
+    fetchOrder()
+  }, [orderId])
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto flex max-w-4xl items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (error || !order) {
     return (
       <div className="mx-auto max-w-3xl py-16 text-center">
-        <h1 className="font-serif text-xl font-medium text-foreground">Not found</h1>
+        <h1 className="font-serif text-xl font-medium text-foreground">{error || "Not found"}</h1>
         <Button asChild variant="outline" className="mt-4">
           <Link href={config.basePath}>Back to list</Link>
         </Button>
@@ -82,36 +116,53 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
     )
   }
 
-  const isService = order.kind === "service"
-  const StatusIcon = statusStyles[order.status].icon
-  const currentIndex = ORDER_STATUS_FLOW.indexOf(order.status)
+  const isService = config.kind === "service"
+  const style = statusStyles[order.status] || { color: "bg-gray-100 text-gray-700", icon: Clock }
+  const StatusIcon = style.icon
+  const currentIndex = ORDER_STATUS_FLOW.indexOf(order.status as OrderStatus)
 
-  const submitUpdate = () => {
-    if (!note.trim()) return
+  const submitUpdate = async () => {
+    if (!note.trim() && order.status === newStatus) return
+    
+    setIsSubmitting(true)
     const trimmedNote = note.trim()
-    const photos = photoNames
-    const files = fileNames.map((name) => ({ name }))
-    addOrderUpdate(order.id, {
+    
+    // In a real implementation with file inputs, we would pass actual File objects here.
+    // For this prototype, we're passing empty arrays.
+    const res = await updateManufacturerOrderStatus(order.id, {
       status: newStatus,
-      note: trimmedNote,
-      photos,
-      files,
-      author: config.author,
+      notes: trimmedNote || undefined,
+      photos: [],
+      attachments: [],
     })
-    // Deliver the status change / note / attachments into the buyer↔seller message thread.
-    postOrderUpdate(order, {
-      id: `u-${Date.now()}`,
-      status: newStatus,
-      note: trimmedNote,
-      photos,
-      files: files.map((f, i) => ({ id: `f-${Date.now()}-${i}`, name: f.name })),
-      createdAt: new Date().toISOString(),
-      author: config.author,
-    })
-    setNote("")
-    setPhotoNames([])
-    setFileNames([])
-    setShowForm(false)
+    
+    if (res.success && res.data) {
+      setOrder(res.data)
+      
+      // Deliver the status change into the buyer↔seller message thread
+      try {
+        postOrderUpdate(res.data as any, {
+          id: `u-${Date.now()}`,
+          status: newStatus,
+          note: trimmedNote,
+          photos: photoNames,
+          files: fileNames.map((f, i) => ({ id: `f-${Date.now()}-${i}`, name: f })),
+          createdAt: new Date().toISOString(),
+          author: config.author,
+        })
+      } catch (e) {
+        console.error("Failed to post message", e)
+      }
+      
+      setNote("")
+      setPhotoNames([])
+      setFileNames([])
+      setShowForm(false)
+    } else {
+      alert(res.message || "Failed to post update")
+    }
+    
+    setIsSubmitting(false)
   }
 
   return (
@@ -128,10 +179,10 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">{order.id}</span>
-              <Badge className={cn("gap-1 text-xs", statusStyles[order.status].color)}>
+              <span className="text-sm font-medium text-muted-foreground">{order.orderNumber}</span>
+              <Badge className={cn("gap-1 text-xs", style.color)}>
                 <StatusIcon className="h-3 w-3" />
-                {getStatusLabel(order.status, order.kind)}
+                {getStatusLabel(order.status)}
               </Badge>
             </div>
             <h1 className="mt-1.5 font-serif text-2xl font-medium text-foreground">{order.title}</h1>
@@ -142,9 +193,9 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
           </div>
           <div className="text-right">
             <p className="font-serif text-2xl font-medium text-foreground">
-              {formatCurrency(order.totalAmount, order.currency)}
+              {formatCurrency(order.totalAmount, order.currencyCode)}
             </p>
-            <p className="text-xs text-muted-foreground">{order.quantity}</p>
+            <p className="text-xs text-muted-foreground">{order.quantity} {order.quantityUnit}</p>
           </div>
         </div>
 
@@ -152,7 +203,7 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
         {order.status !== "cancelled" && (
           <div className="mt-6 flex items-center">
             {ORDER_STATUS_FLOW.map((s, i) => {
-              const reached = i <= currentIndex
+              const reached = currentIndex >= 0 && i <= currentIndex
               return (
                 <div key={s} className="flex flex-1 items-center last:flex-none">
                   <div className="flex flex-col items-center">
@@ -167,11 +218,11 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
                       {reached ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                     </div>
                     <span className="mt-1.5 hidden text-center text-[10px] leading-tight text-muted-foreground sm:block">
-                      {getStatusLabel(s, order.kind)}
+                      {getStatusLabel(s)}
                     </span>
                   </div>
                   {i < ORDER_STATUS_FLOW.length - 1 && (
-                    <div className={cn("mx-1 h-0.5 flex-1", i < currentIndex ? "bg-secondary" : "bg-border")} />
+                    <div className={cn("mx-1 h-0.5 flex-1", reached && i < currentIndex ? "bg-secondary" : "bg-border")} />
                   )}
                 </div>
               )
@@ -199,14 +250,14 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
               <div className="mt-4 space-y-4 rounded-lg border border-border bg-muted/20 p-4">
                 <div className="space-y-2">
                   <Label className="text-sm">Set status</Label>
-                  <Select value={newStatus} onValueChange={(v) => setNewStatus(v as OrderStatus)}>
+                  <Select value={newStatus} onValueChange={(v) => setNewStatus(v)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {ORDER_STATUS_FLOW.concat("cancelled").map((s) => (
+                      {ORDER_STATUS_FLOW.concat("cancelled" as OrderStatus).map((s) => (
                         <SelectItem key={s} value={s}>
-                          {getStatusLabel(s, order.kind)}
+                          {getStatusLabel(s)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -264,8 +315,8 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
                     ))}
                   </div>
                 )}
-                <Button onClick={submitUpdate} disabled={!note.trim()} className="gap-1.5">
-                  <Send className="h-4 w-4" />
+                <Button onClick={submitUpdate} disabled={isSubmitting || (!note.trim() && order.status === newStatus)} className="gap-1.5">
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   Post update
                 </Button>
               </div>
@@ -273,39 +324,44 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
 
             {/* Timeline */}
             <div className="mt-5 space-y-5">
-              {[...order.updates].reverse().map((u) => {
-                const UIcon = statusStyles[u.status].icon
+              {[...order.statusUpdates].reverse().map((u) => {
+                const uStyle = statusStyles[u.status] || { color: "bg-gray-100 text-gray-700", icon: Clock }
+                const UIcon = uStyle.icon
                 return (
                   <div key={u.id} className="relative flex gap-3 pb-1">
                     <div className="flex flex-col items-center">
-                      <div className={cn("flex h-8 w-8 items-center justify-center rounded-full", statusStyles[u.status].color)}>
+                      <div className={cn("flex h-8 w-8 items-center justify-center rounded-full", uStyle.color)}>
                         <UIcon className="h-4 w-4" />
                       </div>
                     </div>
                     <div className="flex-1 pb-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">{getStatusLabel(u.status, order.kind)}</span>
+                        <span className="text-sm font-medium text-foreground">{getStatusLabel(u.status)}</span>
                         <span className="text-xs text-muted-foreground">{formatOrderDate(u.createdAt)}</span>
                         <Badge variant="outline" className="text-[10px] capitalize">{u.author}</Badge>
                       </div>
-                      {u.note && <p className="mt-1 text-sm text-muted-foreground">{u.note}</p>}
+                      {u.notes && <p className="mt-1 text-sm text-muted-foreground">{u.notes}</p>}
                       {u.photos.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {u.photos.map((p, i) => (
-                            <Badge key={i} variant="secondary" className="gap-1 text-xs">
-                              <ImageIcon className="h-3 w-3" />
-                              {p}
-                            </Badge>
+                            <a key={i} href={p} target="_blank" rel="noopener noreferrer">
+                              <Badge variant="secondary" className="gap-1 text-xs hover:bg-secondary/80">
+                                <ImageIcon className="h-3 w-3" />
+                                {p.split('/').pop()}
+                              </Badge>
+                            </a>
                           ))}
                         </div>
                       )}
-                      {u.files.length > 0 && (
+                      {u.attachments.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1.5">
-                          {u.files.map((f) => (
-                            <Badge key={f.id} variant="secondary" className="gap-1 text-xs">
-                              <FileText className="h-3 w-3" />
-                              {f.name}
-                            </Badge>
+                          {u.attachments.map((f) => (
+                            <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer">
+                              <Badge variant="secondary" className="gap-1 text-xs hover:bg-secondary/80">
+                                <FileText className="h-3 w-3" />
+                                {f.name}
+                              </Badge>
+                            </a>
                           ))}
                         </div>
                       )}
@@ -313,6 +369,12 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
                   </div>
                 )
               })}
+              {order.statusUpdates.length === 0 && (
+                <div className="flex flex-col items-center py-8 text-center text-sm text-muted-foreground">
+                  <Clock className="mb-2 h-6 w-6 opacity-20" />
+                  No updates yet.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -322,14 +384,13 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
           <div className="rounded-xl border border-border bg-card p-5">
             <h2 className="font-medium text-foreground">Details</h2>
             <dl className="mt-3 space-y-3 text-sm">
-              <Row label={isService ? "Scope" : "Quantity"} value={order.quantity} />
-              <Row label="Total" value={formatCurrency(order.totalAmount, order.currency)} />
-              <Row label={isService ? "Timeline" : "Production time"} value={order.productionTime} />
-              <Row label={isService ? "Delivery date" : "Est. delivery"} value={formatOrderDate(order.estimatedDelivery)} icon={Calendar} />
-              <Row label="Payment terms" value={order.paymentTerms} />
-              {!isService && <Row label="Shipping terms" value={order.shippingTerms} />}
-              {!isService && <Row label="Destination" value={order.destination} />}
-              {order.rfqTitle && <Row label="From RFQ" value={order.rfqTitle} />}
+              <Row label={isService ? "Scope" : "Quantity"} value={`${order.quantity} ${order.quantityUnit}`} />
+              <Row label="Total" value={formatCurrency(order.totalAmount, order.currencyCode)} />
+              <Row label={isService ? "Timeline" : "Production time"} value={order.productionLead || "N/A"} />
+              <Row label={isService ? "Delivery date" : "Est. delivery"} value={formatOrderDate(order.estimatedDeliveryAt)} icon={Calendar} />
+              <Row label="Payment terms" value={order.paymentTerms || "N/A"} />
+              {!isService && <Row label="Shipping terms" value={order.shippingTerms || "N/A"} />}
+              {!isService && <Row label="Destination" value={order.destination || "N/A"} />}
             </dl>
             {order.notes && (
               <p className="mt-3 border-t border-border pt-3 text-sm text-muted-foreground">{order.notes}</p>
@@ -339,17 +400,17 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
           <div className="rounded-xl border border-border bg-card p-5">
             <h2 className="font-medium text-foreground">Documents</h2>
             <div className="mt-3 space-y-2">
-              {order.documents.length === 0 && (
+              {order.attachments.length === 0 && (
                 <p className="text-sm text-muted-foreground">No documents attached.</p>
               )}
-              {order.documents.map((doc) => (
-                <div key={doc.id} className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2">
+              {order.attachments.map((doc) => (
+                <a key={doc.id} href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2 hover:bg-muted/50 transition-colors">
                   <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
                     <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <span className="truncate">{doc.name}</span>
                   </span>
                   <Download className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </div>
+                </a>
               ))}
             </div>
           </div>

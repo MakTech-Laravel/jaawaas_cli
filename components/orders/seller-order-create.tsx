@@ -1,11 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useOrders, type OrderKind } from "@/lib/orders-context"
 import { useMessages } from "@/lib/messages-context"
-import { getConnectedBuyers, CONNECTION_SOURCE_LABELS } from "@/lib/connected-buyers"
+import { getSelectProducts, getSelectBuyers, createManufacturerOrder, type SelectProduct, type SelectBuyer } from "@/lib/api/orders"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,12 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ArrowLeft, FileText, Plus, X, Building2, Mail, MapPin } from "lucide-react"
+import { ArrowLeft, FileText, Plus, X, Building2, Mail, MapPin, Loader2 } from "lucide-react"
 
 interface CreateConfig {
-  kind: OrderKind
+  kind: string
   basePath: string
-  sellerId: string
+  sellerId: string | number
   sellerName: string
   title: string
   subtitle: string
@@ -31,18 +30,25 @@ interface CreateConfig {
 
 export function SellerOrderCreate({ config }: { config: CreateConfig }) {
   const router = useRouter()
-  const { createOrder } = useOrders()
   const { postOrderCreated } = useMessages()
   const isService = config.kind === "service"
 
-  // Buyers can only be selected from accounts already connected to this seller.
-  const connectedBuyers = getConnectedBuyers(config.sellerId)
-  const [buyerEmail, setBuyerEmail] = useState("")
-  const selectedBuyer = connectedBuyers.find((b) => b.email === buyerEmail)
+  const [products, setProducts] = useState<SelectProduct[]>([])
+  const [buyers, setBuyers] = useState<SelectBuyer[]>([])
+  
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false)
+  const [isLoadingBuyers, setIsLoadingBuyers] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  const [selectedProductId, setSelectedProductId] = useState<string>("")
+  const [selectedBuyerId, setSelectedBuyerId] = useState<string>("")
+  
+  const selectedBuyer = buyers.find((b) => String(b.id) === selectedBuyerId)
 
   const [form, setForm] = useState({
     title: "",
     quantity: "",
+    quantityUnit: isService ? "units" : "units",
     totalAmount: "",
     currency: "USD",
     productionTime: "",
@@ -53,45 +59,88 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
     packagingDetails: "",
     notes: "",
   })
+  
+  // Lightweight file attachment simulation since we can't upload actual files from browser easily without a file input
   const [docs, setDocs] = useState<string[]>([])
   const [showError, setShowError] = useState(false)
 
   const set = (k: keyof typeof form, v: string) => setForm((p) => ({ ...p, [k]: v }))
 
-  const required = !!(selectedBuyer && form.title && form.quantity && form.totalAmount && form.estimatedDelivery)
+  const required = !!(selectedBuyerId && selectedProductId && form.title && form.quantity && form.totalAmount && form.estimatedDelivery)
 
-  const handleSubmit = () => {
-    if (!required || !selectedBuyer) {
+  useEffect(() => {
+    async function loadProducts() {
+      setIsLoadingProducts(true)
+      const res = await getSelectProducts()
+      if (res.success) {
+        setProducts(res.data)
+      }
+      setIsLoadingProducts(false)
+    }
+    loadProducts()
+  }, [])
+
+  useEffect(() => {
+    async function loadBuyers() {
+      if (!selectedProductId) {
+        setBuyers([])
+        setSelectedBuyerId("")
+        return
+      }
+      
+      setIsLoadingBuyers(true)
+      const res = await getSelectBuyers({ product_id: parseInt(selectedProductId, 10) })
+      if (res.success) {
+        setBuyers(res.data)
+      }
+      setIsLoadingBuyers(false)
+    }
+    loadBuyers()
+  }, [selectedProductId])
+
+  const handleSubmit = async () => {
+    if (!required || !selectedBuyerId || !selectedProductId) {
       setShowError(true)
       return
     }
+    
+    setIsSubmitting(true)
     const amount = Number.parseFloat(form.totalAmount) || 0
-    const order = createOrder({
-      kind: config.kind,
+    
+    // Create an empty File array since we're using a dummy string list for docs in UI
+    // If real file uploads are needed, a file input should be added to the UI
+    const attachments: File[] = []
+    
+    const res = await createManufacturerOrder({
+      buyer_id: parseInt(selectedBuyerId, 10),
+      product_id: parseInt(selectedProductId, 10),
       title: form.title,
-      buyerEmail: selectedBuyer.email,
-      buyerName: selectedBuyer.name,
-      buyerCompany: selectedBuyer.company,
-      manufacturerId: config.sellerId,
-      manufacturerName: config.sellerName,
-      providerId: isService ? config.sellerId : undefined,
-      providerName: isService ? config.sellerName : undefined,
-      quantity: form.quantity,
-      unitPrice: amount,
-      totalAmount: amount,
-      currency: form.currency,
-      packagingDetails: form.packagingDetails,
-      productionTime: form.productionTime,
-      estimatedDelivery: form.estimatedDelivery,
-      paymentTerms: form.paymentTerms,
-      shippingTerms: form.shippingTerms,
+      quantity: parseInt(form.quantity, 10) || 1,
+      quantity_unit: form.quantityUnit,
+      total_amount: amount,
+      currency_code: form.currency,
+      estimated_delivery_at: form.estimatedDelivery,
+      production_lead: form.productionTime,
+      payment_terms: form.paymentTerms,
+      shipping_terms: form.shippingTerms,
       destination: form.destination,
       notes: form.notes,
-      documents: docs.map((name) => ({ name, type: "product-doc" as const })),
+      attachments,
     })
-    // Announce the new order/engagement inside the buyer↔seller message thread.
-    postOrderCreated(order)
-    router.push(`${config.basePath}/${order.id}`)
+
+    if (res.success && res.data) {
+      // Note: This relies on the global context which may or may not work depending on how messages are implemented
+      try {
+        postOrderCreated(res.data as any)
+      } catch (e) {
+        console.error("Failed to post message", e)
+      }
+      
+      router.push(`${config.basePath}/${res.data.id}`)
+    } else {
+      setIsSubmitting(false)
+      alert(res.message || "Failed to create order")
+    }
   }
 
   return (
@@ -117,66 +166,84 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
               onChange={(e) => set("title", e.target.value)}
             />
           </Field>
-          <Field label={isService ? "Scope / deliverables" : "Quantity"} required>
-            <Input
-              placeholder={isService ? "e.g., Logo, 3 packaging SKUs, brand guide" : "e.g., 5,000 units"}
-              value={form.quantity}
-              onChange={(e) => set("quantity", e.target.value)}
-            />
-          </Field>
+          
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Related Product" required>
+              <Select value={selectedProductId} onValueChange={setSelectedProductId} disabled={isLoadingProducts}>
+                <SelectTrigger>
+                  <SelectValue placeholder={isLoadingProducts ? "Loading products..." : "Select a product"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                  {products.length === 0 && !isLoadingProducts && (
+                    <SelectItem value="none" disabled>No products available</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field label="Select connected buyer" required>
+              <Select value={selectedBuyerId} onValueChange={setSelectedBuyerId} disabled={!selectedProductId || isLoadingBuyers}>
+                <SelectTrigger>
+                  <SelectValue placeholder={
+                    !selectedProductId ? "Select a product first" :
+                    isLoadingBuyers ? "Loading buyers..." : 
+                    "Choose a buyer"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  {buyers.map((b) => (
+                    <SelectItem key={b.id} value={String(b.id)}>
+                      {b.company} — {b.name}
+                    </SelectItem>
+                  ))}
+                  {buyers.length === 0 && !isLoadingBuyers && selectedProductId && (
+                    <SelectItem value="none" disabled>No buyers available</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={isService ? "Scope / deliverables" : "Quantity"} required>
+              <Input
+                placeholder={isService ? "e.g., Logo, 3 packaging SKUs, brand guide" : "e.g., 5000"}
+                type={isService ? "text" : "number"}
+                value={form.quantity}
+                onChange={(e) => set("quantity", e.target.value)}
+              />
+            </Field>
+            <Field label="Unit">
+              <Input
+                placeholder="e.g., units, pieces, kg"
+                value={form.quantityUnit}
+                onChange={(e) => set("quantityUnit", e.target.value)}
+              />
+            </Field>
+          </div>
         </Section>
 
-        <Section title="Buyer">
-          <Field label="Select connected buyer" required>
-            <Select value={buyerEmail} onValueChange={setBuyerEmail}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a buyer you've worked with" />
-              </SelectTrigger>
-              <SelectContent>
-                {connectedBuyers.map((b) => (
-                  <SelectItem key={b.email} value={b.email}>
-                    {b.company} — {b.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Only buyers connected through RFQs, quotations, or messages can be selected, so this{" "}
-              {isService ? "engagement" : "order"} links to the correct account.
-            </p>
-          </Field>
-
-          {selectedBuyer && (
-            <div className="rounded-lg border border-border bg-muted/20 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1.5 text-sm">
-                  <p className="flex items-center gap-2 font-medium text-foreground">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    {selectedBuyer.company}
-                  </p>
-                  <p className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-4 w-4" />
-                    {selectedBuyer.email}
-                  </p>
-                  <p className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    {selectedBuyer.name} · {selectedBuyer.country}
-                  </p>
-                </div>
-                <div className="flex flex-wrap justify-end gap-1.5">
-                  {selectedBuyer.sources.map((s) => (
-                    <span
-                      key={s}
-                      className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] text-muted-foreground"
-                    >
-                      {CONNECTION_SOURCE_LABELS[s]}
-                    </span>
-                  ))}
-                </div>
+        {selectedBuyer && (
+          <div className="rounded-lg border border-border bg-muted/20 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1.5 text-sm">
+                <p className="flex items-center gap-2 font-medium text-foreground">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  {selectedBuyer.company}
+                </p>
+                <p className="flex items-center gap-2 text-muted-foreground">
+                  <Mail className="h-4 w-4" />
+                  {selectedBuyer.email}
+                </p>
               </div>
             </div>
-          )}
-        </Section>
+          </div>
+        )}
 
         <Section title="Commercial terms">
           <div className="grid gap-4 sm:grid-cols-3">
@@ -191,7 +258,7 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
             </Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={isService ? "Timeline" : "Production time"}>
+            <Field label={isService ? "Timeline" : "Production lead time"}>
               <Input placeholder={isService ? "e.g., 3 weeks" : "e.g., 30 days"} value={form.productionTime} onChange={(e) => set("productionTime", e.target.value)} />
             </Field>
             <Field label="Payment terms">
@@ -211,7 +278,7 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
         </Section>
 
         <Section title="Documents & notes">
-          <Field label="Attach documents">
+          <Field label="Attach documents (Simulated UI)">
             <div className="flex flex-wrap items-center gap-2">
               {docs.map((d, i) => (
                 <span key={i} className="flex items-center gap-1.5 rounded-full border border-border bg-muted/30 px-3 py-1 text-xs text-foreground">
@@ -243,10 +310,13 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
         )}
 
         <div className="flex justify-end gap-3">
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" disabled={isSubmitting}>
             <Link href={config.basePath}>Cancel</Link>
           </Button>
-          <Button onClick={handleSubmit}>{config.submitLabel}</Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {config.submitLabel}
+          </Button>
         </div>
       </div>
     </div>

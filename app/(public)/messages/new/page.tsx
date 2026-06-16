@@ -45,26 +45,31 @@ function NewMessageForm() {
           setSubject(`Inquiry about ${product.name}`)
           setMessage(`Hello,
 
-I am interested in your product "${product.name}" (Product ID: ${product.id}).
+I am interested in your product "${product.name}".
+Product Link: ${window.location.origin}/products/${product.slug || product.id}
+
+
+
 Could you please provide more details regarding pricing, minimum order quantity, and available shipping options?
 
 I look forward to hearing from you soon.
 
 Best regards.`)
 
-          if (product.supplierName && !supplier) {
+          if (!supplier) {
             const found = suppliers.find(s => s.slug === product.supplierSlug || s.id === product.supplierId)
             if (found) {
               setSelectedSupplier(found)
+              setShowSupplierSearch(false)
             } else {
               setSelectedSupplier({
-                id: product.supplierId || "custom",
-                name: product.supplierName,
-                slug: product.supplierSlug || "custom-supplier",
-                description: "",
-                shortDescription: "",
-                industry: "General",
-                industrySlug: "general",
+                id: product.supplierId || "1",
+                name: product.supplierName || "Admin (SourceNest Support)",
+                slug: product.supplierSlug || "admin",
+                description: "Platform Administration and Support",
+                shortDescription: "Platform Admin",
+                industry: "Support",
+                industrySlug: "support",
                 categories: [],
                 location: {
                   city: "Global",
@@ -72,9 +77,9 @@ Best regards.`)
                   countryCode: "INT"
                 },
                 reviewed: true,
-                reviewedLevel: "basic",
+                reviewedLevel: "enterprise",
                 yearEstablished: new Date().getFullYear(),
-                employeeCount: "Unknown",
+                employeeCount: "10-50",
                 productCount: 0,
                 rating: 5.0,
                 reviewCount: 0,
@@ -85,6 +90,7 @@ Best regards.`)
                 mainProducts: [],
                 exportMarkets: []
               })
+              setShowSupplierSearch(false)
             }
           }
         }
