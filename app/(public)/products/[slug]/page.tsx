@@ -316,13 +316,11 @@ export default function ProductPage() {
                 <div className="mt-6 space-y-3">
                   {/* Primary Actions */}
                   <div className="flex flex-col gap-3 sm:flex-row">
-                    <Button 
-                      className="flex-1" 
-                      size="lg"
-                      onClick={() => router.push(`/rfq/new?product=${product.slug}&supplier=${product.supplierId || product.supplierSlug || ""}`)}
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      Request Quote
+                    <Button className="w-full flex-1 gap-2" size="lg" variant="secondary" asChild>
+                      <Link href={`/rfq/new?product_id=${product.id}&supplier=${product.supplierId || product.supplierSlug || ""}`}>
+                        <FileText className="h-5 w-5" />
+                        Request Quote
+                      </Link>
                     </Button>
                     <Button variant="outline" size="lg" className="flex-1" asChild>
                       <Link href={`${dashboardPath}?supplier=${product.supplierId || product.supplierSlug || "admin"}&product=${product.slug}&productName=${encodeURIComponent(product.name)}&prefill=1`}>

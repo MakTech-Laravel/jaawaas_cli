@@ -61,6 +61,31 @@ export const ORDER_DOCUMENT_LABELS: Record<string, string> = {
 
 export type OrderActor = "manufacturer" | "provider" | "buyer" | "admin" | string
 
+export interface Order {
+  id: string
+  title: string
+  kind: OrderKind
+  quantity: string
+  totalAmount: number
+  currency: string
+  estimatedDelivery: string
+  providerId?: string
+  manufacturerId?: string
+  providerName?: string
+  manufacturerName?: string
+  buyerEmail: string
+  buyerName: string
+  buyerCompany: string
+}
+
+export interface OrderUpdate {
+  status: OrderStatus
+  note: string
+  photos: string[]
+  files: string[]
+  createdAt: string
+}
+
 // Formatting helpers
 export function formatCurrency(amount: number, currency: string): string {
   try {

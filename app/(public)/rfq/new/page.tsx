@@ -21,6 +21,7 @@ import { createRFQ } from "@/lib/api/rfqs"
 import { suppliers } from "@/lib/data/suppliers"
 import { countries } from "@/lib/data/countries"
 import { useToast } from "@/hooks/use-toast"
+import Swal from "sweetalert2"
 import { 
   ArrowLeft,
   Package,
@@ -37,13 +38,13 @@ function NewRFQForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { toast } = useToast()
-  const productSlug = searchParams.get('product') || searchParams.get('product_id')
+  const productId = searchParams.get('product_id') || searchParams.get('product')
   const supplierSlug = searchParams.get('supplier')
   
   const initialSupplier = supplierSlug ? suppliers.find(s => s.slug === supplierSlug) : null
   
   const [product, setProduct] = useState<Product | null>(null)
-  const [loading, setLoading] = useState(!!productSlug)
+  const [loading, setLoading] = useState(!!productId)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -72,80 +73,61 @@ function NewRFQForm() {
   ).slice(0, 8)
 
   useEffect(() => {
-    if (!productSlug) {
+    if (!productId) {
       setLoading(false)
       return
     }
 
-    const setDummyProduct = () => {
+    const fetchProductData = async () => {
       setLoading(true)
-      
-      // Static dummy product for UI flow
-      const mockProduct = {
-        id: productSlug,
-        name: "Static Product Example",
-        description: "This is a static product used to demonstrate the RFQ flow.",
-        slug: productSlug,
-        supplierId: "supplier-1",
-        supplierName: "Demo Supplier",
-        supplierSlug: "demo-supplier",
-        category: { id: "cat-1", name: "Sample Category", slug: "sample", icon: "Package", productCount: 0 },
-        categoryId: "cat-1",
-        images: [],
-        pricing_quantities: {
-          unit: "pieces",
-          min_order_quantity: 100,
-          min_price: { price: { amount: "10.00", currencyCode: "USD" }, quantity: 1000 },
-          max_price: { price: { amount: "15.00", currencyCode: "USD" }, quantity: 100 }
-        },
-        certifications: [],
-        specifications: [],
-        tags: [],
-        rating: 5,
-        reviewsCount: 10,
-        status: "published",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      } as any;
-      
-      setProduct(mockProduct)
-      
-      if (!initialSupplier) {
-        setSelectedSupplier({
-          id: "custom",
-          name: mockProduct.supplierName,
-          slug: mockProduct.supplierSlug,
-          description: "",
-          shortDescription: "",
-          industry: "General",
-          industrySlug: "general",
-          categories: [],
-          location: {
-            city: "Global",
-            country: "International",
-            countryCode: "INT"
-          },
-          reviewed: true,
-          reviewedLevel: "basic",
-          yearEstablished: new Date().getFullYear(),
-          employeeCount: "Unknown",
-          productCount: 0,
-          rating: 5.0,
-          reviewCount: 0,
-          responseRate: 100,
-          responseTime: "Usually responds within 24h",
-          onTimeDelivery: 100,
-          certifications: [],
-          mainProducts: [],
-          exportMarkets: []
-        })
+      try {
+        const response = await getProduct(productId)
+        if (response.success && response.data) {
+          const actualProduct = response.data
+          setProduct(actualProduct)
+          
+          if (!initialSupplier) {
+            setSelectedSupplier({
+              id: actualProduct.supplierId || "custom",
+              name: actualProduct.supplierName || "Supplier",
+              slug: actualProduct.supplierSlug || "supplier",
+              description: "",
+              shortDescription: "",
+              industry: "General",
+              industrySlug: "general",
+              categories: [],
+              location: {
+                city: "Global",
+                country: "International",
+                countryCode: "INT"
+              },
+              reviewed: true,
+              reviewedLevel: "basic",
+              yearEstablished: new Date().getFullYear(),
+              employeeCount: "Unknown",
+              productCount: 0,
+              rating: 5.0,
+              reviewCount: 0,
+              responseRate: 100,
+              responseTime: "Usually responds within 24h",
+              onTimeDelivery: 100,
+              certifications: [],
+              mainProducts: [],
+              exportMarkets: []
+            })
+          }
+        } else {
+          setError(response.message || "Product not found")
+        }
+      } catch (err) {
+        setError("Failed to fetch product data")
+      } finally {
+        setLoading(false)
       }
-      
-      setLoading(false)
     }
 
-    setDummyProduct()
-  }, [productSlug])
+    fetchProductData()
+  }, [productId, initialSupplier])
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -172,19 +154,42 @@ function NewRFQForm() {
     setSubmitting(true)
     setSubmitError(null)
 
-    // Simulate network delay for static flow
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const payload = {
+      product_id: Number(product.id),
+      quantity: Number(formData.quantity),
+      quantity_unit: formData.quantity_unit,
+      target_price: formData.target_price ? Number(formData.target_price) : 0,
+      target_currency_code: formData.target_currency_code,
+      required_delivery_date: formData.required_delivery_date,
+      shipping_terms: formData.shipping_terms,
+      destination_country: formData.destination_country,
+      destination_port_city: formData.destination_port_city,
+      packaging_details: formData.packaging_details,
+      additional_requirements: formData.additional_requirements
+    }
+
+    const response = await createRFQ(payload)
+
+    if (response.success) {
+      Swal.fire({
+        title: 'Success! 🎉',
+        text: `Your RFQ for "${product.name}" has been sent successfully. Suppliers will review your request shortly.`,
+        icon: 'success',
+        confirmButtonColor: 'hsl(var(--primary))',
+        confirmButtonText: 'View My RFQs'
+      }).then(() => {
+        router.push('/dashboard/buyer/rfqs')
+      })
+    } else {
+      setSubmitError(response.message || "Failed to create RFQ")
+      toast({
+        title: "Error",
+        description: response.message || "Failed to create RFQ. Please try again.",
+        variant: "destructive",
+      })
+    }
     
-    // Show success toast statically
-    toast({
-      title: "Success! 🎉",
-      description: `Your RFQ for "${product.name}" has been sent successfully. Suppliers will review your request shortly.`,
-    })
-    
-    // Redirect after short delay to let user see the toast
-    setTimeout(() => {
-      router.push('/dashboard/buyer/rfqs')
-    }, 1500)
+    setSubmitting(false)
   }
 
   if (loading) {

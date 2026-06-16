@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
+import Swal from 'sweetalert2'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -55,130 +56,27 @@ import {
   Paperclip
 } from "lucide-react"
 
-const inquiriesData: Record<string, {
-  id: string
-  buyer: string
-  buyerCompany: string
-  email: string
-  phone: string
-  country: string
-  product: string
-  quantity: string
-  targetPrice: string
-  deliveryDate: string
-  message: string
-  date: string
-  status: string
-  source: string
-  specs: {
-    ply?: string
-    material?: string
-    packaging?: string
-    certifications?: string[]
-    privateLabel?: boolean
-    formulation?: string
-    features?: string
-    wattage?: string
-    connectivity?: string
-    grade?: string
-    origin?: string
-  }
-}> = {
-  "1": {
-    id: "1",
-    buyer: "John Smith",
-    buyerCompany: "Global Retail Inc.",
-    email: "john.smith@globalretail.com",
-    phone: "+1 555-0123",
-    country: "United States",
-    product: "Toilet Paper - 2 Ply",
-    quantity: "50,000 rolls",
-    targetPrice: "$0.80 - $1.20 per roll",
-    deliveryDate: "Within 45 days",
-    message: "Looking for high-quality 2-ply toilet paper for our retail chain. Need FSC certification and custom packaging with our store branding. We are a major retailer with stores across the US and are looking for a long-term partnership with reliable manufacturers.",
-    date: "2 hours ago",
-    status: "New",
-    source: "AI Sourcing",
-    specs: {
-      ply: "2-ply",
-      material: "Virgin pulp",
-      packaging: "24 rolls per case",
-      certifications: ["FSC Certified"],
-      privateLabel: true
-    }
-  },
-  "2": {
-    id: "2",
-    buyer: "Emma Mueller",
-    buyerCompany: "EcoBeauty Distributors",
-    email: "emma@ecobeauty.de",
-    phone: "+49 30 12345678",
-    country: "Germany",
-    product: "Organic Shampoo - 500ml",
-    quantity: "10,000 units",
-    targetPrice: "$3.50 - $5.00 per unit",
-    deliveryDate: "Within 60 days",
-    message: "Seeking organic shampoo manufacturer for European market. Must have COSMOS certification and be cruelty-free. Looking for sulfate-free formulations with natural ingredients.",
-    date: "5 hours ago",
-    status: "New",
-    source: "AI Sourcing",
-    specs: {
-      formulation: "Sulfate-free, organic",
-      packaging: "Recyclable bottles",
-      certifications: ["COSMOS Organic", "Cruelty-Free"],
-      privateLabel: true
-    }
-  },
-  "3": {
-    id: "3",
-    buyer: "Michael Chen",
-    buyerCompany: "TechMart USA",
-    email: "m.chen@techmart.com",
-    phone: "+1 415-555-0199",
-    country: "United States",
-    product: "TWS Wireless Earbuds",
-    quantity: "5,000 units",
-    targetPrice: "$12.00 - $15.00 per unit",
-    deliveryDate: "Within 30 days",
-    message: "Interested in TWS earbuds with active noise cancellation for our electronics stores. Need Bluetooth 5.3 and at least 6 hours battery life.",
-    date: "1 day ago",
-    status: "Quoted",
-    source: "Direct",
-    specs: {
-      features: "Bluetooth 5.3, ANC",
-      packaging: "Retail box",
-      certifications: ["FCC", "CE"],
-      privateLabel: false
-    }
-  },
-  "4": {
-    id: "4",
-    buyer: "Hans Mueller",
-    buyerCompany: "EuroTrade GmbH",
-    email: "h.mueller@eurotrade.de",
-    phone: "+49 30 98765432",
-    country: "Germany",
-    product: "LED Smart Bulbs",
-    quantity: "20,000 units",
-    targetPrice: "$4.00 - $6.00 per unit",
-    deliveryDate: "Within 60 days",
-    message: "Looking for smart LED bulbs compatible with major voice assistants. Need CE certification for EU market. Interested in white and color-changing variants.",
-    date: "2 days ago",
-    status: "Quoted",
-    source: "AI Sourcing",
-    specs: {
-      wattage: "9W equivalent to 60W",
-      connectivity: "WiFi + Bluetooth",
-      certifications: ["CE", "RoHS"],
-      privateLabel: true
-    }
-  }
-}
+import { getManufacturerRFQ, type ManufacturerRFQ } from "@/lib/api/rfqs"
+import { format } from "date-fns"
 
 export default function InquiryDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const id = params.id as string
-  const inquiry = inquiriesData[id] || inquiriesData["1"]
+  
+  const [inquiry, setInquiry] = useState<ManufacturerRFQ | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadInquiry() {
+      const response = await getManufacturerRFQ(id)
+      if (response.success && response.data) {
+        setInquiry(response.data)
+      }
+      setLoading(false)
+    }
+    loadInquiry()
+  }, [id])
   
   const [showQuoteDialog, setShowQuoteDialog] = useState(false)
   const [reply, setReply] = useState("")
@@ -267,20 +165,82 @@ export default function InquiryDetailPage() {
 
   const handleSubmitQuote = async () => {
     setIsSubmitting(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setIsSubmitting(false)
-    setQuoteSubmitted(true)
-    setTimeout(() => {
-      setShowQuoteDialog(false)
-      setQuoteSubmitted(false)
-    }, 2000)
+    
+    // Parse numeric fields safely
+    const quoted_price = parseFloat(quoteData.unitPrice.replace(/[^0-9.]/g, '')) || 0
+    const minimum_order_quantity = parseInt(quoteData.moq.replace(/[^0-9]/g, ''), 10) || 0
+    const lead_time_days = parseInt(quoteData.leadTime.replace(/[^0-9]/g, ''), 10) || 0
+    
+    // Construct manufacturer_reply from all the extra fields
+    const replyParts = []
+    if (quoteData.notes) replyParts.push(`Notes: ${quoteData.notes}`)
+    if (quoteData.shippingTerms) replyParts.push(`Shipping Terms: ${quoteData.shippingTerms}`)
+    if (quoteData.paymentTerms) replyParts.push(`Payment Terms: ${quoteData.paymentTerms}`)
+    if (quoteData.sampleCost) replyParts.push(`Sample Cost: ${quoteData.sampleCost}`)
+    if (quoteData.sampleLeadTime) replyParts.push(`Sample Lead Time: ${quoteData.sampleLeadTime}`)
+    if (quoteData.packagingDetails) replyParts.push(`Packaging Details: ${quoteData.packagingDetails}`)
+    if (quoteData.certifications.length > 0) replyParts.push(`Certifications: ${quoteData.certifications.join(", ")}`)
+    
+    const manufacturer_reply = replyParts.join("\n")
+
+    try {
+      const { submitManufacturerQuote } = await import("@/lib/api/rfqs")
+      const response = await submitManufacturerQuote(id, {
+        quoted_price,
+        quote_currency_code: "USD", // Assuming USD for now or extract from target
+        minimum_order_quantity,
+        lead_time_days,
+        quote_valid_until: quoteData.validUntil || new Date().toISOString().split('T')[0],
+        manufacturer_reply,
+      })
+
+      if (response.success) {
+        setShowQuoteDialog(false)
+        Swal.fire({
+          title: 'Success! 🎉',
+          text: `Your quote for Inquiry #${inquiry?.rfq_number} has been sent successfully.`,
+          icon: 'success',
+          confirmButtonColor: 'hsl(var(--primary))',
+          confirmButtonText: 'Great!'
+        }).then(() => {
+          // Refresh the inquiry data
+          window.location.reload()
+        })
+      } else {
+        Swal.fire({
+          title: 'Error',
+          text: response.message || "Failed to submit quote",
+          icon: 'error',
+          confirmButtonColor: 'hsl(var(--destructive))',
+        })
+      }
+    } catch (error) {
+      console.error(error)
+      Swal.fire({
+        title: 'Error',
+        text: "An unexpected error occurred.",
+        icon: 'error',
+        confirmButtonColor: 'hsl(var(--destructive))',
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const statusColors: Record<string, string> = {
-    "New": "bg-secondary text-secondary-foreground",
-    "Quoted": "bg-emerald-100 text-emerald-700",
-    "Negotiating": "bg-amber-100 text-amber-700",
-    "Closed": "bg-slate-100 text-slate-700"
+    "pending": "bg-amber-100 text-amber-700",
+    "quoted": "bg-emerald-100 text-emerald-700",
+    "accepted": "bg-blue-100 text-blue-700",
+    "rejected": "bg-red-100 text-red-700",
+    "expired": "bg-gray-100 text-gray-700"
+  }
+
+  if (loading) {
+    return <div className="py-12 text-center text-muted-foreground">Loading inquiry details...</div>
+  }
+
+  if (!inquiry) {
+    return <div className="py-12 text-center text-muted-foreground">Inquiry not found</div>
   }
 
   return (
@@ -296,12 +256,12 @@ export default function InquiryDetailPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="font-serif text-2xl font-medium text-foreground">
-                Inquiry #{inquiry.id}
+                Inquiry {inquiry.rfq_number}
               </h1>
-              <Badge className={statusColors[inquiry.status] || ""}>{inquiry.status}</Badge>
+              <Badge className={statusColors[inquiry.status] || ""}>{inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}</Badge>
             </div>
             <p className="mt-1 text-muted-foreground">
-              Received {inquiry.date}
+              Received {format(new Date(inquiry.created_at), 'PPP')}
             </p>
           </div>
         </div>
@@ -335,8 +295,8 @@ export default function InquiryDetailPage() {
                   <Package className="h-7 w-7 text-muted-foreground" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-foreground">{inquiry.product}</h3>
-                  <p className="text-secondary font-medium">{inquiry.quantity}</p>
+                  <h3 className="text-lg font-semibold text-foreground">{inquiry.product.name}</h3>
+                  <p className="text-secondary font-medium">{inquiry.quantity} {inquiry.quantity_unit}</p>
                 </div>
               </div>
 
@@ -346,100 +306,52 @@ export default function InquiryDetailPage() {
               <div>
                 <h4 className="font-medium text-foreground mb-3">Specifications</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  {inquiry.specs.ply && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                      <Layers className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Ply Count</p>
-                        <p className="font-medium text-foreground">{inquiry.specs.ply}</p>
-                      </div>
-                    </div>
-                  )}
-                  {inquiry.specs.material && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                      <Package className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Material</p>
-                        <p className="font-medium text-foreground">{inquiry.specs.material}</p>
-                      </div>
-                    </div>
-                  )}
-                  {inquiry.specs.formulation && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                      <Package className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Formulation</p>
-                        <p className="font-medium text-foreground">{inquiry.specs.formulation}</p>
-                      </div>
-                    </div>
-                  )}
-                  {inquiry.specs.features && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                      <Package className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Features</p>
-                        <p className="font-medium text-foreground">{inquiry.specs.features}</p>
-                      </div>
-                    </div>
-                  )}
-                  {inquiry.specs.wattage && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                      <Package className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Power</p>
-                        <p className="font-medium text-foreground">{inquiry.specs.wattage}</p>
-                      </div>
-                    </div>
-                  )}
-                  {inquiry.specs.connectivity && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                      <Package className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Connectivity</p>
-                        <p className="font-medium text-foreground">{inquiry.specs.connectivity}</p>
-                      </div>
-                    </div>
-                  )}
-                  {inquiry.specs.packaging && (
+                  {inquiry.packaging_details && (
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                       <Package className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <p className="text-xs text-muted-foreground">Packaging</p>
-                        <p className="font-medium text-foreground">{inquiry.specs.packaging}</p>
+                        <p className="font-medium text-foreground">{inquiry.packaging_details}</p>
                       </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <DollarSign className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Target Price</p>
-                      <p className="font-medium text-foreground">{inquiry.targetPrice}</p>
+                  {inquiry.target_price && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                      <DollarSign className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Target Price</p>
+                        <p className="font-medium text-foreground">{inquiry.target_price} {inquiry.target_currency_code}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Delivery Timeline</p>
-                      <p className="font-medium text-foreground">{inquiry.deliveryDate}</p>
+                  )}
+                  {inquiry.required_delivery_date && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                      <Calendar className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Delivery Timeline</p>
+                        <p className="font-medium text-foreground">{format(new Date(inquiry.required_delivery_date), 'PP')}</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                  {inquiry.shipping_terms && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                      <Truck className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Shipping Terms</p>
+                        <p className="font-medium text-foreground">{inquiry.shipping_terms}</p>
+                      </div>
+                    </div>
+                  )}
+                  {inquiry.destination_port_city && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                      <MapPin className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Destination Port</p>
+                        <p className="font-medium text-foreground">{inquiry.destination_port_city}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Certifications & Private Label */}
-              <div className="flex flex-wrap items-center gap-2">
-                {inquiry.specs.certifications?.map((cert) => (
-                  <Badge key={cert} variant="outline" className="gap-1.5 py-1.5 px-3">
-                    <Award className="h-4 w-4 text-secondary" />
-                    {cert}
-                  </Badge>
-                ))}
-                {inquiry.specs.privateLabel && (
-                  <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
-                    <Tag className="h-4 w-4" />
-                    Private Label Required
-                  </Badge>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -453,7 +365,7 @@ export default function InquiryDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-foreground leading-relaxed">{inquiry.message}</p>
+              <p className="text-foreground leading-relaxed">{inquiry.additional_requirements || "No additional requirements provided."}</p>
             </CardContent>
           </Card>
 
@@ -778,24 +690,20 @@ export default function InquiryDetailPage() {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground">Company</p>
-                <p className="font-medium">{inquiry.buyerCompany}</p>
+                <p className="font-medium">{"Not Specified"}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Contact Person</p>
-                <p className="font-medium">{inquiry.buyer}</p>
+                <p className="font-medium">{inquiry.buyer.name}</p>
               </div>
               <Separator />
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{inquiry.country}</span>
+                <span className="text-sm">{inquiry.destination_country}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{inquiry.email}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{inquiry.phone}</span>
+                <span className="text-sm">{inquiry.buyer.email}</span>
               </div>
             </CardContent>
           </Card>
@@ -817,17 +725,17 @@ export default function InquiryDetailPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">Inquiry received</p>
-                    <p className="text-xs text-muted-foreground">{inquiry.date}</p>
+                    <p className="text-xs text-muted-foreground">{format(new Date(inquiry.created_at), 'PPP')}</p>
                   </div>
                 </div>
-                {inquiry.status === "Quoted" && (
+                {inquiry.status !== "pending" && inquiry.quoted_at && (
                   <div className="flex gap-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100">
                       <CheckCircle className="h-4 w-4 text-emerald-700" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">Quote sent</p>
-                      <p className="text-xs text-muted-foreground">1 day ago</p>
+                      <p className="text-xs text-muted-foreground">{format(new Date(inquiry.quoted_at), 'PPP')}</p>
                     </div>
                   </div>
                 )}
@@ -846,7 +754,7 @@ export default function InquiryDetailPage() {
               Send Quotation
             </DialogTitle>
             <DialogDescription>
-              Provide your offer for {inquiry.product} ({inquiry.quantity})
+              Provide your offer for {inquiry.product.name} ({inquiry.quantity} {inquiry.quantity_unit})
             </DialogDescription>
           </DialogHeader>
           
@@ -877,7 +785,7 @@ export default function InquiryDetailPage() {
                         className="mt-2"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Buyer target: {inquiry.targetPrice}
+                        Buyer target: {inquiry.target_price} {inquiry.target_currency_code}
                       </p>
                     </div>
                     <div>
@@ -910,7 +818,7 @@ export default function InquiryDetailPage() {
                         className="mt-2"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Buyer needs: {inquiry.deliveryDate}
+                        Buyer needs: {format(new Date(inquiry.required_delivery_date), 'PP')}
                       </p>
                     </div>
                     <div>
