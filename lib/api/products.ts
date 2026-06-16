@@ -357,7 +357,11 @@ function normalizeProduct(payload: unknown): Product {
     inquiry_count: toNumber(product.inquiry_count, 0),
     view_count: toNumber(product.view_count, 0),
     is_approved: toBoolean(product.is_approved, false),
-    image: product.image ? toString(product.image) : null,
+    image: product.image 
+      ? toString(product.image) 
+      : (Array.isArray(product.images) && product.images.length > 0 
+          ? (typeof product.images[0] === "string" ? product.images[0] : (product.images[0] as any).url || (product.images[0] as any).file_path || (product.images[0] as any).path || (product.images[0] as any).image_url || null)
+          : null),
     status: toString(product.status, "active"),
     created_at: toString(product.created_at),
     updated_at: toString(product.updated_at),
@@ -378,7 +382,9 @@ function normalizeProduct(payload: unknown): Product {
     ) || undefined,
     category: normalizeCategory(product.category),
     sub_category: normalizeSubCategory(product.sub_category),
-    images: Array.isArray(product.images) ? (product.images as string[]) : [],
+    images: Array.isArray(product.images) 
+      ? product.images.map((img: any) => typeof img === "string" ? img : img.url || img.file_path || img.path || img.image_url || "").filter(Boolean) 
+      : [],
     pricing_quantities: {
       id: toNumber(pricingQuantities.id),
       min_price: {

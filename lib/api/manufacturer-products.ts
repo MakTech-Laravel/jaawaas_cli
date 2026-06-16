@@ -863,7 +863,7 @@ export function buildManufacturerProductCreateFormData(
   }
 
   p.imageFiles.forEach((file, i) => {
-    fd.append(`product_image[${i}]`, file)
+    fd.append(`product_images[${i}]`, file)
   })
 
   if (p.brochureFile) {
