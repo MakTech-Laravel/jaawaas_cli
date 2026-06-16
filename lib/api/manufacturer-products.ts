@@ -33,7 +33,7 @@ export interface ManufacturerProductsListResponse {
   meta: ManufacturerProductMeta | null
 }
 
-/** Full product payload for view/edit (normalized common fields). */
+
 export interface ManufacturerProductDetail {
   id: number
   slug: string
@@ -469,10 +469,6 @@ export async function getManufacturerProductBySlug(
   }
 }
 
-/**
- * Build multipart body for POST /manufacturer/products/:id (with _method=PUT).
- * Sends all fields matching the Postman PUT contract.
- */
 export function buildManufacturerProductUpdateFormData(
   p: ManufacturerProductCreatePayload
 ): FormData {
@@ -486,7 +482,6 @@ export async function updateManufacturerProduct(
   data: FormData
 ): Promise<ManufacturerProductActionResponse> {
   try {
-    // Use POST + _method=PUT — Laravel does not read $_FILES on PUT requests.
     const response = await apiClient.post(`/manufacturer/products/${id}`, data, {
       validateStatus: () => true,
     })
@@ -877,8 +872,6 @@ export async function createManufacturerProduct(
   formData: FormData
 ): Promise<ManufacturerProductActionResponse> {
   try {
-    // Do not set Content-Type manually — Axios must add the multipart boundary.
-    // validateStatus: read JSON body on 4xx/5xx (Laravel often returns validation details there).
     const response = await apiClient.post("/manufacturer/products", formData, {
       validateStatus: () => true,
     })

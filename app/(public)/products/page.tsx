@@ -315,12 +315,12 @@ function ProductsPageContent() {
                             </div>
                           )}
                           <Badge className="absolute left-3 top-3">{product.category.name}</Badge>
-                          {product.is_approved && (
+                          {/* {product.is_approved && (
                             <Badge className="absolute right-3 top-3 bg-green-500/20 text-green-700 border-green-200">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               {t?.landing?.products?.verified || "Verified"}
                             </Badge>
-                          )}
+                          )} */}
                         </div>
 
                         <div className="p-4">
