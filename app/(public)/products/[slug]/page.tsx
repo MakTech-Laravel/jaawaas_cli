@@ -53,6 +53,7 @@ export default function ProductPage() {
   } = useFavorites()
   
   const [product, setProduct] = useState<Product | null>(null)
+  const [activeImage, setActiveImage] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -66,6 +67,9 @@ export default function ProductPage() {
       
       if (response.success && response.data) {
         setProduct(response.data)
+        const allImages = response.data.images || []
+        const firstImg = allImages.length > 0 ? allImages[0] : response.data.image
+        if (firstImg) setActiveImage(firstImg)
       } else {
         setError(response.message || "Product not found")
       }
@@ -191,20 +195,40 @@ export default function ProductPage() {
             <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
               {/* Product Images */}
               <div>
-                <div className="aspect-square overflow-hidden rounded-2xl bg-muted">
-                  <div className="flex h-full items-center justify-center">
-                    <Package className="h-24 w-24 text-muted-foreground/30" />
-                  </div>
-                </div>
-                <div className="mt-4 grid grid-cols-4 gap-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="aspect-square overflow-hidden rounded-lg bg-muted">
-                      <div className="flex h-full items-center justify-center">
-                        <Package className="h-8 w-8 text-muted-foreground/20" />
-                      </div>
+                <div className="aspect-square overflow-hidden rounded-2xl bg-muted relative border border-border">
+                  {activeImage ? (
+                    <img 
+                      src={activeImage} 
+                      alt={product.name} 
+                      className="h-full w-full object-cover" 
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <Package className="h-24 w-24 text-muted-foreground/30" />
                     </div>
-                  ))}
+                  )}
                 </div>
+                
+                {product.images && product.images.length > 0 && (
+                  <div className="mt-4 grid grid-cols-4 gap-4">
+                    {product.images.slice(0, 4).map((img, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setActiveImage(img)}
+                        className={cn(
+                          "aspect-square overflow-hidden rounded-lg bg-muted border-2 transition-colors",
+                          activeImage === img ? "border-primary" : "border-transparent hover:border-primary/50"
+                        )}
+                      >
+                        <img 
+                          src={img} 
+                          alt={`${product.name} ${i + 1}`} 
+                          className="h-full w-full object-cover" 
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Product Info */}
