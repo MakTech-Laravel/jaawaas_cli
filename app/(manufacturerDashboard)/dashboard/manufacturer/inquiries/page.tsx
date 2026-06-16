@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,105 +28,15 @@ import {
   Tag
 } from "lucide-react"
 
-// Updated inquiries with AI-generated RFQ details
-const inquiries = [
-  { 
-    id: "INQ-001", 
-    buyer: "Global Retail Inc.", 
-    company: "USA",
-    product: "Toilet Paper - 2 Ply", 
-    quantity: "50,000 rolls",
-    specs: {
-      ply: "2-ply",
-      material: "Virgin pulp",
-      packaging: "24 rolls per case",
-      certifications: ["FSC Certified"],
-      privateLabel: true
-    },
-    message: "Looking for high-quality 2-ply toilet paper for our retail chain. Need FSC certification and custom packaging with our store branding.",
-    status: "New", 
-    date: "Mar 15, 2026",
-    priority: "High",
-    source: "AI Sourcing"
-  },
-  { 
-    id: "INQ-002", 
-    buyer: "EcoBeauty Distributors", 
-    company: "Germany",
-    product: "Organic Shampoo - 500ml", 
-    quantity: "10,000 units",
-    specs: {
-      formulation: "Sulfate-free, organic",
-      packaging: "Recyclable bottles",
-      certifications: ["COSMOS Organic", "Cruelty-Free"],
-      privateLabel: true
-    },
-    message: "Seeking organic shampoo manufacturer for European market. Must have COSMOS certification and be cruelty-free.",
-    status: "New", 
-    date: "Mar 14, 2026",
-    priority: "High",
-    source: "AI Sourcing"
-  },
-  { 
-    id: "INQ-003", 
-    buyer: "TechMart USA", 
-    company: "USA",
-    product: "TWS Wireless Earbuds", 
-    quantity: "5,000 units",
-    specs: {
-      features: "Bluetooth 5.3, ANC",
-      packaging: "Retail box",
-      certifications: ["FCC", "CE"],
-      privateLabel: false
-    },
-    message: "Interested in TWS earbuds with active noise cancellation for our electronics stores.",
-    status: "Quoted", 
-    date: "Mar 13, 2026",
-    priority: "Medium",
-    source: "Direct"
-  },
-  { 
-    id: "INQ-004", 
-    buyer: "EuroTrade GmbH", 
-    company: "Germany",
-    product: "LED Smart Bulbs", 
-    quantity: "20,000 units",
-    specs: {
-      wattage: "9W equivalent to 60W",
-      connectivity: "WiFi + Bluetooth",
-      certifications: ["CE", "RoHS"],
-      privateLabel: true
-    },
-    message: "Looking for smart LED bulbs compatible with major voice assistants. Need CE certification for EU market.",
-    status: "Quoted", 
-    date: "Mar 12, 2026",
-    priority: "Medium",
-    source: "AI Sourcing"
-  },
-  { 
-    id: "INQ-005", 
-    buyer: "Asia Pacific Foods", 
-    company: "Singapore",
-    product: "Organic Green Tea", 
-    quantity: "2,000 kg",
-    specs: {
-      grade: "Premium loose leaf",
-      origin: "Certified organic farms",
-      certifications: ["USDA Organic", "JAS Organic"],
-      privateLabel: true
-    },
-    message: "Sourcing premium organic green tea for private label brand. Need USDA and JAS organic certifications.",
-    status: "In Progress", 
-    date: "Mar 10, 2026",
-    priority: "Low",
-    source: "AI Sourcing"
-  },
-]
+import { getManufacturerRFQs, type ManufacturerRFQ } from "@/lib/api/rfqs"
+import { format } from "date-fns"
 
 const statusConfig: Record<string, { color: string; icon: typeof CheckCircle }> = {
-  "New": { color: "bg-secondary text-secondary-foreground", icon: Clock },
-  "Quoted": { color: "bg-emerald-100 text-emerald-700", icon: CheckCircle },
-  "In Progress": { color: "bg-blue-100 text-blue-700", icon: Send },
+  "pending": { color: "bg-amber-100 text-amber-700", icon: Clock },
+  "quoted": { color: "bg-emerald-100 text-emerald-700", icon: CheckCircle },
+  "accepted": { color: "bg-blue-100 text-blue-700", icon: CheckCircle },
+  "rejected": { color: "bg-red-100 text-red-700", icon: CheckCircle },
+  "expired": { color: "bg-gray-100 text-gray-700", icon: CheckCircle },
 }
 
 const priorityConfig: Record<string, string> = {
@@ -138,24 +48,34 @@ const priorityConfig: Record<string, string> = {
 export default function ManufacturerInquiriesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [sourceFilter, setSourceFilter] = useState<string>("all")
+  
+  const [inquiries, setInquiries] = useState<ManufacturerRFQ[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadInquiries() {
+      const response = await getManufacturerRFQs()
+      if (response.success && response.data) {
+        setInquiries(response.data)
+      }
+      setLoading(false)
+    }
+    loadInquiries()
+  }, [])
 
   const filteredInquiries = inquiries.filter(inquiry => {
-    if (searchQuery && !inquiry.product.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !inquiry.buyer.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !inquiry.id.toLowerCase().includes(searchQuery.toLowerCase())) {
+    const searchString = searchQuery.toLowerCase()
+    if (searchQuery && 
+        !inquiry.product.name.toLowerCase().includes(searchString) && 
+        !inquiry.buyer.name.toLowerCase().includes(searchString) &&
+        !inquiry.rfq_number.toLowerCase().includes(searchString)) {
       return false
     }
     if (statusFilter && statusFilter !== "all" && inquiry.status !== statusFilter) {
       return false
     }
-    if (sourceFilter && sourceFilter !== "all" && inquiry.source !== sourceFilter) {
-      return false
-    }
     return true
   })
-
-
 
   return (
     <div className="space-y-6">
@@ -174,16 +94,16 @@ export default function ManufacturerInquiriesPage() {
           <p className="text-sm text-muted-foreground">Total Inquiries</p>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-secondary">{inquiries.filter(i => i.status === "New").length}</div>
-          <p className="text-sm text-muted-foreground">New</p>
+          <div className="text-2xl font-bold text-secondary">{inquiries.filter(i => i.status === "pending").length}</div>
+          <p className="text-sm text-muted-foreground">Pending</p>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-emerald-600">{inquiries.filter(i => i.status === "Quoted").length}</div>
+          <div className="text-2xl font-bold text-emerald-600">{inquiries.filter(i => i.status === "quoted").length}</div>
           <p className="text-sm text-muted-foreground">Quoted</p>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-blue-600">{inquiries.filter(i => i.status === "In Progress").length}</div>
-          <p className="text-sm text-muted-foreground">In Progress</p>
+          <div className="text-2xl font-bold text-blue-600">{inquiries.filter(i => i.status === "accepted").length}</div>
+          <p className="text-sm text-muted-foreground">Accepted</p>
         </div>
       </div>
 
@@ -205,24 +125,21 @@ export default function ManufacturerInquiriesPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="New">New</SelectItem>
-            <SelectItem value="Quoted">Quoted</SelectItem>
-            <SelectItem value="In Progress">In Progress</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="All Sources" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Sources</SelectItem>
-            <SelectItem value="AI Sourcing">AI Sourced</SelectItem>
-            <SelectItem value="Direct">Direct</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="quoted">Quoted</SelectItem>
+            <SelectItem value="accepted">Accepted</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="expired">Expired</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* Inquiries List */}
+      {loading ? (
+        <div className="py-12 text-center text-muted-foreground">
+          Loading inquiries...
+        </div>
+      ) : (
       <div className="space-y-4">
         {filteredInquiries.map((inquiry) => {
           const StatusIcon = statusConfig[inquiry.status]?.icon || Clock
@@ -238,21 +155,18 @@ export default function ManufacturerInquiriesPage() {
                   <div className="flex-1">
                     {/* Header */}
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className="text-sm font-medium text-muted-foreground">{inquiry.id}</span>
-                      <Badge className={statusConfig[inquiry.status]?.color}>
+                      <span className="text-sm font-medium text-muted-foreground">{inquiry.rfq_number}</span>
+                      <Badge className={statusConfig[inquiry.status]?.color || "bg-gray-100 text-gray-700"}>
                         <StatusIcon className="mr-1 h-3 w-3" />
-                        {inquiry.status}
-                      </Badge>
-                      <Badge className={priorityConfig[inquiry.priority]}>
-                        {inquiry.priority}
+                        {inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}
                       </Badge>
                     </div>
                     
                     {/* Buyer Info */}
-                    <h3 className="font-semibold text-foreground text-lg">{inquiry.buyer}</h3>
+                    <h3 className="font-semibold text-foreground text-lg">{inquiry.buyer.name}</h3>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground mt-0.5">
                       <MapPin className="h-3.5 w-3.5" />
-                      {inquiry.company}
+                      {inquiry.destination_country}
                     </div>
                     
                     {/* Product & Specs Card */}
@@ -262,111 +176,69 @@ export default function ManufacturerInquiriesPage() {
                           <Package className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-foreground">{inquiry.product}</p>
-                          <p className="text-sm text-secondary font-medium">{inquiry.quantity}</p>
+                          <p className="font-semibold text-foreground">{inquiry.product.name}</p>
+                          <p className="text-sm text-secondary font-medium">{inquiry.quantity} {inquiry.quantity_unit}</p>
                         </div>
                       </div>
                       
                       {/* Specifications */}
                       <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                        {inquiry.specs.ply && (
+                        {inquiry.target_price && (
                           <div className="flex items-center gap-2">
-                            <Layers className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Ply:</span>
-                            <span className="text-foreground">{inquiry.specs.ply}</span>
+                            <Tag className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">Target Price:</span>
+                            <span className="text-foreground">{inquiry.target_price} {inquiry.target_currency_code}</span>
                           </div>
                         )}
-                        {inquiry.specs.material && (
+                        {inquiry.required_delivery_date && (
                           <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Material:</span>
-                            <span className="text-foreground">{inquiry.specs.material}</span>
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">Delivery By:</span>
+                            <span className="text-foreground">{format(new Date(inquiry.required_delivery_date), 'PP')}</span>
                           </div>
                         )}
-                        {inquiry.specs.formulation && (
-                          <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Type:</span>
-                            <span className="text-foreground">{inquiry.specs.formulation}</span>
-                          </div>
-                        )}
-                        {inquiry.specs.features && (
+                        {inquiry.shipping_terms && (
                           <div className="flex items-center gap-2">
                             <Package className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Features:</span>
-                            <span className="text-foreground">{inquiry.specs.features}</span>
+                            <span className="text-muted-foreground">Terms:</span>
+                            <span className="text-foreground">{inquiry.shipping_terms}</span>
                           </div>
                         )}
-                        {inquiry.specs.wattage && (
+                        {inquiry.destination_port_city && (
                           <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Power:</span>
-                            <span className="text-foreground">{inquiry.specs.wattage}</span>
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">Port:</span>
+                            <span className="text-foreground">{inquiry.destination_port_city}</span>
                           </div>
-                        )}
-                        {inquiry.specs.connectivity && (
-                          <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Connectivity:</span>
-                            <span className="text-foreground">{inquiry.specs.connectivity}</span>
-                          </div>
-                        )}
-                        {inquiry.specs.grade && (
-                          <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Grade:</span>
-                            <span className="text-foreground">{inquiry.specs.grade}</span>
-                          </div>
-                        )}
-                        {inquiry.specs.packaging && (
-                          <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Packaging:</span>
-                            <span className="text-foreground">{inquiry.specs.packaging}</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Certifications & Private Label */}
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        {inquiry.specs.certifications?.map((cert) => (
-                          <Badge key={cert} variant="outline" className="gap-1 text-xs">
-                            <Award className="h-3 w-3" />
-                            {cert}
-                          </Badge>
-                        ))}
-                        {inquiry.specs.privateLabel && (
-                          <Badge variant="secondary" className="gap-1 text-xs">
-                            <Tag className="h-3 w-3" />
-                            Private Label
-                          </Badge>
                         )}
                       </div>
                     </div>
                     
                     {/* Buyer Message */}
-                    <p className="mt-3 text-sm text-muted-foreground">{inquiry.message}</p>
+                    {inquiry.additional_requirements && (
+                      <p className="mt-3 text-sm text-muted-foreground">{inquiry.additional_requirements}</p>
+                    )}
                   </div>
                   
                   {/* Actions */}
                   <div className="flex flex-col items-end gap-3 lg:ml-6">
-                    <span className="text-xs text-muted-foreground">{inquiry.date}</span>
+                    <span className="text-xs text-muted-foreground">{format(new Date(inquiry.created_at), 'PP')}</span>
                     <div className="flex flex-wrap gap-2">
                       <Button variant="outline" size="sm" className="gap-1" asChild>
-                        <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id.replace('INQ-00', '')}`}>
+                        <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id}`}>
                           <Eye className="h-4 w-4" />
                           View Details
                         </Link>
                       </Button>
                       <Button variant="outline" size="sm" className="gap-1" asChild>
-                        <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id.replace('INQ-00', '')}`}>
+                        <Link href={`/dashboard/manufacturer/messages?buyer=${inquiry.buyer.id}`}>
                           <MessageSquare className="h-4 w-4" />
                           Message
                         </Link>
                       </Button>
-                      {inquiry.status === "New" && (
+                      {inquiry.status === "pending" && (
                         <Button size="sm" className="gap-1" asChild>
-                          <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id.replace('INQ-00', '')}`}>
+                          <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id}`}>
                             <Send className="h-4 w-4" />
                             Send Quote
                           </Link>
@@ -380,13 +252,14 @@ export default function ManufacturerInquiriesPage() {
           )
         })}
       </div>
+      )}
 
-      {filteredInquiries.length === 0 && (
+      {!loading && filteredInquiries.length === 0 && (
         <div className="rounded-xl border border-dashed border-border py-12 text-center">
           <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
           <h3 className="mt-4 font-semibold text-foreground">No inquiries found</h3>
           <p className="mt-2 text-muted-foreground">
-            {searchQuery || statusFilter !== "all" || sourceFilter !== "all" 
+            {searchQuery || statusFilter !== "all" 
               ? "Try adjusting your filters" 
               : "New buyer inquiries will appear here"}
           </p>

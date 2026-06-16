@@ -142,13 +142,11 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
       // Deliver the status change into the buyer↔seller message thread
       try {
         postOrderUpdate(res.data as any, {
-          id: `u-${Date.now()}`,
-          status: newStatus,
+          status: newStatus as any,
           note: trimmedNote,
           photos: photoNames,
-          files: fileNames.map((f, i) => ({ id: `f-${Date.now()}-${i}`, name: f })),
+          files: fileNames,
           createdAt: new Date().toISOString(),
-          author: config.author,
         })
       } catch (e) {
         console.error("Failed to post message", e)

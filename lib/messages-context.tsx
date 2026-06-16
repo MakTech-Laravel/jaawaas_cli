@@ -155,8 +155,8 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
 
   // Find an existing thread for an order's buyer/seller pair, or build a new one.
   const upsertThreadMessage = (order: Order, message: ChatMessage) => {
-    const sellerId = order.providerId ?? order.manufacturerId
-    const sellerName = order.providerName ?? order.manufacturerName
+    const sellerId = order.providerId ?? order.manufacturerId ?? ""
+    const sellerName = order.providerName ?? order.manufacturerName ?? ""
     const id = threadId(sellerId, order.buyerEmail)
     setThreads((prev) => {
       const existing = prev.find((t) => t.id === id)
