@@ -1,4 +1,4 @@
-import { apiClient } from "./client"
+import { apiClient, publicApiClient } from "./client"
 import { getApiErrorMessage } from "./errors"
 
 /** A single feature entry as returned by GET /plans. */
@@ -52,7 +52,7 @@ export async function fetchPublicPlans(): Promise<{
   data: PublicPlan[]
 }> {
   try {
-    const response = await apiClient.get<PublicPlansResponse>("/plans")
+    const response = await publicApiClient.get<PublicPlansResponse>("/plans")
     const payload = response.data
 
     return {

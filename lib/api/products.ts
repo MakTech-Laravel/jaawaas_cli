@@ -95,6 +95,37 @@ export interface ShippingMethod {
   name: string
 }
 
+export interface ReviewStats {
+  average_rating: number
+  total_reviews: number
+  breakdown: {
+    rating: number
+    count: number
+    percentage: number
+  }[]
+}
+
+export interface ProductReview {
+  id: number
+  rating: number
+  title: string
+  comment: string
+  created_at: string
+  reviewer: {
+    id: number
+    first_name: string
+    last_name: string
+    company_name: string
+    country: string
+  }
+  order: {
+    id: number
+    total_amount: number
+    currency_code: string
+    status: string
+  }
+}
+
 export interface Product {
   id: number
   name: string
@@ -125,6 +156,8 @@ export interface Product {
   shipping_packaging: ShippingPackaging
   available_options: string | null
   shipping_methods: ShippingMethod[]
+  review_stats?: ReviewStats
+  reviews?: ProductReview[]
 }
 
 export interface ProductsMetadata {
@@ -434,6 +467,8 @@ function normalizeProduct(payload: unknown): Product {
     shipping_methods: Array.isArray(product.shipping_methods)
       ? (product.shipping_methods as ShippingMethod[])
       : [],
+    review_stats: product.review_stats ? (product.review_stats as ReviewStats) : undefined,
+    reviews: Array.isArray(product.reviews) ? (product.reviews as ProductReview[]) : undefined,
   }
 }
 

@@ -1,4 +1,4 @@
-import { apiClient } from "./client"
+import { apiClient, publicApiClient } from "./client"
 import { getApiErrorMessage } from "./errors"
 
 export interface ActivePromotionPlan {
@@ -70,7 +70,7 @@ export async function fetchActivePromotion(): Promise<{
   data: ActivePromotion | null
 }> {
   try {
-    const response = await apiClient.get<ActivePromotionResponse>("/admin/promotions/active")
+    const response = await publicApiClient.get<ActivePromotionResponse>("/promotions/active")
     const payload = response.data
     return {
       success: payload?.success ?? true,

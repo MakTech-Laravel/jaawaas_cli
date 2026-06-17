@@ -164,7 +164,7 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="w-full">
       <Button asChild variant="ghost" size="sm" className="mb-4 gap-1.5 text-muted-foreground">
         <Link href={config.basePath}>
           <ArrowLeft className="h-4 w-4" />
