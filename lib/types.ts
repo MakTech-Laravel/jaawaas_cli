@@ -21,6 +21,7 @@ export interface User {
   agreed_to_terms: boolean;
   created_at: string;
   updated_at: string | null;
+  manufacture_status?: string | null;
 }
 
 /** Present on successful login and immediate post-register (e.g. buyer). */
