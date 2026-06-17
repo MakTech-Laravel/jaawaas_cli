@@ -136,6 +136,7 @@ function toAuthUser(user: User | ApiUser): User {
       name: `${firstName} ${lastName}`.trim(),
       company: normalizedRole === "admin" ? "SourceNest" : "",
       createdAt: user.created_at,
+      manufacturerStatus: (user as ApiUser).manufacture_status as ManufacturerStatus | undefined,
     }
   }
 
@@ -238,7 +239,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         return {
           success: true,
-          redirectTo: getDashboardPathByRole(response.data.user.role),
+          redirectTo: getDashboardPathByRole(
+            response.data.user.role, 
+            response.data.user.manufacture_status
+          ),
           message: response.message || undefined,
         }
       }
@@ -325,7 +329,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return {
           success: true,
           pendingReview: false,
-          redirectTo: getDashboardPathByRole(session.user.role),
+          redirectTo: getDashboardPathByRole(
+            session.user.role, 
+            session.user.manufacture_status
+          ),
           message: response.message || undefined,
         }
       }
@@ -368,7 +375,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(response.data.user)
         return {
           success: true,
-          redirectTo: getDashboardPathByRole(response.data.user.role),
+          redirectTo: getDashboardPathByRole(
+            response.data.user.role,
+            response.data.user.manufacture_status
+          ),
         }
       }
 
@@ -431,7 +441,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(response.data.user)
         return {
           success: true,
-          redirectTo: getDashboardPathByRole(response.data.user.role),
+          redirectTo: getDashboardPathByRole(
+            response.data.user.role,
+            response.data.user.manufacture_status
+          ),
         }
       }
 
@@ -467,7 +480,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) {
       return "/auth/signin"
     }
-    return getDashboardPathByRole(user.role)
+    return getDashboardPathByRole(user.role, user.manufacturerStatus)
   }
 
   return (

@@ -20,10 +20,10 @@ import {
 
 export default function ManufacturerAccountReviewPage() {
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-linear-to-b from-muted/50 to-muted/20">
       {/* Header / Navbar */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <span className="text-sm font-bold text-primary-foreground">SN</span>
@@ -31,20 +31,20 @@ export default function ManufacturerAccountReviewPage() {
             <span className="font-serif text-lg font-medium">SourceNest</span>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex">
               <Building2 className="h-4 w-4" />
               <span>TechGear Manufacturing Ltd.</span>
             </div>
             <Button variant="ghost" size="sm" className="gap-2">
               <LogOut className="h-4 w-4" />
-              Sign Out
+              <span className="hidden sm:inline">Sign Out</span>
             </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container max-w-5xl py-8 md:py-12">
+      <main className="container mx-auto max-w-5xl px-4 py-8 md:px-8 md:py-12">
         {/* Page Title & Status Overview */}
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
@@ -55,7 +55,7 @@ export default function ManufacturerAccountReviewPage() {
           </div>
           
           {/* Main Status Badge */}
-          <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/20 dark:bg-amber-500/10">
+          <div className="flex items-center gap-4 rounded-xl border border-amber-200/60 bg-linear-to-r from-amber-50 to-amber-100/50 px-5 py-4 shadow-sm dark:border-amber-500/20 dark:from-amber-500/10 dark:to-amber-500/5">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
               <Clock className="h-5 w-5" />
             </div>
@@ -71,14 +71,14 @@ export default function ManufacturerAccountReviewPage() {
           <div className="space-y-6 md:col-span-2">
             
             {/* What is required section */}
-            <Card className="border-l-4 border-l-amber-500 shadow-sm">
+            <Card className="overflow-hidden border-l-4 border-l-amber-500 shadow-md transition-all hover:shadow-lg">
               <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5 text-amber-500" />
+                    <AlertCircle className="h-5 w-5 shrink-0 text-amber-500" />
                     <CardTitle className="text-lg">Required Actions</CardTitle>
                   </div>
-                  <Badge variant="outline" className="bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                  <Badge variant="outline" className="shrink-0 bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
                     2 Pending Tasks
                   </Badge>
                 </div>
@@ -95,9 +95,9 @@ export default function ManufacturerAccountReviewPage() {
                       <FileWarning className="h-4 w-4" />
                     </div>
                     <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <h4 className="font-medium text-foreground">Business License</h4>
-                        <Badge variant="secondary" className="text-xs">Document</Badge>
+                        <Badge variant="secondary" className="shrink-0 text-xs">Document</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
                         The business license you uploaded is expired. Please upload a valid, current business registration document.
@@ -119,9 +119,9 @@ export default function ManufacturerAccountReviewPage() {
                       <FileQuestion className="h-4 w-4" />
                     </div>
                     <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <h4 className="font-medium text-foreground">Facility Photos</h4>
-                        <Badge variant="secondary" className="text-xs">Information</Badge>
+                        <Badge variant="secondary" className="shrink-0 text-xs">Information</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
                         Please provide 2-3 additional photos of your main manufacturing floor showing equipment.
@@ -140,7 +140,7 @@ export default function ManufacturerAccountReviewPage() {
             </Card>
 
             {/* Admin Communications */}
-            <Card className="shadow-sm">
+            <Card className="overflow-hidden shadow-md transition-all hover:shadow-lg">
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <MessageSquare className="h-5 w-5 text-primary" />
@@ -193,7 +193,7 @@ export default function ManufacturerAccountReviewPage() {
           <div className="space-y-6">
             
             {/* Progress Tracker */}
-            <Card className="shadow-sm">
+            <Card className="overflow-hidden shadow-md transition-all hover:shadow-lg">
               <CardHeader>
                 <CardTitle className="text-lg">Review Progress</CardTitle>
               </CardHeader>
@@ -252,7 +252,7 @@ export default function ManufacturerAccountReviewPage() {
             </Card>
 
             {/* Submitted Info Summary */}
-            <Card className="shadow-sm">
+            <Card className="overflow-hidden shadow-md transition-all hover:shadow-lg">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   Your Details
