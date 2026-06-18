@@ -293,3 +293,111 @@ export async function getPublicSupplierCertifications(slugOrId: string): Promise
     return null
   }
 }
+
+export interface ApiSupplierMapCountry {
+  name: string
+  country: string
+  country_code: string
+  group: string
+  subregion: string
+  coordinates: {
+    lat: number | null
+    lng: number | null
+  }
+  suppliers_count: number
+  has_suppliers: boolean
+  flag: string
+  flag_icon: string
+}
+
+export interface ApiSupplierMapResponse {
+  success: boolean
+  message: string
+  data: {
+    countries: ApiSupplierMapCountry[]
+    country_code_groups: {
+      group: string
+      countries: string[]
+    }[]
+    total_countries: number
+    countries_with_suppliers: number
+    total_suppliers: number
+    filters: {
+      group: string | null
+      search: string | null
+    }
+    pagination: {
+      current_page: number
+      per_page: number
+      total: number
+      last_page: number
+    }
+  }
+}
+
+export async function getSuppliersMap(): Promise<ApiSupplierMapResponse | null> {
+  try {
+    const response = await publicApiClient.get<ApiSupplierMapResponse>("/suppliers/map")
+    return response.data
+  } catch (error) {
+    console.error("Failed to fetch suppliers map:", getApiErrorMessage(error))
+    return null
+  }
+}
+
+export interface ApiSupplierMapGroup {
+  group: string
+  country_count: number
+  countries_with_suppliers: number
+  suppliers_count: number
+}
+
+export interface ApiSupplierMapGroupsResponse {
+  success: boolean
+  message: string
+  data: {
+    total_groups: number
+    groups: ApiSupplierMapGroup[]
+  }
+}
+
+export async function getSuppliersMapGroups(): Promise<ApiSupplierMapGroupsResponse | null> {
+  try {
+    const response = await publicApiClient.get<ApiSupplierMapGroupsResponse>("/suppliers/map/groups")
+    return response.data
+  } catch (error) {
+    console.error("Failed to fetch suppliers map groups:", getApiErrorMessage(error))
+    return null
+  }
+}
+
+export interface ApiSupplierMapTopCountry {
+  country: string
+  country_code: string
+  group: string
+  subregion: string
+  manufacturers_count: number
+  flag: string
+  flag_icon: string
+}
+
+export interface ApiSupplierMapTopCountriesResponse {
+  success: boolean
+  message: string
+  data: {
+    countries: ApiSupplierMapTopCountry[]
+    filters: Record<string, any>
+    pagination: Record<string, any>
+  }
+}
+
+export async function getSuppliersMapTopCountries(): Promise<ApiSupplierMapTopCountriesResponse | null> {
+  try {
+    const response = await publicApiClient.get<ApiSupplierMapTopCountriesResponse>("/suppliers/map/top-countries")
+    return response.data
+  } catch (error) {
+    console.error("Failed to fetch suppliers map top countries:", getApiErrorMessage(error))
+    return null
+  }
+}
+

@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { getAdminDashboard, AdminDashboardData } from "@/lib/api/admin-dashboard"
+import { approveManufacturer, rejectManufacturer } from "@/lib/api/admin-manufacturer-registrations"
+import { useToast } from "@/hooks/use-toast"
 import {
   Dialog,
   DialogContent,
@@ -48,8 +50,10 @@ const getStatIcon = (key: string) => {
 }
 
 export default function AdminDashboardPage() {
+  const { toast } = useToast()
   const [data, setData] = useState<AdminDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [processingId, setProcessingId] = useState<string | null>(null)
 
   // Modals state
   const [showReviewDialog, setShowReviewDialog] = useState(false)
@@ -74,18 +78,64 @@ export default function AdminDashboardPage() {
     setShowReviewDialog(true)
   }
 
-  // Placeholder for real approval/rejection endpoints
-  const approveItem = (id: string) => {
-    if (data) {
+  // Call real approval/rejection endpoints based on item type
+  const approveItem = async (id: string) => {
+    if (!data) return
+    const item = data.pending_approvals.find((i) => i.id === id)
+    if (!item) return
+
+    setProcessingId(id)
+    try {
+      // Use manufacturer approval for both manufacturer and supplier
+      if (item.type === 'manufacturer' || item.type === 'supplier' || item.type === 'Supplier' || item.type === 'Manufacturer' || !item.type) {
+        await approveManufacturer(id)
+        toast({
+          title: "Approved",
+          description: `${item.name} has been approved.`,
+        })
+      } else {
+        toast({
+          title: "Notice",
+          description: `Approval for type ${item.type} is not fully wired yet. Removed from list.`,
+        })
+      }
+
       setData({
         ...data,
         pending_approvals: data.pending_approvals.filter((i) => i.id !== id)
       })
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve application.",
+        variant: "destructive"
+      })
+    } finally {
+      setProcessingId(null)
     }
   }
 
-  const rejectItem = () => {
-    if (currentItem && data) {
+  const rejectItem = async () => {
+    if (!currentItem || !data) return
+    if (!rejectReason.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a reason for rejection.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setProcessingId(currentItem.id)
+    try {
+      if (currentItem.type === 'manufacturer' || currentItem.type === 'supplier' || currentItem.type === 'Supplier' || currentItem.type === 'Manufacturer' || !currentItem.type) {
+        await rejectManufacturer(currentItem.id, rejectReason)
+        toast({
+          title: "Rejected",
+          description: `${currentItem.name} has been rejected.`,
+        })
+      }
+
       setData({
         ...data,
         pending_approvals: data.pending_approvals.filter((i) => i.id !== currentItem.id)
@@ -93,6 +143,14 @@ export default function AdminDashboardPage() {
       setShowRejectDialog(false)
       setCurrentItem(null)
       setRejectReason("")
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reject application.",
+        variant: "destructive"
+      })
+    } finally {
+      setProcessingId(null)
     }
   }
 
@@ -223,8 +281,13 @@ export default function AdminDashboardPage() {
                     <Button 
                       size="sm"
                       onClick={() => approveItem(item.id)}
+                      disabled={processingId === item.id}
                     >
-                      <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+                      {processingId === item.id ? (
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+                      )}
                       Approve
                     </Button>
                   </div>
@@ -369,8 +432,15 @@ export default function AdminDashboardPage() {
             <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={rejectItem}>
-              Reject Application
+            <Button variant="destructive" onClick={rejectItem} disabled={processingId === currentItem?.id}>
+              {processingId === currentItem?.id ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Rejecting...
+                </>
+              ) : (
+                "Reject Application"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
