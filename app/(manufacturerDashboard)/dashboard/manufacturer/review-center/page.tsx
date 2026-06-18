@@ -1,7 +1,7 @@
 "use client"
 
-import ReviewCenter from "@/components/manufacturers/review-center"
+import AdditionalInformationCenter from "@/components/manufacturers/additional-information-center"
 
 export default function ManufacturerReviewCenterPage() {
-  return <ReviewCenter />
+  return <AdditionalInformationCenter variant="dashboard" />
 }
