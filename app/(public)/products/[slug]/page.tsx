@@ -322,7 +322,7 @@ export default function ProductPage() {
                       </Link>
                     </Button>
                     <Button variant="outline" size="lg" className="flex-1" asChild>
-                      <Link href={`${dashboardPath}?supplier=${product.supplierId || product.supplierSlug || "admin"}&product=${product.slug}&productName=${encodeURIComponent(product.name)}&prefill=1`}>
+                      <Link href={`${dashboardPath}?supplier=${product.supplierId || product.supplierSlug || "admin"}&product=${product.id}&productName=${encodeURIComponent(product.name)}&productImage=${encodeURIComponent(product.images?.[0] || (product as any).image || '')}&productDesc=${encodeURIComponent(product.description || '')}&prefill=1`}>
                         <MessageSquare className="mr-2 h-4 w-4" />
                         Contact Supplier
                       </Link>
