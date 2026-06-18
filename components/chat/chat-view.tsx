@@ -35,6 +35,7 @@ export interface ChatMessage {
   text: string
   timestamp: string
   isRead: boolean
+  attachments?: string[]
 }
 
 export interface ChatConversation {
@@ -50,7 +51,7 @@ interface ChatViewProps {
   messages: ChatMessage[]
   currentUser: ChatParticipant
   onSelectConversation: (conversation: ChatConversation) => void
-  onSendMessage: (text: string) => void
+  onSendMessage: (text: string, files?: File[]) => Promise<boolean | void> | boolean | void
   selectedConversationId?: string
   isLoading?: boolean
   initialMessage?: string
@@ -72,7 +73,9 @@ export function ChatView({
   const [searchQuery, setSearchQuery] = useState("")
   const [newMessage, setNewMessage] = useState(initialMessage)
   const [productRef, setProductRef] = useState<ChatProductReference | null>(initialProductRef)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (initialMessage) {
@@ -101,20 +104,36 @@ export function ChatView({
            other?.company?.toLowerCase().includes(searchQuery.toLowerCase())
   })
 
-  const handleSend = () => {
+  const handleSend = async () => {
+    if (!selectedConversationId && conversations.length === 0) return
+
     let finalMessage = newMessage
     if (productRef) {
-      const img = productRef.images?.[0] || ""
-      const desc = productRef.description || ""
-      const refText = `[Product Reference: ${productRef.name}]\nLink: ${productRef.url}\nImage: ${img}\nDesc: ${desc}\n\n`
+      const refText = `[Product Reference: ${productRef.name}]\nLink: ${productRef.url}\nImage: ${productRef.images?.[0] || ""}\nDesc: ${productRef.description || ""}\n\n`
       finalMessage = refText + finalMessage
     }
 
-    if (finalMessage.trim()) {
-      onSendMessage(finalMessage)
-      setNewMessage("")
-      setProductRef(null)
+    if (finalMessage.trim() || selectedFiles.length > 0) {
+      const success = await onSendMessage(finalMessage, selectedFiles)
+      if (success !== false) {
+        setNewMessage("")
+        setProductRef(null)
+        setSelectedFiles([])
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
+        }
+      }
     }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setSelectedFiles(prev => [...prev, ...Array.from(e.target.files!)])
+    }
+  }
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
   return (
@@ -299,7 +318,29 @@ export function ChatView({
                           <div className="whitespace-pre-wrap">{actualText}</div>
                         </div>
                       ) : (
-                        <div className="whitespace-pre-wrap">{msg.text}</div>
+                        <div className="whitespace-pre-wrap">{actualText}</div>
+                      )}
+                      {msg.attachments && msg.attachments.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {msg.attachments.map((att, i) => (
+                            <a 
+                              key={i} 
+                              href={att} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="block overflow-hidden rounded-md border border-border bg-background"
+                            >
+                              {att.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                                <img src={att} alt="Attachment" className="max-h-32 object-cover" />
+                              ) : (
+                                <div className="flex items-center gap-2 p-2 text-xs text-foreground">
+                                  <Package className="h-4 w-4" />
+                                  <span>Attachment {i + 1}</span>
+                                </div>
+                              )}
+                            </a>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -354,6 +395,24 @@ export function ChatView({
                     </div>
                   </div>
                 )}
+                
+                {/* File Previews */}
+                {selectedFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2 p-3 bg-muted/20 border-t border-border">
+                    {selectedFiles.map((file, i) => (
+                      <div key={i} className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1 text-xs">
+                        <span className="max-w-[150px] truncate">{file.name}</span>
+                        <button 
+                          onClick={() => removeFile(i)}
+                          className="rounded-full hover:bg-muted p-0.5 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="relative flex-1 bg-muted/30">
                   <Textarea
                     placeholder="Type a message..."
@@ -367,6 +426,26 @@ export function ChatView({
                       }
                     }}
                   />
+                  <div className="absolute right-14 top-1/2 -translate-y-1/2">
+                    <input 
+                      type="file" 
+                      multiple 
+                      className="hidden" 
+                      ref={fileInputRef} 
+                      onChange={handleFileChange} 
+                    />
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
+                        <path d="M4.5 4.5V10.5C4.5 12.1569 5.84315 13.5 7.5 13.5C9.15685 13.5 10.5 12.1569 10.5 10.5V4.5C10.5 3.39543 9.60457 2.5 8.5 2.5C7.39543 2.5 6.5 3.39543 6.5 4.5V9.5C6.5 10.0523 6.94772 10.5 7.5 10.5C8.05228 10.5 8.5 10.0523 8.5 9.5V4.5H9.5V9.5C9.5 10.6046 8.60457 11.5 7.5 11.5C6.39543 11.5 5.5 10.6046 5.5 9.5V4.5C5.5 2.84315 6.84315 1.5 8.5 1.5C10.1569 1.5 11.5 2.84315 11.5 4.5V10.5C11.5 12.7091 9.70914 14.5 7.5 14.5C5.29086 14.5 3.5 12.7091 3.5 10.5V4.5H4.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+                      </svg>
+                    </Button>
+                  </div>
                   <Button 
                     size="icon" 
                     className={cn(
@@ -374,7 +453,7 @@ export function ChatView({
                       newMessage.trim() || productRef ? "bg-secondary text-secondary-foreground scale-100" : "bg-muted text-muted-foreground scale-90"
                     )}
                     onClick={handleSend}
-                    disabled={!newMessage.trim() && !productRef}
+                    disabled={(!newMessage.trim() && !productRef && selectedFiles.length === 0)}
                   >
                     <Send className="h-4 w-4" />
                   </Button>

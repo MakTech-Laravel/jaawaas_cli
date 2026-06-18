@@ -192,10 +192,10 @@ export default function AdminMessagesPage() {
     }
   }
 
-  const handleSendMessage = async (text: string) => {
-    if (!selectedConvId) return
+  const handleSendMessage = async (text: string, files?: File[]) => {
+    if (!selectedConvId) return false
 
-    const sentMsg = await sendMessage(selectedConvId, text)
+    const sentMsg = await sendMessage(selectedConvId, text, files)
     if (sentMsg) {
       setMessages(prev => [...prev, sentMsg])
       
@@ -205,7 +205,9 @@ export default function AdminMessagesPage() {
           ? { ...c, lastMessage: sentMsg, updatedAt: "Just now" } 
           : c
       ))
+      return true
     }
+    return false
   }
 
   if (isLoading) {
