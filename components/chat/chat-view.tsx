@@ -1,13 +1,24 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Search, Send, MoreVertical, ArrowLeft, MessageSquare, User, Factory, Globe, CheckCircle } from "lucide-react"
+import { Search, Send, MoreVertical, ArrowLeft, MessageSquare, User, Factory, Globe, CheckCircle, X, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { ChatProductCard } from "./chat-product-card"
+
+export interface ChatProductReference {
+  name: string
+  images?: string[]
+  description?: string
+  minOrder?: string | number
+  price?: string
+  url: string
+}
 
 export interface ChatParticipant {
   id: string
@@ -43,6 +54,7 @@ interface ChatViewProps {
   selectedConversationId?: string
   isLoading?: boolean
   initialMessage?: string
+  initialProductRef?: ChatProductReference | null
 }
 
 export function ChatView({
@@ -53,11 +65,13 @@ export function ChatView({
   onSendMessage,
   selectedConversationId,
   isLoading = false,
-  initialMessage = ""
+  initialMessage = "",
+  initialProductRef = null
 }: ChatViewProps) {
   const [showSidebar, setShowSidebar] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [newMessage, setNewMessage] = useState(initialMessage)
+  const [productRef, setProductRef] = useState<ChatProductReference | null>(initialProductRef)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -65,6 +79,12 @@ export function ChatView({
       setNewMessage(initialMessage)
     }
   }, [initialMessage, selectedConversationId])
+
+  useEffect(() => {
+    if (initialProductRef) {
+      setProductRef(initialProductRef)
+    }
+  }, [initialProductRef, selectedConversationId])
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId)
   const otherParticipant = selectedConversation?.participants.find(p => p.id !== currentUser.id)
@@ -82,9 +102,18 @@ export function ChatView({
   })
 
   const handleSend = () => {
-    if (newMessage.trim()) {
-      onSendMessage(newMessage)
+    let finalMessage = newMessage
+    if (productRef) {
+      const img = productRef.images?.[0] || ""
+      const desc = productRef.description || ""
+      const refText = `[Product Reference: ${productRef.name}]\nLink: ${productRef.url}\nImage: ${img}\nDesc: ${desc}\n\n`
+      finalMessage = refText + finalMessage
+    }
+
+    if (finalMessage.trim()) {
+      onSendMessage(finalMessage)
       setNewMessage("")
+      setProductRef(null)
     }
   }
 
@@ -224,6 +253,26 @@ export function ChatView({
             >
               {messages.map((msg, index) => {
                 const isMine = msg.senderId === currentUser.id
+                
+                // Parse Product Reference
+                let productRefMatch = null;
+                let actualText = msg.text;
+                
+                const newRefRegex = /^\[Product Reference: (.*?)\]\nLink: (.*?)\nImage: (.*?)\nDesc: (.*?)\n\n([\s\S]*)$/;
+                const oldRefRegex = /^\[Product Reference: (.*?)\]\nLink: (.*?)\n\n([\s\S]*)$/;
+                
+                const newMatch = msg.text.match(newRefRegex);
+                if (newMatch) {
+                  productRefMatch = { name: newMatch[1], url: newMatch[2], image: newMatch[3], desc: newMatch[4] };
+                  actualText = newMatch[5];
+                } else {
+                  const oldMatch = msg.text.match(oldRefRegex);
+                  if (oldMatch) {
+                    productRefMatch = { name: oldMatch[1], url: oldMatch[2], image: "", desc: "" };
+                    actualText = oldMatch[3];
+                  }
+                }
+
                 return (
                   <div
                     key={msg.id}
@@ -233,12 +282,25 @@ export function ChatView({
                     )}
                   >
                     <div className={cn(
-                      "max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-sm whitespace-pre-wrap",
+                      "max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-sm",
                       isMine 
                         ? "bg-secondary text-secondary-foreground rounded-tr-none" 
                         : "bg-card border border-border text-foreground rounded-tl-none"
                     )}>
-                      {msg.text}
+                      {productRefMatch ? (
+                        <div className="flex flex-col gap-2.5">
+                          <ChatProductCard 
+                            name={productRefMatch.name} 
+                            url={productRefMatch.url} 
+                            fallbackImage={productRefMatch.image} 
+                            fallbackDesc={productRefMatch.desc} 
+                            isMine={isMine} 
+                          />
+                          <div className="whitespace-pre-wrap">{actualText}</div>
+                        </div>
+                      ) : (
+                        <div className="whitespace-pre-wrap">{msg.text}</div>
+                      )}
                     </div>
                   </div>
                 )
@@ -247,12 +309,55 @@ export function ChatView({
 
             {/* Input Area */}
             <div className="border-t border-border p-4 bg-card">
-              <div className="flex items-center gap-2">
-                {/* Attachment disabled: removed Paperclip button as requested */}
-                <div className="relative flex-1">
+              <div className="flex flex-col rounded-md border border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary overflow-hidden transition-colors">
+                {productRef && (
+                  <div className="border-b border-border bg-muted/30 p-3">
+                    <div className="group relative flex items-start gap-4 rounded-lg border border-border/50 bg-background p-3 shadow-sm transition-all hover:border-border hover:shadow-md">
+                      <button 
+                        type="button" 
+                        onClick={() => setProductRef(null)}
+                        className="absolute right-2 top-2 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        title="Remove product reference"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
+                        {productRef.images && productRef.images[0] ? (
+                          <img
+                            src={productRef.images[0]}
+                            alt={productRef.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-muted">
+                            <Package className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col justify-center py-0.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Product Reference</span>
+                        <h4 className="font-medium text-foreground line-clamp-1 pr-6 text-sm">{productRef.name}</h4>
+                        {productRef.description && (
+                          <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{productRef.description}</p>
+                        )}
+                        <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
+                          {productRef.minOrder && (
+                            <span>Min. Order: {productRef.minOrder}</span>
+                          )}
+                          {productRef.price && (
+                             <span className="font-medium text-foreground">
+                               {productRef.price}
+                             </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="relative flex-1 bg-muted/30">
                   <Textarea
                     placeholder="Type a message..."
-                    className="pr-12 bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-secondary min-h-[60px] py-3 resize-none"
+                    className="pr-12 border-none focus-visible:ring-0 min-h-[60px] py-3 resize-none bg-transparent"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={(e) => {
@@ -265,11 +370,11 @@ export function ChatView({
                   <Button 
                     size="icon" 
                     className={cn(
-                      "absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8 transition-all",
-                      newMessage.trim() ? "bg-secondary text-secondary-foreground scale-100" : "bg-muted text-muted-foreground scale-90"
+                      "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 transition-all",
+                      newMessage.trim() || productRef ? "bg-secondary text-secondary-foreground scale-100" : "bg-muted text-muted-foreground scale-90"
                     )}
                     onClick={handleSend}
-                    disabled={!newMessage.trim()}
+                    disabled={!newMessage.trim() && !productRef}
                   >
                     <Send className="h-4 w-4" />
                   </Button>

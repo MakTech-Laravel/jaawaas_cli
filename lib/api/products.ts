@@ -355,8 +355,10 @@ export async function getProduct(slug: string): Promise<GetProductResponse> {
     }
     
     return response.data
-  } catch (error) {
-    console.error(`Error fetching product ${slug}:`, error)
+  } catch (error: any) {
+    if (error?.response?.status !== 404) {
+      console.error(`Error fetching product ${slug}:`, error)
+    }
     return {
       success: false,
       message: getApiErrorMessage(error) || "Product not found.",
