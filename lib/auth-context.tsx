@@ -5,7 +5,6 @@ import type { LoginInput, User as ApiUser } from "@/lib/types"
 import {
   completeSocialProfile,
   extractTwoFactorToken,
-  fetchCurrentUser,
   googleTokenLogin,
   isTwoFactorRequiredResponse,
   login as loginRequest,
@@ -188,53 +187,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    let cancelled = false
+    try {
+      const storedUser = localStorage.getItem("sourcenest_user")
+      const storedToken = localStorage.getItem("sourcenest_token")
 
-    const bootstrapAuth = async () => {
-      try {
-        const storedUser = localStorage.getItem("sourcenest_user")
-        const storedToken = localStorage.getItem("sourcenest_token")
-
-        if (storedToken) {
-          setTokenState(storedToken)
-          try {
-            const freshUser = await fetchCurrentUser()
-            if (!cancelled) {
-              setUser(freshUser)
-            }
-            return
-          } catch {
-            localStorage.removeItem("sourcenest_token")
-            localStorage.removeItem("sourcenest_user")
-            if (!cancelled) {
-              setTokenState(null)
-              setUserState(null)
-            }
-            return
-          }
-        }
-
-        if (storedUser && !cancelled) {
-          setUserState(JSON.parse(storedUser))
-        }
-      } catch {
-        localStorage.removeItem("sourcenest_user")
-        localStorage.removeItem("sourcenest_token")
-        if (!cancelled) {
-          setUserState(null)
-          setTokenState(null)
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false)
-        }
+      if (storedUser) {
+        setUserState(JSON.parse(storedUser))
       }
-    }
 
-    void bootstrapAuth()
-
-    return () => {
-      cancelled = true
+      if (storedToken) {
+        setTokenState(storedToken)
+      }
+    } catch {
+      localStorage.removeItem("sourcenest_user")
+      localStorage.removeItem("sourcenest_token")
+      setUserState(null)
+      setTokenState(null)
+    } finally {
+      setIsLoading(false)
     }
   }, [])
 
