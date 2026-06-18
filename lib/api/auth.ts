@@ -1,6 +1,7 @@
 import axios from "axios";
 import { apiClient, publicApiClient } from "./client";
-import { AuthTokenPayload, LoginInput, LoginResponse } from "@/lib/types";
+import { AuthTokenPayload, LoginInput, LoginResponse, User } from "@/lib/types";
+import { getApiErrorMessage } from "./errors";
 
 export type LoginTwoFactorChallengeData = {
   two_factor?: boolean
@@ -93,6 +94,19 @@ export async function login(data: LoginInput): Promise<LoginEnvelope> {
       return error.response.data as LoginEnvelope
     }
     throw error
+  }
+}
+
+/** Validate stored token and return the current authenticated user. */
+export async function fetchCurrentUser(): Promise<User> {
+  try {
+    const response = await apiClient.get<{ success: boolean; data: User }>("/me")
+    if (!response.data?.data) {
+      throw new Error("Invalid session response")
+    }
+    return response.data.data
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, "Failed to load your account"))
   }
 }
 

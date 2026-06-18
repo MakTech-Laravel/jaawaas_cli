@@ -12,12 +12,23 @@ export function normalizeUserRole(role: string): UserRole {
   }
 }
 
+/** Manufacturer is not yet approved — should use /review, not the full dashboard. */
+export function isManufacturerPendingReview(status?: string | null): boolean {
+  if (!status) return false;
+  const normalized = status.toLowerCase();
+  return (
+    normalized === "pending" ||
+    normalized === "pending_approval" ||
+    normalized === "needs_more_info"
+  );
+}
+
 export function getDashboardPathByRole(role: string, status?: string | null): string {
   switch (normalizeUserRole(role)) {
     case "admin":
       return "/admin";
     case "manufacturer":
-      if (status === "pending_approval" || status === "needs_more_info") {
+      if (isManufacturerPendingReview(status)) {
         return "/review";
       }
       return "/dashboard/manufacturer";
