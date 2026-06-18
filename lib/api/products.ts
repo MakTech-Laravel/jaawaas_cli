@@ -146,6 +146,8 @@ export interface Product {
   supplierId?: string
   supplierSlug?: string
   supplierName?: string
+  categoryId?: number | string
+  subCategoryId?: number | string
   category: Category
   sub_category: SubCategory
   images: string[]
@@ -415,6 +417,8 @@ function normalizeProduct(payload: unknown): Product {
       product.supplier_name ?? product.supplierName ?? supplier.name,
       ""
     ) || undefined,
+    categoryId: (product.category_id ?? product.categoryId ?? toRecord(product.category).id) as string | number | undefined,
+    subCategoryId: (product.sub_category_id ?? product.subCategoryId ?? toRecord(product.sub_category).id) as string | number | undefined,
     category: normalizeCategory(product.category),
     sub_category: normalizeSubCategory(product.sub_category),
     images: Array.isArray(product.images) 

@@ -176,7 +176,7 @@ function SearchContent() {
                           {products.slice(0, 3).map((product) => (
                             <Link
                               key={product.id}
-                              href={`/products/${product.slug}`}
+                              href={`/products/${product.id}`}
                               className="group rounded-xl border border-border bg-card p-4 transition-all hover:shadow-md"
                             >
                               <div className="flex items-start gap-4">
@@ -325,7 +325,7 @@ function SearchContent() {
                       {products.map((product) => (
                         <Link
                           key={product.id}
-                          href={`/products/${product.slug}`}
+                          href={`/products/${product.id}`}
                           className="group rounded-xl border border-border bg-card overflow-hidden transition-all hover:shadow-md"
                         >
                           <div className="aspect-4/3 bg-muted flex items-center justify-center overflow-hidden">

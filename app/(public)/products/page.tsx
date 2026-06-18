@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { getProducts, type Product } from "@/lib/api/products"
+import { getPublicCategories, type BackendCategory } from "@/lib/api/categories"
 import { ProductActionButtons } from "@/components/products/product-action-buttons"
 import { 
   Search, 
@@ -40,26 +41,76 @@ function ProductsPageContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get("category") || "all")
   const [sortBy, setSortBy] = useState("relevance")
   const [showFilters, setShowFilters] = useState(false)
+  const [allCategories, setAllCategories] = useState<BackendCategory[]>([])
 
-  // Get unique categories from products
+  // Fetch all categories once
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const response = await getPublicCategories()
+      if (response.success) {
+        setAllCategories(response.data)
+      }
+    }
+    fetchCategories()
+  }, [])
+
+  // Use the fetched categories for the dropdown
   const categories = useMemo(() => {
-    const cats = new Map<string, string>()
-    products.forEach(p => {
-      cats.set(p.category.slug, p.category.name)
-    })
-    return Array.from(cats.entries()).map(([slug, name]) => ({ slug, name }))
-  }, [products])
+    const list = allCategories.map(c => ({ slug: c.slug || c.name.toLowerCase().replace(/\s+/g, '-'), name: c.name }))
+    // If selectedCategory is not in the list (e.g. it's a subcategory), add it temporarily so the dropdown doesn't break
+    if (selectedCategory !== "all" && !list.find(c => c.slug === selectedCategory)) {
+      // Find the subcategory name
+      let subName = selectedCategory
+      for (const cat of allCategories) {
+        const sub = (cat.sub_categories || cat.subcategories || []).find(s => (s.slug || s.name.toLowerCase().replace(/\s+/g, '-')) === selectedCategory)
+        if (sub) {
+          subName = sub.name
+          break
+        }
+      }
+      list.push({ slug: selectedCategory, name: subName })
+    }
+    return list
+  }, [allCategories, selectedCategory])
 
-  // Fetch products
+  // Fetch products when filters change
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true)
       setError(null)
       
-      const response = await getProducts(1, {})
+      const filters: Record<string, unknown> = {}
+      if (selectedCategory !== "all") {
+        filters.category = selectedCategory
+        // Try to find if it's a category or subcategory to pass the correct ID to backend
+        let foundCat = allCategories.find(c => (c.slug || c.name.toLowerCase().replace(/\s+/g, '-')) === selectedCategory)
+        if (foundCat) {
+          filters.category_id = foundCat.id
+          filters.category_slug = foundCat.slug || selectedCategory
+        } else {
+          // Check subcategories
+          for (const cat of allCategories) {
+            const sub = (cat.sub_categories || cat.subcategories || []).find(s => (s.slug || s.name.toLowerCase().replace(/\s+/g, '-')) === selectedCategory)
+            if (sub) {
+              // TRICK: The user requested that if a subcategory is clicked, we show ALL products from the parent category!
+              // So we deliberately treat this as if the parent category was clicked for filtering purposes.
+              foundCat = cat
+              filters.category_id = cat.id 
+              filters.category_slug = cat.slug
+              // We omit sub_category_id so the backend doesn't filter out the parent's other products
+              break
+            }
+          }
+        }
+      }
+      if (searchQuery) {
+        filters.search = searchQuery
+      }
+
+      const response = await getProducts(1, filters)
       
       if (response.success) {
         setProducts(response.data)
@@ -71,8 +122,17 @@ function ProductsPageContent() {
       setLoading(false)
     }
 
-    fetchProducts()
-  }, [])
+    const timeoutId = setTimeout(fetchProducts, 300)
+    return () => clearTimeout(timeoutId)
+  }, [selectedCategory, searchQuery])
+
+  // Sync state with URL params when they change
+  useEffect(() => {
+    const cat = searchParams.get("category")
+    if (cat) {
+      setSelectedCategory(cat)
+    }
+  }, [searchParams])
 
   // Filter and sort products
   const filteredAndSortedProducts = useMemo(() => {
@@ -88,9 +148,44 @@ function ProductsPageContent() {
       )
     }
 
-    // Apply category filter
+    // Local category filter is redundant if backend handles it, but keep it just in case
     if (selectedCategory !== "all") {
-      result = result.filter(p => p.category.slug === selectedCategory)
+      const lowerSelected = selectedCategory.toLowerCase()
+      
+      // Resolve the category/subcategory from allCategories
+      let foundCat = allCategories.find(c => (c.slug || c.name.toLowerCase().replace(/\s+/g, '-')) === selectedCategory)
+      let foundSub: any = null
+      if (!foundCat) {
+        for (const cat of allCategories) {
+          foundSub = (cat.sub_categories || cat.subcategories || []).find(s => (s.slug || s.name.toLowerCase().replace(/\s+/g, '-')) === selectedCategory)
+          if (foundSub) {
+            // TRICK: Treat the parent category as the found category to show all parent products
+            foundCat = cat
+            break
+          }
+        }
+      }
+
+      result = result.filter(p => {
+        const pCat = p.category
+        const pSub = p.sub_category
+
+        // Exact slug match
+        if (pCat && pCat.slug && pCat.slug.toLowerCase() === lowerSelected) return true
+        if (pSub && pSub.slug && pSub.slug.toLowerCase() === lowerSelected) return true
+
+        // Match by resolved ID
+        if (foundCat && String(pCat?.id) === String(foundCat.id)) return true
+        if (foundCat && String(p.categoryId) === String(foundCat.id)) return true
+        if (foundSub && String(pSub?.id) === String(foundSub.id)) return true
+        if (foundSub && String(p.subCategoryId) === String(foundSub.id)) return true
+
+        // Match by exact name (very useful for dummy data where slugs differ but names match)
+        if (foundCat && pCat && pCat.name && pCat.name.toLowerCase() === foundCat.name.toLowerCase()) return true
+        if (foundSub && pSub && pSub.name && pSub.name.toLowerCase() === foundSub.name.toLowerCase()) return true
+
+        return false
+      })
     }
 
     // Apply sorting
