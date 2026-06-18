@@ -242,7 +242,7 @@ export function ChatView({
                     {otherParticipant?.role === "manufacturer" && (
                       <Badge variant="secondary" className="h-5 px-1 text-[10px] bg-emerald-100 text-emerald-700">
                         <CheckCircle className="mr-0.5 h-3 w-3" />
-                        Verified
+                        Approved
                       </Badge>
                     )}
                   </div>

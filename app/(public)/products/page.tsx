@@ -318,7 +318,7 @@ function ProductsPageContent() {
                           {/* {product.is_approved && (
                             <Badge className="absolute right-3 top-3 bg-green-500/20 text-green-700 border-green-200">
                               <CheckCircle className="h-3 w-3 mr-1" />
-                              {t?.landing?.products?.verified || "Verified"}
+                              {t?.landing?.products?.verified || "Reviewed"}
                             </Badge>
                           )} */}
                         </div>

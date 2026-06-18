@@ -646,7 +646,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ slug:
                     <Shield className="mx-auto h-12 w-12 text-muted-foreground/50" />
                     <h3 className="mt-4 font-semibold text-foreground">No Certifications Available</h3>
                     <p className="mt-2 text-muted-foreground">
-                      This supplier has not added any verified certifications yet.
+                      This supplier has not added any approved certifications yet.
                     </p>
                   </div>
                 ) : (

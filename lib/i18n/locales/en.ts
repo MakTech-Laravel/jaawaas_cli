@@ -699,7 +699,7 @@ const en = {
       mostPopular: "Most Popular",
       productsFound: "products found",
       sortDisplay: "Sort:",
-      verified: "Verified",
+      verified: "Reviewed",
       moqLabel: "MOQ:",
       daysLabel: "days",
       inquiriesLabel: "inquiries",
