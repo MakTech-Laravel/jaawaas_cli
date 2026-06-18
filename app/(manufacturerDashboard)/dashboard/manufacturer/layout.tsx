@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
-import { isManufacturerPendingReview } from "@/lib/roles/dashboard-route"
 import { NotificationsDropdown } from "@/components/notifications-dropdown"
 import { 
   LayoutDashboard, 
@@ -64,14 +63,6 @@ export default function ManufacturerDashboardLayout({
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "manufacturer")) {
       router.push("/auth/signin?role=manufacturer")
-      return
-    }
-    if (
-      !isLoading &&
-      user?.role === "manufacturer" &&
-      isManufacturerPendingReview(user.manufacturerStatus)
-    ) {
-      router.replace("/review")
     }
   }, [user, isLoading, router])
 
@@ -90,6 +81,7 @@ export default function ManufacturerDashboardLayout({
     return null
   }
 
+  // Show approval status banner for non-approved manufacturers
   const showApprovalBanner = user.manufacturerStatus && user.manufacturerStatus !== "approved"
   const isNavItemActive = (href: string) => {
     if (pathname === href) return true
