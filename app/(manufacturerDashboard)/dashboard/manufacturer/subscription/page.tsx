@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -47,6 +47,41 @@ export default function SubscriptionPage() {
 
   const allPlans = getAllPlans().filter(p => p.id !== "free") // Exclude free plan for manufacturers
   const currentPlanId = getCurrentPlanId()
+
+  useEffect(() => {
+    if (typeof window === "undefined" || isLoading) return
+    
+    const searchParams = new URLSearchParams(window.location.search)
+    const planParam = searchParams.get('plan') as PlanId
+    const promoParam = searchParams.get('promo')
+    
+    if (planParam && planParam !== currentPlanId) {
+      const applyPromo = async () => {
+        setUpgrading(planParam)
+        try {
+          const targetPlan = allPlans.find(p => p.id === planParam)
+          if (!targetPlan) return
+          
+          await upgradePlan(planParam)
+          if (promoParam) {
+            toast.success(`Founding Manufacturer Promo Applied! You have been upgraded to the ${targetPlan.name} plan.`)
+          } else {
+            toast.success(`Successfully subscribed to ${targetPlan.name} plan.`)
+          }
+          // Clean up URL
+          window.history.replaceState({}, '', '/dashboard/manufacturer/subscription')
+        } catch {
+          toast.error("Failed to apply promotion.")
+        } finally {
+          setUpgrading(null)
+        }
+      }
+      
+      // Clear params first to prevent infinite loop
+      window.history.replaceState({}, '', '/dashboard/manufacturer/subscription')
+      applyPromo()
+    }
+  }, [isLoading, currentPlanId, upgradePlan, allPlans])
 
   const handlePlanChange = async (planId: PlanId) => {
     setUpgrading(planId)
@@ -240,7 +275,7 @@ export default function SubscriptionPage() {
                     {planOption.features.prioritySearchVisibility && (
                       <li className="flex items-start gap-2 text-sm">
                         <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
-                        Priority search visibility
+                        Priority visibility
                       </li>
                     )}
                     {planOption.features.featuredSupplierBadge && (

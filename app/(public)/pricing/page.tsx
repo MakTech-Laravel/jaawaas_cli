@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils"
 import { Check, X, ArrowRight, Shield, HelpCircle, Sparkles, Users, CheckCircle, AlertCircle, X as XIcon, Loader2 } from "lucide-react"
 import { fetchPublicPlans, type PublicPlan } from "@/lib/api/public-plans"
 import { fetchActivePromotion, type ActivePromotion } from "@/lib/api/public-promotions"
+import { useAuth } from "@/lib/auth-context"
 
 import { useRouter } from "next/navigation"
 
@@ -29,6 +30,7 @@ interface PlanOption {
 
 export default function PricingPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly")
   const [selectedPlan, setSelectedPlan] = useState<PlanOption | null>(null)
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "success" | "error">("idle")
@@ -229,7 +231,17 @@ export default function PricingPage() {
 
                 <Button
                   className="w-full gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90 py-6 text-base"
-                  onClick={() => router.push(activePromotion ? `/auth/signup?role=manufacturer&plan=${activePromotion.plan.id}&promo=${activePromotion.id}` : '/auth/signup?role=manufacturer')}
+                  onClick={() => {
+                    if (user) {
+                      if (user.role === 'manufacturer') {
+                        router.push(activePromotion ? `/dashboard/manufacturer/subscription?plan=${activePromotion.plan.id}&promo=${activePromotion.id}` : `/dashboard/manufacturer/subscription`)
+                      } else {
+                        alert("You are currently logged in as a Buyer. To apply as a Manufacturer, please create a new manufacturer account or contact support.")
+                      }
+                    } else {
+                      router.push(activePromotion ? `/auth/signup?role=manufacturer&plan=${activePromotion.plan.id}&promo=${activePromotion.id}` : '/auth/signup?role=manufacturer')
+                    }
+                  }}
                   disabled={activePromotion?.stats?.is_full}
                 >
                   {activePromotion?.stats?.is_full ? "Promotion Full" : "Apply as Founding Manufacturer"}
@@ -353,7 +365,13 @@ export default function PricingPage() {
                         )}
                         variant={plan.is_popular ? "default" : "outline"}
                         onClick={() => {
-                          if (planIsFree) {
+                          if (user) {
+                            if (user.role === 'manufacturer') {
+                              router.push(`/dashboard/manufacturer/subscription?plan=${plan.id}`)
+                            } else {
+                              alert("You are currently logged in as a Buyer. To subscribe, please create a new manufacturer account or contact support.")
+                            }
+                          } else if (planIsFree) {
                             router.push("/auth/signup?role=manufacturer&plan=free")
                           } else if (currentPrice > 0) {
                             handlePlanSelect(plan.name, currentPrice)
@@ -492,7 +510,7 @@ export default function PricingPage() {
                 },
                 {
                   q: t?.pricing?.faq?.q4 || "What is the Founding Manufacturer program?",
-                  a: t?.pricing?.faq?.a4 || "The Founding Manufacturer program is a limited offer for the first 300 manufacturers who join SourceNest. As a founding member, you get 6 months of free access to our full Growth plan ($299/month value) - including up to 100 products, advanced analytics, priority search visibility, featured supplier badge, and multiple team users. No credit card required to start."
+                  a: t?.pricing?.faq?.a4 || "The Founding Manufacturer program is a limited offer for the first 300 manufacturers who join SourceNest. As a founding member, you get 6 months of free access to our full Growth plan ($299/month value) - including up to 100 products, advanced analytics, priority visibility, featured supplier badge, and multiple team users. No credit card required to start."
                 },
                 {
                   q: t?.pricing?.faq?.q5 || "What happens after my 6-month free period ends?",
