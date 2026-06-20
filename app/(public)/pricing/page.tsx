@@ -138,107 +138,110 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* Special Launch Plan - Dynamic Promotion */}
-        {(!promotionLoading && activePromotion) && (
-          <section className="py-16 lg:py-20 bg-linear-to-b from-secondary/5 to-background">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <div className="mx-auto max-w-3xl text-center mb-12">
-                <Badge className="bg-secondary/20 text-secondary border-secondary/30 mb-4">
-                  <Sparkles className="mr-1.5 h-3 w-3" />
-                  {t?.pricing?.founding?.badge || "Limited Time Offer"}
-                </Badge>
-                <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground">
-                  {activePromotion.promotion_title || t?.pricing?.founding?.title || "Join as a Founding Manufacturer"}
-                </h2>
-                <p className="mt-4 text-muted-foreground">
-                  {activePromotion.short_description}
-                </p>
-              </div>
+        {/* Special Launch Plan - Founding Manufacturer */}
+        <section className="py-16 lg:py-20 bg-linear-to-b from-secondary/5 to-background">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-3xl text-center mb-12">
+              <Badge className="bg-secondary/20 text-secondary border-secondary/30 mb-4">
+                <Sparkles className="mr-1.5 inline-block h-3 w-3" />
+                First 300 Manufacturers Only
+              </Badge>
+              <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground">
+                Founding Manufacturer
+              </h2>
+              <p className="mt-4 text-muted-foreground">
+                Early Supplier Program
+              </p>
+            </div>
 
-              <div className="max-w-lg mx-auto">
-                <div className="relative rounded-2xl border-2 border-secondary bg-card p-8 shadow-lg">
-                  <Badge className="absolute -top-3 left-6 bg-secondary text-secondary-foreground">
-                    <Users className="mr-1.5 h-3 w-3" />
-                    First {activePromotion.slots} Only
-                  </Badge>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10">
-                      <Sparkles className="h-6 w-6 text-secondary" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-foreground">{activePromotion.promotion_title}</h3>
-                      <p className="text-sm text-muted-foreground">Early Supplier Program</p>
-                    </div>
+            <div className="max-w-lg mx-auto">
+              <div className="relative rounded-2xl border-2 border-secondary bg-card p-8 shadow-lg">
+                <Badge className="absolute -top-3 left-6 bg-secondary text-secondary-foreground">
+                  <Users className="mr-1.5 inline-block h-3 w-3" />
+                  First 300 Manufacturers Only
+                </Badge>
+                
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10">
+                    <Sparkles className="h-6 w-6 text-secondary" />
                   </div>
-                  <div className="mb-4">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-bold text-foreground">$0</span>
-                      <span className="text-muted-foreground">for {activePromotion.duration_months} months</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm line-through text-muted-foreground">
-                        ${parsePrice(activePromotion.plan.monthly_price.amount).toFixed(0)}/mo
-                      </span>
-                      <Badge variant="secondary" className="text-xs bg-secondary/20 text-secondary">
-                        Save ${(parsePrice(activePromotion.plan.monthly_price.amount) * activePromotion.duration_months).toFixed(0)}
-                      </Badge>
-                    </div>
-                    <p className="mt-1 text-sm text-secondary font-medium">No credit card required</p>
+                  <div>
+                    <h3 className="text-xl font-semibold text-foreground">Founding Manufacturer</h3>
+                    <p className="text-sm text-muted-foreground">Early Supplier Program</p>
                   </div>
-                  <div className="mb-4 rounded-lg bg-secondary/10 p-3 border border-secondary/20">
-                    <p className="text-sm text-foreground">
-                      {activePromotion.highlight_text || `Get full ${activePromotion.plan.name} plan features free for ${activePromotion.duration_months} months.`}
-                    </p>
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-bold text-foreground">$0</span>
+                    <span className="text-muted-foreground">for 6 months</span>
                   </div>
-                  
-                  {/* Spots remaining section */}
-                  <div className="mb-6 rounded-lg bg-muted/50 p-3 border border-border">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Spots remaining:</span>
-                      <span className="font-semibold text-secondary">{activePromotion.stats.spots_remaining} / {activePromotion.slots}</span>
-                    </div>
-                    <div className="mt-2 h-2 rounded-full bg-secondary/20 overflow-hidden">
-                      <div 
-                        className="h-full rounded-full bg-secondary transition-all" 
-                        style={{ width: `${activePromotion.stats.fill_percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                  
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-center gap-3 text-sm">
-                      <Check className="h-4 w-4 text-secondary" />
-                      <span className="text-foreground">Full {activePromotion.plan.name} Features</span>
-                    </li>
-                    <li className="flex items-center gap-3 text-sm">
-                      <Check className="h-4 w-4 text-secondary" />
-                      <span className="text-foreground font-medium">Free for {activePromotion.duration_months} months</span>
-                    </li>
-                    <li className="flex items-center gap-3 text-sm">
-                      <Check className="h-4 w-4 text-secondary" />
-                      <span className="text-foreground">Priority search visibility</span>
-                    </li>
-                    <li className="flex items-center gap-3 text-sm">
-                      <Check className="h-4 w-4 text-secondary" />
-                      <span className="text-foreground font-medium">Featured supplier badge</span>
-                    </li>
-                  </ul>
-                  <Button
-                    className="w-full gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90"
-                    onClick={() => router.push(`/auth/signup?role=manufacturer&plan=${activePromotion.plan.id}&promo=${activePromotion.id}`)}
-                    disabled={activePromotion.stats.is_full}
-                  >
-                    {activePromotion.stats.is_full ? "Promotion Full" : (activePromotion.cta_button_text || "Apply as Founding Member")}
-                    {!activePromotion.stats.is_full && <ArrowRight className="h-4 w-4" />}
-                  </Button>
-                  <p className="mt-3 text-xs text-center text-muted-foreground">
-                    Subject to admin review and approval
+                  <p className="mt-2 text-sm text-secondary font-medium">No credit card required</p>
+                </div>
+
+                <div className="mb-4 rounded-lg bg-secondary/10 p-4 border border-secondary/20">
+                  <p className="text-sm text-foreground leading-relaxed">
+                    Get full Growth Plan features free for 6 months. <br/>
+                    <span className="text-muted-foreground mt-1 inline-block">After the trial, continue with any paid plan to keep your manufacturer account active.</span>
                   </p>
                 </div>
+                
+                {/* Spots remaining section */}
+                <div className="mb-6 rounded-lg bg-muted/50 p-4 border border-border">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Spots remaining:</span>
+                    <span className="font-semibold text-secondary">
+                      {activePromotion ? `${activePromotion.stats.spots_remaining} / ${activePromotion.slots}` : '127 / 300'}
+                    </span>
+                  </div>
+                  <div className="mt-2 h-2 rounded-full bg-secondary/20 overflow-hidden">
+                    <div 
+                      className="h-full rounded-full bg-secondary transition-all" 
+                      style={{ width: activePromotion ? `${activePromotion.stats.fill_percentage}%` : '57.6%' }}
+                    />
+                  </div>
+                </div>
+                
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-foreground mb-3">Included Features</h4>
+                  <ul className="space-y-3">
+                    {[
+                      "Professional company profile",
+                      "Up to 100 products",
+                      "Internal messaging",
+                      "Buyer inquiry inbox",
+                      "RFQ reception",
+                      "Catalog upload",
+                      "Certifications section",
+                      "Export markets section",
+                      "Advanced analytics",
+                      "Priority visibility in manufacturer discovery",
+                      "Featured supplier badge",
+                      "Up to 3 team users"
+                    ].map((feature, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm">
+                        <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
+                        <span className="text-foreground">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <Button
+                  className="w-full gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90 py-6 text-base"
+                  onClick={() => router.push(activePromotion ? `/auth/signup?role=manufacturer&plan=${activePromotion.plan.id}&promo=${activePromotion.id}` : '/auth/signup?role=manufacturer')}
+                  disabled={activePromotion?.stats?.is_full}
+                >
+                  {activePromotion?.stats?.is_full ? "Promotion Full" : "Apply as Founding Manufacturer"}
+                  {!activePromotion?.stats?.is_full && <ArrowRight className="h-4 w-4" />}
+                </Button>
+                <p className="mt-4 text-xs text-center text-muted-foreground">
+                  Subject to admin review and approval.
+                </p>
               </div>
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
         {/* Pricing Toggle & Cards */}
         <section className="py-16 lg:py-24">
