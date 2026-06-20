@@ -174,7 +174,7 @@ export function ProductReviewForm({
             <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground/50" />
             <h3 className="mt-4 font-semibold text-foreground">Purchase Required</h3>
             <p className="mt-2 text-muted-foreground">
-              You must have a completed order for this product to leave a review.
+              Only customers with a completed order can leave a review.
             </p>
             <Button className="mt-6" variant="outline" onClick={() => onOpenChange(false)}>
               Close
