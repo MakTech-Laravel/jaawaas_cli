@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { useAuth } from "./auth-context"
+import { apiClient } from "@/lib/api/client"
 
 export type PlanId = "free" | "starter" | "growth" | "enterprise"
 
@@ -256,7 +257,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   // Load subscription data based on user
   useEffect(() => {
-    const loadSubscription = () => {
+    const loadSubscription = async () => {
       setIsLoading(true)
       
       if (!user) {
@@ -272,45 +273,46 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // For manufacturers, load their subscription from localStorage (demo)
-      const storedSub = localStorage.getItem(`sourcenest_subscription_${user.id}`)
-      const storedUsage = localStorage.getItem(`sourcenest_usage_${user.id}`)
-      
-      if (storedSub) {
-        try {
-          setSubscription(JSON.parse(storedSub))
-        } catch {
-          // Default subscription for demo
-          const defaultSub: Subscription = {
-            planId: "growth",
-            status: "active",
-            billingCycle: "monthly",
-            currentPeriodStart: "2026-03-01",
-            currentPeriodEnd: "2026-04-01",
-            cancelAtPeriodEnd: false
+      // Fetch from backend
+      try {
+        const response = await apiClient.get('/manufacturer/subscriptions')
+        if (response.data?.success && response.data?.data) {
+          const subData = response.data.data
+          let mappedPlanId: PlanId = "growth"
+          if (subData.plan?.name) {
+            const name = subData.plan.name.toLowerCase()
+            if (["starter", "growth", "enterprise"].includes(name)) {
+              mappedPlanId = name as PlanId
+            }
           }
-          setSubscription(defaultSub)
-          localStorage.setItem(`sourcenest_subscription_${user.id}`, JSON.stringify(defaultSub))
+          
+          setSubscription({
+            planId: mappedPlanId,
+            status: subData.status,
+            billingCycle: subData.billing_interval === "year" ? "yearly" : "monthly",
+            currentPeriodStart: subData.starts_at,
+            currentPeriodEnd: subData.ends_at,
+            cancelAtPeriodEnd: !subData.auto_renew
+          })
+        } else {
+          setSubscription(null)
         }
-      } else {
-        // Default subscription for demo (Growth plan)
-        const defaultSub: Subscription = {
-          planId: "growth",
-          status: "active",
-          billingCycle: "monthly",
-          currentPeriodStart: "2026-03-01",
-          currentPeriodEnd: "2026-04-01",
-          cancelAtPeriodEnd: false
+      } catch (error: any) {
+        // A 404 means no subscription yet.
+        // A 403 might mean the manufacturer is pending approval or doesn't have access.
+        const status = error?.response?.status;
+        if (status !== 404 && status !== 403) {
+          console.error("Failed to fetch subscription:", error)
         }
-        setSubscription(defaultSub)
-        localStorage.setItem(`sourcenest_subscription_${user.id}`, JSON.stringify(defaultSub))
+        setSubscription(null)
       }
 
+      // Usage is still mocked for now
+      const storedUsage = localStorage.getItem(`sourcenest_usage_${user.id}`)
       if (storedUsage) {
         try {
           setUsage(JSON.parse(storedUsage))
         } catch {
-          // Default usage
           setUsage({
             productsUsed: 47,
             inquiriesThisMonth: 128,
@@ -320,7 +322,6 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
           })
         }
       } else {
-        // Default usage for demo
         const defaultUsage: SubscriptionUsage = {
           productsUsed: 47,
           inquiriesThisMonth: 128,
