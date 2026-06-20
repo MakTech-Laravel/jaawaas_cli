@@ -95,8 +95,8 @@ export default function AdminAnalyticsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {metrics.map((metric) => (
           <Card key={metric.label}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+            <CardContent className="px-6 py-0">
+              <div className="flex items-center justify-between mt-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
                   <metric.icon className="h-5 w-5 text-muted-foreground" />
                 </div>
