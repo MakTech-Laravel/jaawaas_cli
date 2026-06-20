@@ -211,19 +211,36 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={isService ? "Scope / deliverables" : "Quantity"} required>
-              <Input
-                placeholder={isService ? "e.g., Logo, 3 packaging SKUs, brand guide" : "e.g., 5000"}
-                type={isService ? "text" : "number"}
-                value={form.quantity}
-                onChange={(e) => set("quantity", e.target.value)}
-              />
-            </Field>
-            <Field label="Unit">
-              <Input
-                placeholder="e.g., units, pieces, kg"
-                value={form.quantityUnit}
-                onChange={(e) => set("quantityUnit", e.target.value)}
-              />
+              <div className="flex gap-2">
+                <Input
+                  placeholder={isService ? "e.g., Logo, 3 packaging SKUs, brand guide" : "e.g., 5000"}
+                  type={isService ? "text" : "number"}
+                  value={form.quantity}
+                  onChange={(e) => set("quantity", e.target.value)}
+                  className="flex-1"
+                />
+                {!isService && (
+                  <Select 
+                    value={form.quantityUnit} 
+                    onValueChange={(value) => set("quantityUnit", value)}
+                  >
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pieces">Pieces</SelectItem>
+                      <SelectItem value="sets">Sets</SelectItem>
+                      <SelectItem value="units">Units</SelectItem>
+                      <SelectItem value="kg">KG</SelectItem>
+                      <SelectItem value="meters">Meters</SelectItem>
+                      <SelectItem value="cartons">Cartons</SelectItem>
+                      <SelectItem value="pallets">Pallets</SelectItem>
+                      <SelectItem value="20ft container">20ft Container</SelectItem>
+                      <SelectItem value="40ft container">40ft Container</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
             </Field>
           </div>
         </Section>

@@ -117,6 +117,9 @@ interface SignupData {
   additionalNotes?: string
   deviceName?: string
   agreeTerms?: boolean
+  transactionId?: string
+  planId?: string
+  promoId?: string
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -315,6 +318,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data.deviceName) form.append("device_name", data.deviceName)
+      if (data.transactionId) form.append("transaction_id", data.transactionId)
+      if (data.planId) form.append("plan_id", data.planId)
+      if (data.promoId) form.append("promo_id", data.promoId)
 
       const response = await registerRequest(form)
 
