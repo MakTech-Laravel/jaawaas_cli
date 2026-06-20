@@ -21,8 +21,12 @@ import { fetchActivePromotion, type ActivePromotion } from "@/lib/api/public-pro
 import { useAuth } from "@/lib/auth-context"
 
 import { useRouter } from "next/navigation"
+import { useSubscription } from "@/lib/subscription-context"
+import Swal from "sweetalert2"
+import { toast } from "sonner"
 
 interface PlanOption {
+  id: string;
   name: string;
   price: number;
   cycle: "monthly" | "yearly";
@@ -37,6 +41,7 @@ export default function PricingPage() {
   const [transactionId, setTransactionId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const router = useRouter()
+  const { upgradePlan } = useSubscription()
 
   // Dynamic plans from backend
   const [plans, setPlans] = useState<PublicPlan[]>([])
@@ -69,8 +74,9 @@ export default function PricingPage() {
     return () => { cancelled = true }
   }, [])
 
-  const handlePlanSelect = (planName: string, price: number) => {
+  const handlePlanSelect = (planId: string, planName: string, price: number) => {
     setSelectedPlan({
+      id: planId,
       name: planName,
       price,
       cycle: billingCycle,
@@ -84,7 +90,11 @@ export default function PricingPage() {
     setPaymentStatus("success")
     setTransactionId(id)
     setTimeout(() => {
-      router.push(`/dashboard/manufacturer/subscription?transactionId=${id}`)
+      if (user) {
+        router.push(`/dashboard/manufacturer/subscription?transactionId=${id}`)
+      } else {
+        router.push(`/auth/signup?role=manufacturer&plan=${selectedPlan?.id || ''}&transactionId=${id}`)
+      }
     }, 3000)
   }
 
@@ -234,9 +244,35 @@ export default function PricingPage() {
                   onClick={() => {
                     if (user) {
                       if (user.role === 'manufacturer') {
-                        router.push(activePromotion ? `/dashboard/manufacturer/subscription?plan=${activePromotion.plan.id}&promo=${activePromotion.id}` : `/dashboard/manufacturer/subscription`)
+                        Swal.fire({
+                          title: 'Apply Founding Manufacturer Promo?',
+                          text: 'You will receive a 6‑month free Growth plan. Continue?',
+                          icon: 'question',
+                          showCancelButton: true,
+                          confirmButtonColor: 'var(--color-secondary)',
+                          cancelButtonColor: '#d33',
+                          confirmButtonText: 'Yes, apply',
+                          cancelButtonText: 'Cancel'
+                        }).then(async (result) => {
+                          if (result.isConfirmed) {
+                            try {
+                              if (activePromotion) {
+                                await upgradePlan(activePromotion.plan.id as any)
+                                toast.success('Founding Manufacturer Promo Applied!')
+                              }
+                            } catch (e) {
+                              toast.error('Failed to apply promo')
+                            }
+                          }
+                        })
                       } else {
-                        alert("You are currently logged in as a Buyer. To apply as a Manufacturer, please create a new manufacturer account or contact support.")
+                        Swal.fire({
+                          icon: "info",
+                          title: "Buyer Account Detected",
+                          text: "You are currently logged in as a Buyer. To apply as a Manufacturer, please create a new manufacturer account or contact support.",
+                          confirmButtonColor: "var(--color-secondary)",
+                          confirmButtonText: "Got it"
+                        })
                       }
                     } else {
                       router.push(activePromotion ? `/auth/signup?role=manufacturer&plan=${activePromotion.plan.id}&promo=${activePromotion.id}` : '/auth/signup?role=manufacturer')
@@ -365,16 +401,22 @@ export default function PricingPage() {
                         )}
                         variant={plan.is_popular ? "default" : "outline"}
                         onClick={() => {
-                          if (user) {
-                            if (user.role === 'manufacturer') {
-                              router.push(`/dashboard/manufacturer/subscription?plan=${plan.id}`)
-                            } else {
-                              alert("You are currently logged in as a Buyer. To subscribe, please create a new manufacturer account or contact support.")
-                            }
+                          if (user && user.role === 'buyer') {
+                            Swal.fire({
+                              icon: "info",
+                              title: "Buyer Account Detected",
+                              text: "You are currently logged in as a Buyer. To subscribe, please create a new manufacturer account or contact support.",
+                              confirmButtonColor: "var(--color-secondary)",
+                              confirmButtonText: "Got it"
+                            })
                           } else if (planIsFree) {
-                            router.push("/auth/signup?role=manufacturer&plan=free")
+                            if (user) {
+                              router.push("/dashboard/manufacturer/subscription")
+                            } else {
+                              router.push("/auth/signup?role=manufacturer&plan=free")
+                            }
                           } else if (currentPrice > 0) {
-                            handlePlanSelect(plan.name, currentPrice)
+                            handlePlanSelect(plan.id.toString(), plan.name, currentPrice)
                           } else {
                             router.push("/contact?type=sales")
                           }
@@ -666,5 +708,3 @@ export default function PricingPage() {
     </div>
   )
 }
-
-

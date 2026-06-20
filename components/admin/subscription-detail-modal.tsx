@@ -156,7 +156,7 @@ export function SubscriptionDetailModal({ subscriptionId, isOpen, onClose }: Sub
                           {format(new Date(log.created_at), "MMM dd, yyyy HH:mm")}
                         </p>
                       </div>
-                      {log.paid_amount > 0 && (
+                      {log.paid_amount != null && log.paid_amount > 0 && (
                         <div className="font-medium text-emerald-600">
                           +${log.paid_amount}
                         </div>

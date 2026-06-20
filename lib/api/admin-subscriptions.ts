@@ -87,7 +87,7 @@ export interface SubscriptionLog {
   from_plan: SubscriptionLogPlan | null
   to_plan: SubscriptionLogPlan | null
   event_type: string
-  paid_amount: number
+  paid_amount: number | null
   created_at: string
 }
 
