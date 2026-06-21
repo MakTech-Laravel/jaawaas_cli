@@ -43,7 +43,7 @@ const navigation = [
   { name: "Products", href: "/dashboard/manufacturer/products", icon: Package },
   { name: "Catalogs", href: "/dashboard/manufacturer/catalogs", icon: FileBox },
   { name: "Certifications", href: "/dashboard/manufacturer/certifications", icon: Award },
-  { name: "Export Markets", href: "/dashboard/manufacturer/markets", icon: Globe },
+  // { name: "Export Markets", href: "/dashboard/manufacturer/markets", icon: Globe }, // Commented out per user request
   { name: "Analytics", href: "/dashboard/manufacturer/analytics", icon: BarChart3 },
   { name: "Company Profile", href: "/dashboard/manufacturer/profile", icon: Factory },
   { name: "Subscription", href: "/dashboard/manufacturer/subscription", icon: CreditCard },
