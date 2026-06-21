@@ -91,9 +91,9 @@ export default function PricingPage() {
     setTransactionId(id)
     setTimeout(() => {
       if (user) {
-        router.push(`/dashboard/manufacturer/subscription?transactionId=${id}`)
+        router.push(`/dashboard/manufacturer/subscription?transactionId=${id}&planId=${selectedPlan?.id || ""}&cycle=${billingCycle}&price=${selectedPlan?.price || ""}`)
       } else {
-        router.push(`/auth/signup?role=manufacturer&plan=${selectedPlan?.id || ''}&transactionId=${id}`)
+        router.push(`/auth/signup?role=manufacturer&plan=${selectedPlan?.id || ""}&transactionId=${id}`)
       }
     }, 3000)
   }
@@ -640,7 +640,9 @@ export default function PricingPage() {
                       {t?.pricing?.payment?.transactionId || "Transaction ID:"} <span className="font-mono text-xs">{transactionId}</span>
                     </p>
                     <p className="mt-4 text-xs text-green-600">
-                      {t?.pricing?.payment?.redirecting || "Redirecting to sign up..."}
+                      {user
+                        ? (t?.pricing?.payment?.redirectingDashboard || "Redirecting to your dashboard...")
+                        : (t?.pricing?.payment?.redirecting || "Redirecting to sign up...")}
                     </p>
                   </div>
                 )}
