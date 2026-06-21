@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
+import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
 import {
   Dialog,
   DialogContent,
@@ -28,8 +30,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { 
-  DollarSign, 
+import {
   Edit, 
   Plus, 
   Trash2,
@@ -626,36 +627,31 @@ export default function AdminPricingPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{plans.length}</div>
-            <p className="text-sm text-muted-foreground">Total Plans</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-emerald-600">
-              {plans.filter(p => p.active).length}
-            </div>
-            <p className="text-sm text-muted-foreground">Active Plans</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">
-              ${Math.max(...plans.map(p => p.monthlyPrice))}
-            </div>
-            <p className="text-sm text-muted-foreground">Highest Monthly</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">
-              ${Math.max(...plans.map(p => p.yearlyPrice))}
-            </div>
-            <p className="text-sm text-muted-foreground">Highest Yearly</p>
-          </CardContent>
-        </Card>
+        <AdminStatCard
+          title="Total Plans"
+          value={plans.length}
+          layout="vertical"
+          contentClassName="pt-6 pb-6 px-6"
+        />
+        <AdminStatCard
+          title="Active Plans"
+          value={plans.filter(p => p.active).length}
+          valueClassName="text-emerald-600"
+          layout="vertical"
+          contentClassName="pt-6 pb-6 px-6"
+        />
+        <AdminStatCard
+          title="Highest Monthly"
+          value={`$${Math.max(...plans.map(p => p.monthlyPrice), 0)}`}
+          layout="vertical"
+          contentClassName="pt-6 pb-6 px-6"
+        />
+        <AdminStatCard
+          title="Highest Yearly"
+          value={`$${Math.max(...plans.map(p => p.yearlyPrice), 0)}`}
+          layout="vertical"
+          contentClassName="pt-6 pb-6 px-6"
+        />
       </div>
 
       {/* Feature Catalog */}

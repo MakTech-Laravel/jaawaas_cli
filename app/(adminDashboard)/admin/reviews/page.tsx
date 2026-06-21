@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -56,7 +57,8 @@ import {
   Trash2,
   CheckCircle,
   AlertTriangle,
-  MessageSquare
+  MessageSquare,
+  Clock
 } from "lucide-react"
 
 const statusConfig = {
@@ -138,50 +140,39 @@ export default function AdminReviewsPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Reviews</p>
-              <p className="text-2xl font-bold text-foreground">{stats.total}</p>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-              <MessageSquare className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Published</p>
-              <p className="text-2xl font-bold text-green-600">{stats.published}</p>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-            </div>
-          </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Pending Review</p>
-              <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
-            </div>
-          </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Flagged</p>
-              <p className="text-2xl font-bold text-red-600">{stats.flagged}</p>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
-              <Flag className="h-5 w-5 text-red-600" />
-            </div>
-          </div>
-        </div>
+        <AdminStatCard
+          title="Total Reviews"
+          value={stats.total}
+          icon={MessageSquare}
+          layout="spaceBetween"
+        />
+        <AdminStatCard
+          title="Published"
+          value={stats.published}
+          valueClassName="text-green-600"
+          icon={CheckCircle}
+          iconClassName="text-green-600"
+          iconWrapperClassName="bg-green-100"
+          layout="spaceBetween"
+        />
+        <AdminStatCard
+          title="Pending Review"
+          value={stats.pending}
+          valueClassName="text-amber-600"
+          icon={AlertTriangle}
+          iconClassName="text-amber-600"
+          iconWrapperClassName="bg-amber-100"
+          layout="spaceBetween"
+        />
+        <AdminStatCard
+          title="Flagged"
+          value={stats.flagged}
+          valueClassName="text-red-600"
+          icon={Flag}
+          iconClassName="text-red-600"
+          iconWrapperClassName="bg-red-100"
+          layout="spaceBetween"
+        />
       </div>
 
       {/* Filters */}

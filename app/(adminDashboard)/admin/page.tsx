@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { getAdminDashboard, AdminDashboardData } from "@/lib/api/admin-dashboard"
@@ -184,30 +185,18 @@ export default function AdminDashboardPage() {
         {data.stats.map((stat) => {
           const Icon = getStatIcon(stat.key)
           return (
-            <Card key={stat.key}>
-              <CardContent className="px-5 py-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                    <Icon className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <Badge 
-                    variant={stat.trend === "up" ? "secondary" : "outline"}
-                    className={stat.trend === "up" ? "gap-1 bg-emerald-100 text-emerald-700" : "gap-1"}
-                  >
-                    {stat.trend === "up" ? (
-                      <TrendingUp className="h-3 w-3" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3" />
-                    )}
-                    {stat.change}
-                  </Badge>
-                </div>
-                <div className="mt-2">
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                </div>
-              </CardContent>
-            </Card>
+            <AdminStatCard
+              key={stat.key}
+              title={stat.label}
+              value={stat.value}
+              icon={Icon}
+              layout="vertical"
+              trend={{
+                value: stat.change,
+                direction: stat.trend as "up" | "down"
+              }}
+              contentClassName="px-5 py-4"
+            />
           )
         })}
       </div>
