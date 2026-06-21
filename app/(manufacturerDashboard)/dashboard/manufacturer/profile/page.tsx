@@ -101,6 +101,7 @@ export default function ManufacturerProfilePage() {
     factorySize: "",
     productionLines: "",
     annualOutput: "",
+    companyType: "",
   })
 
   const loadProfile = useCallback(async () => {
@@ -130,6 +131,7 @@ export default function ManufacturerProfilePage() {
             address: c.street_address || "",
             industry: c.industries?.[0]?.slug || "",
             minimumOrder: c.minimum_order_value?.toString() || "",
+            companyType: c.company_type || "",
           }))
           
           try { if (c.certifications) setCertifications(JSON.parse(c.certifications)) } catch(e){}
@@ -171,8 +173,8 @@ export default function ManufacturerProfilePage() {
       setIsSaving(true)
       
       const formDataToSend = new FormData()
-      formDataToSend.append("_method", "PUT")
       
+      // Text fields — exact keys from Postman screenshot
       formDataToSend.append("company_name", formData.companyName)
       formDataToSend.append("short_description", formData.shortDescription)
       formDataToSend.append("long_description", formData.fullDescription)
@@ -183,41 +185,65 @@ export default function ManufacturerProfilePage() {
       formDataToSend.append("street_address", formData.address)
       formDataToSend.append("minimum_order_value", formData.minimumOrder)
       
-      const compType = businessTypes.manufacturer && businessTypes.tradingCompany ? 'both' 
-                    : businessTypes.tradingCompany ? 'trading' 
-                    : 'manufacturer'
+      const compType = formData.companyType || "Private Limited"
       formDataToSend.append("company_type", compType)
-      formDataToSend.append("revenue", formData.annualOutput || "1000-2000") // UI currently uses annualOutput
+      formDataToSend.append("revenue", formData.annualOutput || "1000-2000")
+      
+      // Capabilities — only append if non-empty
+      const caps: string[] = []
+      if (oem) caps.push("OEM")
+      if (odm) caps.push("ODM")
+      if (customization) caps.push("Customization")
+      if (privateLabelEnabled) caps.push("Private Label")
+      
+      // Arrays — must use key[] bracket notation for Laravel
+      const appendAsArray = (key: string, arr: string[]) => {
+        if (arr.length === 0) {
+          formDataToSend.append(`${key}[]`, "")
+        } else {
+          arr.forEach(item => {
+            formDataToSend.append(`${key}[]`, item)
+          })
+        }
+      }
+
+      appendAsArray("capabilities", caps)
+      appendAsArray("certifications", certifications)
+      appendAsArray("export_markets", exportMarkets)
+      appendAsArray("language_spoken", languages)
+      appendAsArray("payments_term", paymentTerms)
+      
+      // Factory fields
       formDataToSend.append("factory_production", "1")
       formDataToSend.append("mulitple_factories", "0")
-      formDataToSend.append("factory_size", formData.factorySize || "5000")
-      formDataToSend.append("production_lines", formData.productionLines || "3")
-      
+
+      // Industries — send as comma-separated IDs
       const selectedIndustry = industries.find(i => i.slug === formData.industry)
       if (selectedIndustry) {
-        formDataToSend.append("industries_id", JSON.stringify([parseInt(selectedIndustry.id)]))
+        formDataToSend.append("industries_id", selectedIndustry.id.toString())
       }
       
-      formDataToSend.append("capabilities", JSON.stringify([
-        ...(oem ? ["OEM"] : []),
-        ...(odm ? ["ODM"] : []),
-        ...(customization ? ["Customization"] : []),
-        ...(privateLabelEnabled ? ["Private Label"] : [])
-      ]))
-      formDataToSend.append("certifications", JSON.stringify(certifications))
-      formDataToSend.append("export_markets", JSON.stringify(exportMarkets))
-      formDataToSend.append("language_spoken", JSON.stringify(languages))
-      formDataToSend.append("payments_term", JSON.stringify(paymentTerms))
-      formDataToSend.append("remove_images", JSON.stringify(removeImages))
+      formDataToSend.append("factory_size", formData.factorySize || "5000")
+      formDataToSend.append("production_lines", formData.productionLines || "3")
 
+      // File uploads — company_logo
       if (logoFile) {
         formDataToSend.append("company_logo", logoFile)
       }
       
-      factoryImages.forEach((file) => {
-        // Using standard array syntax for files
-        formDataToSend.append("factory_images[]", file)
-      })
+      // Factory images — 1-based indexing as in Postman: factory_images[1], factory_images[2]
+      if (factoryImages.length > 0) {
+        factoryImages.forEach((file, index) => {
+          formDataToSend.append(`factory_images[${index + 1}]`, file)
+        })
+      }
+
+      // Images to remove
+      if (removeImages.length > 0) {
+        removeImages.forEach((img, index) => {
+          formDataToSend.append(`remove_images[${index}]`, img)
+        })
+      }
 
       const res = await updateManufacturerProfile(formDataToSend)
       
@@ -225,13 +251,13 @@ export default function ManufacturerProfilePage() {
         throw new Error(res.message || "Failed to update profile: validation error")
       }
       
-      // Clear local states
+      // Clear local file states
       setLogoFile(null)
       setFactoryImages([])
       setFactoryImagePreviews([])
       setRemoveImages([])
 
-      // Reload profile to fetch the new image URLs from the backend
+      // Reload profile to fetch fresh data from backend
       await loadProfile()
       
       Swal.fire({
@@ -265,7 +291,6 @@ export default function ManufacturerProfilePage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">Preview Profile</Button>
           <Button className="gap-2" onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save Changes
@@ -857,26 +882,6 @@ export default function ManufacturerProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Review Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Review Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3 rounded-lg bg-secondary/10 p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
-                  <CheckCircle className="h-5 w-5 text-secondary-foreground" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Premium Reviewed</p>
-                  <p className="text-sm text-muted-foreground">Valid until Dec 2026</p>
-                </div>
-              </div>
-              <Button variant="link" className="mt-3 h-auto p-0 text-secondary">
-                Learn about review levels
-              </Button>
-            </CardContent>
-          </Card>
 
           {/* Approval Status */}
           <Card>

@@ -4,9 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
 import {
   Select,
   SelectContent,
@@ -15,11 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { 
-  Bell,
-  Mail,
   Shield,
   Globe,
-  CreditCard,
   User,
   Save,
   Loader2
@@ -28,7 +23,7 @@ import { AccountDangerZone } from "@/components/settings/account-danger-zone"
 import { TwoFactorSettings } from "@/components/settings/two-factor-settings"
 import { LanguageSelector } from "@/components/settings/language-selector"
 import { useTranslation } from "@/lib/i18n"
-import { getManufacturerProfile, updateBasicProfile, updateNotificationPreferences } from "@/lib/api/manufacturer-profile"
+import { getManufacturerProfile, updateBasicProfile } from "@/lib/api/manufacturer-profile"
 import { useToast } from "@/components/ui/use-toast"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import Swal from "sweetalert2"

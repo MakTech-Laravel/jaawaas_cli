@@ -43,6 +43,7 @@ export interface ManufacturerProfile {
   manufacture_status: string
   manufacture_status_label: string
   company: ManufacturerCompany | null
+  factory_images?: Array<{ id?: number; url: string } | string>
 }
 
 export interface ManufacturerProfileResponse {
@@ -56,8 +57,13 @@ export async function getManufacturerProfile(): Promise<ManufacturerProfileRespo
   return response.data
 }
 
-export async function updateManufacturerProfile(data: any): Promise<any> {
-  const response = await apiClient.post("/manufacturer/profile/update", data)
+export async function updateManufacturerProfile(data: FormData): Promise<any> {
+  // Laravel cannot parse multipart/form-data on native PUT.
+  // Standard workaround: send as POST with _method=PUT field.
+  data.append("_method", "PUT")
+  const response = await apiClient.post("/manufacturer/profile/update", data, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })
   return response.data
 }
 
