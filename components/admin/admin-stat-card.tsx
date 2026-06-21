@@ -105,9 +105,9 @@ export function AdminStatCard({
   return (
     <Card className={className}>
       <CardContent className={cn(
-        "flex flex-col justify-center h-full", 
-        layout === 'vertical' ? 'p-5' : layout === 'spaceBetween' ? 'p-4' : 'px-5 py-0 min-h-22',
-        contentClassName
+        "flex flex-col justify-center h-full px-4",
+        contentClassName,
+        "py-0!"
       )}>
         {renderContent()}
       </CardContent>
