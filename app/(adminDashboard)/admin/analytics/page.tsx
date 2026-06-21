@@ -1,6 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Badge } from "@/components/ui/badge"
 import { 
   TrendingUp,
@@ -94,30 +95,18 @@ export default function AdminAnalyticsPage() {
       {/* Key Metrics */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {metrics.map((metric) => (
-          <Card key={metric.label}>
-            <CardContent className="px-6 py-0">
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                  <metric.icon className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <Badge 
-                  variant={metric.trend === "up" ? "secondary" : "outline"}
-                  className="gap-1"
-                >
-                  {metric.trend === "up" ? (
-                    <TrendingUp className="h-3 w-3" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3" />
-                  )}
-                  {metric.change}
-                </Badge>
-              </div>
-              <div className="mt-4">
-                <p className="text-2xl font-bold text-foreground">{metric.value}</p>
-                <p className="text-sm text-muted-foreground">{metric.label}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <AdminStatCard
+            key={metric.label}
+            title={metric.label}
+            value={metric.value}
+            icon={metric.icon}
+            layout="vertical"
+            trend={{
+              value: metric.change,
+              direction: metric.trend as "up" | "down"
+            }}
+            contentClassName="px-6 py-4"
+          />
         ))}
       </div>
 

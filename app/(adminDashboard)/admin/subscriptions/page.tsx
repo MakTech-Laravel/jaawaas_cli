@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+
+import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,7 +23,9 @@ import {
   Factory,
   MoreVertical,
   Eye,
-  Loader2
+  Loader2,
+  CheckCircle,
+  AlertTriangle
 } from "lucide-react"
 import { 
   getAdminSubscriptions, 
@@ -92,66 +96,34 @@ export default function AdminSubscriptionsPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4">
-        <Card>
-          <CardContent className="p-5 flex flex-col justify-center h-full">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
-                <Users className="h-5 w-5 text-secondary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {stats ? stats.overview.total_active_subscriptions : "-"}
-                </p>
-                <p className="text-sm text-muted-foreground">Active Subscriptions</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5 flex flex-col justify-center h-full">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
-                <DollarSign className="h-5 w-5 text-emerald-700" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">
-                  ${stats ? stats.this_month.revenue.toLocaleString() : "-"}
-                </p>
-                <p className="text-sm text-muted-foreground">Monthly Revenue</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5 flex flex-col justify-center h-full">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-                <TrendingUp className="h-5 w-5 text-blue-700" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">
-                  ${stats ? stats.overview.total_revenue_all_time.toLocaleString() : "-"}
-                </p>
-                <p className="text-sm text-muted-foreground">All-Time Revenue</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5 flex flex-col justify-center h-full">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
-                <CreditCard className="h-5 w-5 text-amber-700" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {stats ? stats.this_month.new_subscriptions : "-"}
-                </p>
-                <p className="text-sm text-muted-foreground">New This Month</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminStatCard
+          title="Active Subscriptions"
+          value={stats ? stats.overview.total_active_subscriptions : "-"}
+          icon={Users}
+          iconClassName="text-secondary"
+          iconWrapperClassName="bg-secondary/10"
+        />
+        <AdminStatCard
+          title="Monthly Revenue"
+          value={stats ? `$${stats.this_month.revenue.toLocaleString()}` : "-"}
+          icon={DollarSign}
+          iconClassName="text-emerald-700"
+          iconWrapperClassName="bg-emerald-100"
+        />
+        <AdminStatCard
+          title="All-Time Revenue"
+          value={stats ? `$${stats.overview.total_revenue_all_time.toLocaleString()}` : "-"}
+          icon={TrendingUp}
+          iconClassName="text-blue-700"
+          iconWrapperClassName="bg-blue-100"
+        />
+        <AdminStatCard
+          title="New This Month"
+          value={stats ? stats.this_month.new_subscriptions : "-"}
+          icon={CreditCard}
+          iconClassName="text-amber-700"
+          iconWrapperClassName="bg-amber-100"
+        />
       </div>
 
       {/* Filters */}

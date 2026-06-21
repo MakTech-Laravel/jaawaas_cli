@@ -40,6 +40,7 @@ import {
   X,
   Loader2,
 } from "lucide-react"
+import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Separator } from "@/components/ui/separator"
 import { fetchAdminPromotions, resetAdminPromotions, updateAdminPromotion, toggleAdminPromotionStatus, type Promotion } from "@/lib/api/admin-promotions"
 import { useToast } from "@/hooks/use-toast"
@@ -162,58 +163,38 @@ export default function PromotionsPage() {
 
       {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Spots</p>
-                <p className="text-2xl font-bold text-foreground">{totalSpots}</p>
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <Users className="h-5 w-5 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Approved</p>
-                <p className="text-2xl font-bold text-foreground">{totalApproved}</p>
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
-                <CheckCircle className="h-5 w-5 text-secondary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Spots Remaining</p>
-                <p className="text-2xl font-bold text-foreground">{totalRemaining}</p>
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10">
-                <TrendingUp className="h-5 w-5 text-amber-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Pending Review</p>
-                <p className="text-2xl font-bold text-foreground">{totalPending}</p>
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
-                <Clock className="h-5 w-5 text-blue-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AdminStatCard
+          title="Total Spots"
+          value={totalSpots}
+          icon={Users}
+          iconClassName="text-primary"
+          iconWrapperClassName="bg-primary/10"
+          layout="spaceBetween"
+        />
+        <AdminStatCard
+          title="Approved"
+          value={totalApproved}
+          icon={CheckCircle}
+          iconClassName="text-secondary"
+          iconWrapperClassName="bg-secondary/10"
+          layout="spaceBetween"
+        />
+        <AdminStatCard
+          title="Spots Remaining"
+          value={totalRemaining}
+          icon={TrendingUp}
+          iconClassName="text-amber-500"
+          iconWrapperClassName="bg-amber-500/10"
+          layout="spaceBetween"
+        />
+        <AdminStatCard
+          title="Pending Review"
+          value={totalPending}
+          icon={Clock}
+          iconClassName="text-blue-500"
+          iconWrapperClassName="bg-blue-500/10"
+          layout="spaceBetween"
+        />
       </div>
 
       {/* Promotion Cards — one per promotion from backend */}
