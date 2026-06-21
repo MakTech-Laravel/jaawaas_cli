@@ -4,6 +4,7 @@ import { getApiErrorMessage } from "./errors"
 /** A single feature entry as returned by GET /plans. */
 export interface PublicPlanFeature {
   id: number
+  label?: string
   features: {
     id: number
     name: string

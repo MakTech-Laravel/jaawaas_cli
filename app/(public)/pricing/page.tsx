@@ -433,7 +433,7 @@ export default function PricingPage() {
                             <li key={feature.id} className="flex items-center gap-3 text-sm">
                               <Check className="h-4 w-4 shrink-0 text-secondary" />
                               <span className="text-foreground">
-                                {feature.features.name}
+                                {feature.label || feature.features.name}
                               </span>
                             </li>
                           ))}

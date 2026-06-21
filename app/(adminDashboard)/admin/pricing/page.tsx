@@ -71,13 +71,16 @@ function transformBackendPlan(plan: BackendPricingPlan, featureCatalog: PlanFeat
     description: plan.description,
     monthlyPrice: parseFloat(plan.monthly_price?.amount || "0"),
     yearlyPrice: parseFloat(plan.yearly_price?.amount || "0"),
-    features: plan.features?.map((feature) => ({
-      rowId: `${feature.id}-${feature.input_type}-${feature.value}`,
-      id: feature.id,
-      label: featureCatalog.find((item) => Number(item.id) === Number(feature.id))?.name,
-      inputType: feature.input_type === "boolean" ? "boolean" : "text",
-      value: feature.value,
-    })) || [],
+    features: plan.features?.map((feature) => {
+      const actualFeatureId = feature.features?.id ?? feature.id
+      return {
+        rowId: `${actualFeatureId}-${feature.input_type}-${feature.value}`,
+        id: actualFeatureId,
+        label: feature.label || featureCatalog.find((item) => Number(item.id) === Number(actualFeatureId))?.name || "",
+        inputType: feature.input_type === "boolean" ? "boolean" : "text",
+        value: feature.value,
+      }
+    }) || [],
     highlighted: plan.is_popular,
     buttonText: plan.button_text,
     active: plan.status === 1
@@ -92,6 +95,7 @@ function serializePlanFeatures(features: PricingFeature[]) {
   return features.map((feature) => ({
     id: feature.id,
     input_type: feature.inputType,
+    label: feature.label || "",
     value: feature.inputType === "boolean"
       ? (feature.value === "1" ? "1" : "0")
       : feature.value.trim(),
@@ -145,7 +149,23 @@ function EditableFeatureRow(props: {
           </Button>
         </div>
 
-        <CollapsibleContent className="px-2 pb-3">
+        <CollapsibleContent className="px-2 pb-3 space-y-3">
+          <div className="space-y-2">
+            <Label>Custom Display Label</Label>
+            <Input
+              type="text"
+              value={props.feature.label || ""}
+              onChange={(event) =>
+                props.onChange({
+                  ...props.feature,
+                  label: event.target.value,
+                })
+              }
+              placeholder="e.g. Custom feature text or limit description"
+              disabled={props.disabled}
+            />
+          </div>
+
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Type</Label>
@@ -602,10 +622,6 @@ export default function AdminPricingPage() {
           <p className="text-muted-foreground">Manage subscription plans and pricing</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setShowPreview(true)}>
-            <Eye className="mr-2 h-4 w-4" />
-            Preview
-          </Button>
           <Button onClick={() => {
             setEditForm({
               name: "",
