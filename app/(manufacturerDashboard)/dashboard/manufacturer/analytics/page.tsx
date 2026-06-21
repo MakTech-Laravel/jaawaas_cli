@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -20,13 +21,22 @@ import {
   BarChart3,
   Package
 } from "lucide-react"
+import { getManufacturerAnalyticsMetrics, AnalyticsMetricItem } from "@/lib/api/manufacturer-analytics"
+import ManufacturerStatCard from "@/components/manufacturer/manufacturer-stat-card"
 
-const metrics = [
-  { label: "Profile Views", value: "2,847", change: "+12.5%", trend: "up", icon: Eye },
-  { label: "Inquiries Received", value: "156", change: "+8.3%", trend: "up", icon: FileText },
-  { label: "Messages", value: "423", change: "+15.2%", trend: "up", icon: MessageSquare },
-  { label: "Quote Requests", value: "89", change: "-2.1%", trend: "down", icon: Package },
-]
+const metricIcons: Record<string, React.ComponentType<any>> = {
+  profile_views: Eye,
+  inquiries_received: FileText,
+  messages: MessageSquare,
+  quote_requests: Package,
+}
+
+const periodApiMap: Record<string, string> = {
+  "7": "last_7_days",
+  "30": "last_30_days",
+  "90": "last_90_days",
+  "365": "last_year"
+}
 
 const topProducts = [
   { name: "TWS Wireless Earbuds Pro", views: 1234, inquiries: 45 },
@@ -46,6 +56,29 @@ const topCountries = [
 ]
 
 export default function ManufacturerAnalyticsPage() {
+  const [metrics, setMetrics] = useState<AnalyticsMetricItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [period, setPeriod] = useState("30")
+
+  const loadAnalytics = useCallback(async (selectedPeriod: string) => {
+    try {
+      setIsLoading(true)
+      const apiPeriod = periodApiMap[selectedPeriod] || "last_30_days"
+      const res = await getManufacturerAnalyticsMetrics({ period: apiPeriod })
+      if (res.success && res.data?.metrics) {
+        setMetrics(res.data.metrics)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadAnalytics(period)
+  }, [period, loadAnalytics])
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -55,7 +88,7 @@ export default function ManufacturerAnalyticsPage() {
             Track your performance and buyer engagement
           </p>
         </div>
-        <Select defaultValue="30">
+        <Select value={period} onValueChange={setPeriod}>
           <SelectTrigger className="w-36">
             <SelectValue placeholder="Time period" />
           </SelectTrigger>
@@ -70,32 +103,40 @@ export default function ManufacturerAnalyticsPage() {
 
       {/* Key Metrics */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {metrics.map((metric) => (
-          <Card key={metric.label}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                  <metric.icon className="h-5 w-5 text-muted-foreground" />
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, idx) => (
+            <Card key={idx} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="h-10 w-10 rounded-lg bg-muted" />
+                  <div className="h-5 w-12 rounded bg-muted" />
                 </div>
-                <Badge 
-                  variant={metric.trend === "up" ? "secondary" : "outline"}
-                  className="gap-1"
-                >
-                  {metric.trend === "up" ? (
-                    <TrendingUp className="h-3 w-3" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3" />
-                  )}
-                  {metric.change}
-                </Badge>
-              </div>
-              <div className="mt-4">
-                <p className="text-2xl font-bold text-foreground">{metric.value}</p>
-                <p className="text-sm text-muted-foreground">{metric.label}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                <div className="mt-4 space-y-2">
+                  <div className="h-8 w-20 rounded bg-muted" />
+                  <div className="h-4 w-28 rounded bg-muted" />
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          metrics.map((metric) => {
+            const Icon = metricIcons[metric.key] || Eye
+            return (
+              <ManufacturerStatCard
+                key={metric.key}
+                title={metric.label}
+                value={metric.value}
+                icon={Icon}
+                iconClassName="text-muted-foreground"
+                iconWrapperClassName="bg-muted"
+                trend={{
+                  value: metric.change,
+                  direction: metric.trend
+                }}
+              />
+            )
+          })
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

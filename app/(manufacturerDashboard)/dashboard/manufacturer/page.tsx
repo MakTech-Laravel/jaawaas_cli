@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { getManufacturerDashboard, ManufacturerDashboardStats } from "@/lib/api/manufacturer-dashboard"
+import ManufacturerStatCard from "@/components/manufacturer/manufacturer-stat-card"
 import { 
   MessageSquare, 
   FileText, 
@@ -73,83 +74,50 @@ export default function ManufacturerDashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-5 w-full overflow-hidden">
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
-              <FileText className="h-5 w-5 text-secondary" />
-            </div>
-            <Badge 
-              variant="secondary" 
-              className={`text-xs ${
-                data.stats.new_inquiries_30d.trend === 'up' 
-                  ? 'bg-emerald-100 text-emerald-700' 
-                  : 'bg-red-100 text-red-700'
-              }`}
-            >
-              {data.stats.new_inquiries_30d.change}
-            </Badge>
-          </div>
-          <div className="mt-4">
-            <div className="text-2xl font-bold text-foreground">{data.stats.new_inquiries_30d.value}</div>
-            <p className="text-sm text-muted-foreground">{data.stats.new_inquiries_30d.label}</p>
-          </div>
-        </div>
+        <ManufacturerStatCard
+          title={data.stats.new_inquiries_30d.label}
+          value={data.stats.new_inquiries_30d.value}
+          icon={FileText}
+          trend={{
+            value: data.stats.new_inquiries_30d.change,
+            direction: data.stats.new_inquiries_30d.trend
+          }}
+        />
 
-        <div className="rounded-xl border border-border bg-card p-5 w-full overflow-hidden">
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
-              <Eye className="h-5 w-5 text-secondary" />
-            </div>
-            <Badge 
-              variant="secondary" 
-              className={`text-xs ${
-                data.stats.profile_views_30d.trend === 'up' 
-                  ? 'bg-emerald-100 text-emerald-700' 
-                  : 'bg-gray-100 text-gray-700'
-              }`}
-            >
-              {data.stats.profile_views_30d.change}
-            </Badge>
-          </div>
-          <div className="mt-4">
-            <div className="text-2xl font-bold text-foreground">{data.stats.profile_views_30d.value.toLocaleString()}</div>
-            <p className="text-sm text-muted-foreground">{data.stats.profile_views_30d.label}</p>
-          </div>
-        </div>
+        <ManufacturerStatCard
+          title={data.stats.profile_views_30d.label}
+          value={data.stats.profile_views_30d.value.toLocaleString()}
+          icon={Eye}
+          trend={{
+            value: data.stats.profile_views_30d.change,
+            direction: data.stats.profile_views_30d.trend
+          }}
+          badgeClassName={data.stats.profile_views_30d.trend !== 'up' ? 'bg-gray-100 text-gray-700' : undefined}
+        />
 
-        <div className="rounded-xl border border-border bg-card p-5 w-full overflow-hidden">
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
-              <DollarSign className="h-5 w-5 text-secondary" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="text-2xl font-bold text-foreground">{data.stats.quote_value_30d.formatted}</div>
-            <p className="text-sm text-muted-foreground">{data.stats.quote_value_30d.label}</p>
-          </div>
-        </div>
+        <ManufacturerStatCard
+          title={data.stats.quote_value_30d.label}
+          value={data.stats.quote_value_30d.formatted}
+          icon={DollarSign}
+        />
 
-        <div className="rounded-xl border border-border bg-card p-5 w-full overflow-hidden">
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
-              <Star className="h-5 w-5 text-secondary" />
+        <ManufacturerStatCard
+          title={`Average Rating (${data.stats.average_rating.review_count} reviews)`}
+          icon={Star}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-bold text-foreground">{data.stats.average_rating.value}</span>
+            <div className="flex items-center">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star 
+                  key={star} 
+                  className={`h-4 w-4 ${star <= data.stats.average_rating.value ? 'fill-amber-400 text-amber-400' : 'text-muted/30'}`} 
+                />
+              ))}
             </div>
           </div>
-          <div className="mt-4">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-foreground">{data.stats.average_rating.value}</span>
-              <div className="flex items-center">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star 
-                    key={star} 
-                    className={`h-4 w-4 ${star <= data.stats.average_rating.value ? 'fill-amber-400 text-amber-400' : 'text-muted/30'}`} 
-                  />
-                ))}
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">Average Rating ({data.stats.average_rating.review_count} reviews)</p>
-          </div>
-        </div>
+          <p className="text-sm text-muted-foreground mt-1">Average Rating</p>
+        </ManufacturerStatCard>
       </div>
 
       {/* Main Content */}

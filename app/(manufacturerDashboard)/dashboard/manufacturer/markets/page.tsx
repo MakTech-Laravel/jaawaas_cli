@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import ManufacturerStatCard from "@/components/manufacturer/manufacturer-stat-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -95,58 +96,36 @@ export default function ExportMarketsPage() {
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="md:pt-3">
-            <div className="flex items-center gap-4">
-              <div className="rounded-lg bg-secondary/20 p-3">
-                <Globe className="h-5 w-5 text-secondary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{selectedCountries.length}</p>
-                <p className="text-sm text-muted-foreground">Active Markets</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="md:pt-3">
-            <div className="flex items-center gap-4">
-              <div className="rounded-lg bg-primary/20 p-3">
-                <Users className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">677</p>
-                <p className="text-sm text-muted-foreground">Total Inquiries</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="md:pt-3">
-            <div className="flex items-center gap-4">
-              <div className="rounded-lg bg-green-500/20 p-3">
-                <Package className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">120</p>
-                <p className="text-sm text-muted-foreground">Orders</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="md:pt-3">
-            <div className="flex items-center gap-4">
-              <div className="rounded-lg bg-amber-500/20 p-3">
-                <TrendingUp className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">+23%</p>
-                <p className="text-sm text-muted-foreground">Growth Rate</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <ManufacturerStatCard
+          title="Active Markets"
+          value={selectedCountries.length}
+          icon={Globe}
+          layout="horizontal"
+        />
+        <ManufacturerStatCard
+          title="Total Inquiries"
+          value="677"
+          icon={Users}
+          iconClassName="text-primary"
+          iconWrapperClassName="bg-primary/20"
+          layout="horizontal"
+        />
+        <ManufacturerStatCard
+          title="Orders"
+          value="120"
+          icon={Package}
+          iconClassName="text-green-600"
+          iconWrapperClassName="bg-green-500/20"
+          layout="horizontal"
+        />
+        <ManufacturerStatCard
+          title="Growth Rate"
+          value="+23%"
+          icon={TrendingUp}
+          iconClassName="text-amber-600"
+          iconWrapperClassName="bg-amber-500/20"
+          layout="horizontal"
+        />
       </div>
 
       {/* Current Markets */}

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Swal from "sweetalert2"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import ManufacturerStatCard from "@/components/manufacturer/manufacturer-stat-card"
 import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
@@ -313,45 +314,28 @@ export default function ManufacturerCatalogsPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
-                <FileBox className="h-5 w-5 text-secondary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{stats?.total_catalogs ?? 0}</p>
-                <p className="text-sm text-muted-foreground">Total Catalogs</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
-                <FileBox className="h-5 w-5 text-emerald-700" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{stats?.active_catalogs ?? 0}</p>
-                <p className="text-sm text-muted-foreground">Active Catalogs</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100">
-                <FileBox className="h-5 w-5 text-slate-700" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{stats?.inactive_catalogs ?? 0}</p>
-                <p className="text-sm text-muted-foreground">Inactive Catalogs</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <ManufacturerStatCard
+          title="Total Catalogs"
+          value={stats?.total_catalogs ?? 0}
+          icon={FileBox}
+          layout="horizontal"
+        />
+        <ManufacturerStatCard
+          title="Active Catalogs"
+          value={stats?.active_catalogs ?? 0}
+          icon={FileBox}
+          iconClassName="text-emerald-700"
+          iconWrapperClassName="bg-emerald-100"
+          layout="horizontal"
+        />
+        <ManufacturerStatCard
+          title="Inactive Catalogs"
+          value={stats?.inactive_catalogs ?? 0}
+          icon={FileBox}
+          iconClassName="text-slate-700"
+          iconWrapperClassName="bg-slate-100"
+          layout="horizontal"
+        />
       </div>
 
       {/* Filters */}
