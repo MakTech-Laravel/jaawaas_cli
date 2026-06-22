@@ -19,9 +19,32 @@ import {
   Users,
   Globe,
   BarChart3,
-  Package
+  Package,
+  Loader2
 } from "lucide-react"
-import { getManufacturerAnalyticsMetrics, AnalyticsMetricItem } from "@/lib/api/manufacturer-analytics"
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts"
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig
+} from "@/components/ui/chart"
+import { 
+  getManufacturerAnalyticsMetrics, 
+  getManufacturerAnalyticsPerformance,
+  getManufacturerAnalyticsFunnel,
+  AnalyticsMetricItem,
+  AnalyticsPerformanceItem,
+  AnalyticsFunnelStep
+} from "@/lib/api/manufacturer-analytics"
 import ManufacturerStatCard from "@/components/manufacturer/manufacturer-stat-card"
 
 const metricIcons: Record<string, React.ComponentType<any>> = {
@@ -37,6 +60,25 @@ const periodApiMap: Record<string, string> = {
   "90": "last_90_days",
   "365": "last_year"
 }
+
+const chartConfig = {
+  profile_views: {
+    label: "Profile Views",
+    color: "var(--chart-1)",
+  },
+  inquiries: {
+    label: "Inquiries Received",
+    color: "var(--chart-2)",
+  },
+  messages: {
+    label: "Messages",
+    color: "var(--chart-3)",
+  },
+  quote_requests: {
+    label: "Quote Requests",
+    color: "var(--chart-4)",
+  },
+} satisfies ChartConfig
 
 const topProducts = [
   { name: "TWS Wireless Earbuds Pro", views: 1234, inquiries: 45 },
@@ -57,13 +99,20 @@ const topCountries = [
 
 export default function ManufacturerAnalyticsPage() {
   const [metrics, setMetrics] = useState<AnalyticsMetricItem[]>([])
+  const [performanceData, setPerformanceData] = useState<AnalyticsPerformanceItem[]>([])
+  const [funnelSteps, setFunnelSteps] = useState<AnalyticsFunnelStep[]>([])
+  
   const [isLoading, setIsLoading] = useState(true)
+  const [isChartLoading, setIsChartLoading] = useState(true)
+  const [isFunnelLoading, setIsFunnelLoading] = useState(true)
   const [period, setPeriod] = useState("30")
 
   const loadAnalytics = useCallback(async (selectedPeriod: string) => {
+    const apiPeriod = periodApiMap[selectedPeriod] || "last_30_days"
+    
+    // Fetch metrics
     try {
       setIsLoading(true)
-      const apiPeriod = periodApiMap[selectedPeriod] || "last_30_days"
       const res = await getManufacturerAnalyticsMetrics({ period: apiPeriod })
       if (res.success && res.data?.metrics) {
         setMetrics(res.data.metrics)
@@ -72,6 +121,33 @@ export default function ManufacturerAnalyticsPage() {
       console.error(err)
     } finally {
       setIsLoading(false)
+    }
+
+    // Fetch performance data
+    try {
+      setIsChartLoading(true)
+      const res = await getManufacturerAnalyticsPerformance({ period: apiPeriod })
+      if (res.success && res.data) {
+        // Reverse array to render chronologically (oldest to newest)
+        setPerformanceData([...res.data].reverse())
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsChartLoading(false)
+    }
+
+    // Fetch funnel data
+    try {
+      setIsFunnelLoading(true)
+      const res = await getManufacturerAnalyticsFunnel({ period: apiPeriod })
+      if (res.success && res.data?.steps) {
+        setFunnelSteps(res.data.steps)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsFunnelLoading(false)
     }
   }, [])
 
@@ -140,7 +216,7 @@ export default function ManufacturerAnalyticsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Performance Chart Placeholder */}
+        {/* Performance Chart */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -149,16 +225,74 @@ export default function ManufacturerAnalyticsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex h-64 items-center justify-center rounded-lg bg-muted/50">
-              <div className="text-center">
-                <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground/30" />
-                <p className="mt-4 text-muted-foreground">
-                  Chart visualization would appear here
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Showing inquiries, messages, and views over time
-                </p>
-              </div>
+            <div className="h-80 w-full flex items-center justify-center">
+              {isChartLoading ? (
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Loading performance data...</p>
+                </div>
+              ) : performanceData.length === 0 ? (
+                <div className="text-center">
+                  <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground/30" />
+                  <p className="mt-4 text-muted-foreground">No data available for this period</p>
+                </div>
+              ) : (
+                <ChartContainer config={chartConfig} className="h-full w-full">
+                  <LineChart
+                    data={performanceData}
+                    margin={{
+                      top: 10,
+                      right: 10,
+                      left: 0,
+                      bottom: 0,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      fontSize={11} 
+                      tickLine={false} 
+                      axisLine={false} 
+                    />
+                    <YAxis 
+                      fontSize={11} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      tickFormatter={(value) => `${value}`} 
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend content={<ChartLegendContent />} wrapperStyle={{ paddingTop: "10px" }} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="profile_views" 
+                      stroke="var(--color-profile_views)" 
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="inquiries" 
+                      stroke="var(--color-inquiries)" 
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="messages" 
+                      stroke="var(--color-messages)" 
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="quote_requests" 
+                      stroke="var(--color-quote_requests)" 
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ChartContainer>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -227,27 +361,28 @@ export default function ManufacturerAnalyticsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 sm:grid-cols-4">
-              <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">2,847</p>
-                <p className="text-sm text-muted-foreground">Profile Views</p>
+            {isFunnelLoading ? (
+              <div className="flex h-24 items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Loading funnel metrics...</span>
               </div>
-              <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">423</p>
-                <p className="text-sm text-muted-foreground">Messages Started</p>
-                <p className="text-xs text-secondary">14.9% conversion</p>
+            ) : funnelSteps.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground text-sm">
+                No funnel data available for this period.
               </div>
-              <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">89</p>
-                <p className="text-sm text-muted-foreground">Quotes Sent</p>
-                <p className="text-xs text-secondary">21.0% conversion</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-4">
+                {funnelSteps.map((step) => (
+                  <div key={step.key} className="rounded-lg border border-border bg-muted/50 p-4 text-center">
+                    <p className="text-2xl font-bold text-foreground">{step.value_formatted}</p>
+                    <p className="text-sm text-muted-foreground">{step.label}</p>
+                    {step.conversion_label && (
+                      <p className="text-xs text-secondary mt-1">{step.conversion_label}</p>
+                    )}
+                  </div>
+                ))}
               </div>
-              <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">34</p>
-                <p className="text-sm text-muted-foreground">Orders Received</p>
-                <p className="text-xs text-secondary">38.2% conversion</p>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
