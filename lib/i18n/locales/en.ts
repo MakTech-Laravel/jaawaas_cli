@@ -951,7 +951,9 @@ const en = {
         cta: "Contact Sales"
       },
       billedAnnually: "Billed annually (${price}/month)",
-      pricePerCycle: "{cycle}"
+      pricePerCycle: "{cycle}",
+      free: "Free",
+      noPlans: "No pricing plans available at this time."
     },
     approval: {
       title: "Approval Required",
@@ -1011,6 +1013,7 @@ const en = {
       success: "Payment Successful!",
       transactionId: "Transaction ID:",
       redirecting: "Redirecting to sign up...",
+      redirectingDashboard: "Redirecting to your dashboard...",
       failed: "Payment Failed",
       tryAgain: "Try Again",
       priceInfo: "{plan} Plan ({cycle})",
