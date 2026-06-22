@@ -23,7 +23,7 @@ import {
   Upload,
   Plus,
   X,
-  Globe,
+  // Globe,
   Award,
   MapPin,
   CheckCircle,
@@ -58,7 +58,7 @@ export default function ManufacturerProfilePage() {
   })
   
   const [certifications, setCertifications] = useState<string[]>([])
-  const [exportMarkets, setExportMarkets] = useState<string[]>([])
+  // const [exportMarkets, setExportMarkets] = useState<string[]>([])
   const [languages, setLanguages] = useState<string[]>([])
   const [paymentTerms, setPaymentTerms] = useState<string[]>([])
   const [businessTypes, setBusinessTypes] = useState({
@@ -68,7 +68,7 @@ export default function ManufacturerProfilePage() {
     odm: false
   })
   const [newCert, setNewCert] = useState("")
-  const [newMarket, setNewMarket] = useState("")
+  // const [newMarket, setNewMarket] = useState("")
   const [newLanguage, setNewLanguage] = useState("")
   const [newPaymentTerm, setNewPaymentTerm] = useState("")
   const [oem, setOem] = useState(false)
@@ -135,7 +135,7 @@ export default function ManufacturerProfilePage() {
           }))
           
           try { if (c.certifications) setCertifications(JSON.parse(c.certifications)) } catch(e){}
-          try { if (c.export_markets) setExportMarkets(JSON.parse(c.export_markets)) } catch(e){}
+          // try { if (c.export_markets) setExportMarkets(JSON.parse(c.export_markets)) } catch(e){}
           try { if (c.language_spoken) setLanguages(JSON.parse(c.language_spoken)) } catch(e){}
           try { if (c.payments_term) setPaymentTerms(JSON.parse(c.payments_term)) } catch(e){}
           
@@ -209,7 +209,7 @@ export default function ManufacturerProfilePage() {
 
       appendAsArray("capabilities", caps)
       appendAsArray("certifications", certifications)
-      appendAsArray("export_markets", exportMarkets)
+      // appendAsArray("export_markets", exportMarkets)
       appendAsArray("language_spoken", languages)
       appendAsArray("payments_term", paymentTerms)
       
@@ -615,7 +615,7 @@ export default function ManufacturerProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Export Markets */}
+          {/* Export Markets — disabled until export_markets_section plan feature is enabled
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -658,6 +658,7 @@ export default function ManufacturerProfilePage() {
               </div>
             </CardContent>
           </Card>
+          */}
 
           {/* Languages */}
           <Card>

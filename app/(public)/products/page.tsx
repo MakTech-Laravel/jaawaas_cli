@@ -45,6 +45,14 @@ function ProductsPageContent() {
   const [sortBy, setSortBy] = useState("relevance")
   const [showFilters, setShowFilters] = useState(false)
   const [allCategories, setAllCategories] = useState<BackendCategory[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalProducts, setTotalProducts] = useState(0)
+
+  // Reset page when category, search or sort changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedCategory, searchQuery, sortBy])
 
   // Fetch all categories once
   useEffect(() => {
@@ -76,7 +84,7 @@ function ProductsPageContent() {
     return list
   }, [allCategories, selectedCategory])
 
-  // Fetch products when filters change
+  // Fetch products when filters or page changes
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true)
@@ -110,13 +118,17 @@ function ProductsPageContent() {
         filters.search = searchQuery
       }
 
-      const response = await getProducts(1, filters)
+      const response = await getProducts(currentPage, filters)
       
       if (response.success) {
         setProducts(response.data)
+        setTotalPages(response.meta?.last_page || 1)
+        setTotalProducts(response.meta?.total || response.data.length)
       } else {
         setError(response.message || "Failed to load products")
         setProducts([])
+        setTotalPages(1)
+        setTotalProducts(0)
       }
       
       setLoading(false)
@@ -124,7 +136,7 @@ function ProductsPageContent() {
 
     const timeoutId = setTimeout(fetchProducts, 300)
     return () => clearTimeout(timeoutId)
-  }, [selectedCategory, searchQuery])
+  }, [selectedCategory, searchQuery, currentPage])
 
   // Sync state with URL params when they change
   useEffect(() => {
@@ -243,7 +255,7 @@ function ProductsPageContent() {
                 {t?.landing?.products?.pageTitle || "Discover Products"}
               </h1>
               <p className="mx-auto mt-4 max-w-2xl text-lg text-primary-foreground/80">
-                {t?.landing?.products?.pageDescription?.replace("{productCount}", products.length.toLocaleString()) || `Browse ${products.length.toLocaleString()}+ products from reviewed manufacturers worldwide`}
+                {t?.landing?.products?.pageDescription?.replace("{productCount}", totalProducts.toLocaleString()) || `Browse ${totalProducts.toLocaleString()}+ products from reviewed manufacturers worldwide`}
               </p>
             </div>
 
@@ -337,7 +349,7 @@ function ProductsPageContent() {
                 {/* Results Header */}
                 <div className="mb-6 flex items-center justify-between">
                   <p className="text-muted-foreground">
-                    <span className="font-medium text-foreground">{filteredAndSortedProducts.length}</span> {t?.landing?.products?.productsFound || "products found"}
+                    <span className="font-medium text-foreground">{totalProducts}</span> {t?.landing?.products?.productsFound || "products found"}
                   </p>
                 </div>
 
@@ -389,65 +401,96 @@ function ProductsPageContent() {
 
                 {/* Product Cards */}
                 {!loading && !error && (
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {filteredAndSortedProducts.map((product) => (
-                      <div
-                        key={product.id}
-                        onClick={() => router.push(`/products/${product.id}`)}
-                        className="group cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-md"
-                      >
-                        {/* Product Image */}
-                        <div className="relative aspect-4/3 bg-muted">
-                          {product.image ? (
-                            <img 
-                              src={product.image} 
-                              alt={product.name} 
-                              className="absolute inset-0 h-full w-full object-cover" 
-                            />
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <Package className="h-12 w-12 text-muted-foreground/30" />
-                            </div>
-                          )}
-                          <Badge className="absolute left-3 top-3">{product.category.name}</Badge>
-                          {/* {product.is_approved && (
-                            <Badge className="absolute right-3 top-3 bg-green-500/20 text-green-700 border-green-200">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              {t?.landing?.products?.verified || "Reviewed"}
-                            </Badge>
-                          )} */}
-                        </div>
-
-                        <div className="p-4">
-                          <h3 className="font-semibold text-foreground group-hover:text-secondary line-clamp-2">
-                            {product.name}
-                          </h3>
-                          
-                          <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                            {product.description}
-                          </p>
-
-                          <div className="mt-3">
-                            <span className="text-lg font-semibold text-foreground">
-                              ${parseFloat(product.pricing_quantities.min_price.price.amount).toFixed(2)} - ${parseFloat(product.pricing_quantities.max_price.price.amount).toFixed(2)}
-                            </span>
-                            <span className="text-sm text-muted-foreground"> / {product.pricing_quantities.unit}</span>
+                  <>
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {filteredAndSortedProducts.map((product) => (
+                        <div
+                          key={product.id}
+                          onClick={() => router.push(`/products/${product.id}`)}
+                          className="group cursor-pointer overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-md"
+                        >
+                          {/* Product Image */}
+                          <div className="relative aspect-4/3 bg-muted">
+                            {product.image ? (
+                              <img 
+                                src={product.image} 
+                                alt={product.name} 
+                                className="absolute inset-0 h-full w-full object-cover" 
+                              />
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Package className="h-12 w-12 text-muted-foreground/30" />
+                              </div>
+                            )}
+                            <Badge className="absolute left-3 top-3">{product.category.name}</Badge>
+                            {/* {product.is_approved && (
+                              <Badge className="absolute right-3 top-3 bg-green-500/20 text-green-700 border-green-200">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                {t?.landing?.products?.verified || "Reviewed"}
+                              </Badge>
+                            )} */}
                           </div>
 
-                          <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
-                            <span>{t?.landing?.products?.moqLabel || "MOQ:"} {product.pricing_quantities.minimum_order_quantity}</span>
-                            <span>{product.pricing_quantities.lead_time} {t?.landing?.products?.daysLabel || "days"}</span>
-                          </div>
+                          <div className="p-4">
+                            <h3 className="font-semibold text-foreground group-hover:text-secondary line-clamp-2">
+                              {product.name}
+                            </h3>
+                            
+                            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                              {product.description}
+                            </p>
 
-                          {product.inquiry_count > 0 && (
-                            <div className="mt-2 text-xs text-amber-600">
-                              ⭐ {product.inquiry_count} {t?.landing?.products?.inquiriesLabel || "inquiries"}
+                            <div className="mt-3">
+                              <span className="text-lg font-semibold text-foreground">
+                                ${parseFloat(product.pricing_quantities.min_price.price.amount).toFixed(2)} - ${parseFloat(product.pricing_quantities.max_price.price.amount).toFixed(2)}
+                              </span>
+                              <span className="text-sm text-muted-foreground"> / {product.pricing_quantities.unit}</span>
                             </div>
-                          )}
+
+                            <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
+                              <span>{t?.landing?.products?.moqLabel || "MOQ:"} {product.pricing_quantities.minimum_order_quantity}</span>
+                              <span>{product.pricing_quantities.lead_time} {t?.landing?.products?.daysLabel || "days"}</span>
+                            </div>
+
+                            {product.inquiry_count > 0 && (
+                              <div className="mt-2 text-xs text-amber-600">
+                                ⭐ {product.inquiry_count} {t?.landing?.products?.inquiriesLabel || "inquiries"}
+                              </div>
+                            )}
+                          </div>
                         </div>
+                      ))}
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="mt-8 flex justify-center gap-2">
+                        <Button
+                          variant="outline"
+                          disabled={currentPage === 1 || loading}
+                          onClick={() => {
+                            setCurrentPage(p => Math.max(1, p - 1))
+                            window.scrollTo({ top: 0, behavior: 'smooth' })
+                          }}
+                        >
+                          Previous
+                        </Button>
+                        <div className="flex items-center justify-center px-4">
+                          <span className="text-sm font-medium">Page {currentPage} of {totalPages}</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          disabled={currentPage === totalPages || loading}
+                          onClick={() => {
+                            setCurrentPage(p => Math.min(totalPages, p + 1))
+                            window.scrollTo({ top: 0, behavior: 'smooth' })
+                          }}
+                        >
+                          Next
+                        </Button>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
 
                 {/* Empty State */}
