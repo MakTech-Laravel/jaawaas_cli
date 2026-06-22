@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -76,6 +76,12 @@ export default function AdminReviewsPage() {
   const [selectedReview, setSelectedReview] = useState<Review | null>(null)
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [deleteReviewId, setDeleteReviewId] = useState<string | null>(null)
+  const [page, setPage] = useState<number>(1)
+  const [perPage, setPerPage] = useState<number>(10)
+
+  useEffect(() => {
+    setPage(1)
+  }, [searchQuery, statusFilter, ratingFilter])
 
   const filteredReviews = reviews.filter(review => {
     if (searchQuery) {
@@ -94,6 +100,8 @@ export default function AdminReviewsPage() {
     }
     return true
   })
+
+  const paginatedReviews = filteredReviews.slice((page - 1) * perPage, page * perPage)
 
   const getSupplierName = (supplierId: string) => {
     return suppliers.find(s => s.id === supplierId)?.name || "Unknown Supplier"
@@ -228,7 +236,7 @@ export default function AdminReviewsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredReviews.map((review) => {
+            {paginatedReviews.map((review) => {
               const StatusIcon = statusConfig[review.status].icon
               return (
                 <TableRow key={review.id}>
@@ -293,12 +301,6 @@ export default function AdminReviewsPage() {
                             Hide
                           </DropdownMenuItem>
                         )}
-                        {review.status !== "flagged" && (
-                          <DropdownMenuItem onClick={() => updateReviewStatus(review.id, "flagged")}>
-                            <Flag className="mr-2 h-4 w-4" />
-                            Flag for Review
-                          </DropdownMenuItem>
-                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           className="text-destructive"
@@ -323,6 +325,36 @@ export default function AdminReviewsPage() {
             <p className="mt-2 text-muted-foreground">
               Try adjusting your search or filter criteria
             </p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {filteredReviews.length > 0 && (
+          <div className="px-4 py-3 border-t">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredReviews.length === 0 ? 0 : (page - 1) * perPage + 1} - {Math.min(page * perPage, filteredReviews.length)} of {filteredReviews.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  Previous
+                </Button>
+                <div className="text-sm text-muted-foreground">Page {page} / {Math.ceil(filteredReviews.length / perPage) || 1}</div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page >= Math.ceil(filteredReviews.length / perPage)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -412,16 +444,7 @@ export default function AdminReviewsPage() {
             <Button variant="outline" onClick={() => setShowViewDialog(false)}>
               Close
             </Button>
-            {selectedReview?.status !== "published" && (
-              <Button onClick={() => {
-                if (selectedReview) {
-                  updateReviewStatus(selectedReview.id, "published")
-                  setShowViewDialog(false)
-                }
-              }}>
-                Approve Review
-              </Button>
-            )}
+
           </DialogFooter>
         </DialogContent>
       </Dialog>

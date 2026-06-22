@@ -21,7 +21,7 @@ import { fetchActivePromotion, type ActivePromotion } from "@/lib/api/public-pro
 import { useAuth } from "@/lib/auth-context"
 
 import { useRouter } from "next/navigation"
-import { useSubscription } from "@/lib/subscription-context"
+import { useSubscription, type PlanId } from "@/lib/subscription-context"
 import Swal from "sweetalert2"
 import { toast } from "sonner"
 
@@ -91,9 +91,9 @@ export default function PricingPage() {
     setTransactionId(id)
     setTimeout(() => {
       if (user) {
-        router.push(`/dashboard/manufacturer/subscription?transactionId=${id}`)
+        router.push(`/dashboard/manufacturer/subscription?transactionId=${id}&planId=${selectedPlan?.id || ""}&cycle=${billingCycle}&price=${selectedPlan?.price || ""}`)
       } else {
-        router.push(`/auth/signup?role=manufacturer&plan=${selectedPlan?.id || ''}&transactionId=${id}`)
+        router.push(`/auth/signup?role=manufacturer&plan=${selectedPlan?.id || ""}&transactionId=${id}`)
       }
     }, 3000)
   }
@@ -257,7 +257,7 @@ export default function PricingPage() {
                           if (result.isConfirmed) {
                             try {
                               if (activePromotion) {
-                                await upgradePlan(activePromotion.plan.id as any)
+                                await upgradePlan(activePromotion.plan.name.toLowerCase() as PlanId)
                                 toast.success('Founding Manufacturer Promo Applied!')
                               }
                             } catch (e) {
@@ -373,7 +373,7 @@ export default function PricingPage() {
                         {planIsFree ? (
                           <div className="flex items-baseline">
                             <span className="text-4xl font-bold text-foreground">
-                              {(t?.pricing?.paidPlans as any)?.free || "Free"}
+                              {t?.pricing?.paidPlans?.free || "Free"}
                             </span>
                           </div>
                         ) : (
@@ -433,7 +433,7 @@ export default function PricingPage() {
                             <li key={feature.id} className="flex items-center gap-3 text-sm">
                               <Check className="h-4 w-4 shrink-0 text-secondary" />
                               <span className="text-foreground">
-                                {feature.features.name}
+                                {feature.label || feature.features.name}
                               </span>
                             </li>
                           ))}
@@ -448,7 +448,7 @@ export default function PricingPage() {
             {/* Empty state if no plans */}
             {!plansLoading && plans.length === 0 && (
               <div className="mt-12 rounded-xl border border-dashed border-border py-16 text-center">
-                <p className="text-muted-foreground">{(t?.pricing?.paidPlans as any)?.noPlans || "No pricing plans available at this time."}</p>
+                <p className="text-muted-foreground">{t?.pricing?.paidPlans?.noPlans || "No pricing plans available at this time."}</p>
               </div>
             )}
 
@@ -640,7 +640,9 @@ export default function PricingPage() {
                       {t?.pricing?.payment?.transactionId || "Transaction ID:"} <span className="font-mono text-xs">{transactionId}</span>
                     </p>
                     <p className="mt-4 text-xs text-green-600">
-                      {t?.pricing?.payment?.redirecting || "Redirecting to sign up..."}
+                      {user
+                        ? (t?.pricing?.payment?.redirectingDashboard || "Redirecting to your dashboard...")
+                        : (t?.pricing?.payment?.redirecting || "Redirecting to sign up...")}
                     </p>
                   </div>
                 )}
@@ -653,7 +655,7 @@ export default function PricingPage() {
                         <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-red-600 mt-0.5" />
                         <div className="min-w-0">
                           <h3 className="font-semibold text-red-900 text-sm">{t?.pricing?.payment?.failed || "Payment Failed"}</h3>
-                          <p className="mt-1 text-xs sm:text-sm text-red-700 break-word">{errorMessage}</p>
+                          <p className="mt-1 text-xs sm:text-sm text-red-700 wrap-break-word">{errorMessage}</p>
                         </div>
                       </div>
                     </div>
