@@ -85,3 +85,26 @@ export async function fetchActivePromotion(): Promise<{
     }
   }
 }
+
+/**
+ * POST /manufacturer/promotions/apply?promotion_id={id} — enroll a manufacturer user in a promotion
+ */
+export async function enrollInPromotion(
+  promotionId: number | string
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const response = await apiClient.post<{ success: boolean; message: string }>(
+      `/manufacturer/promotions/apply?promotion_id=${promotionId}`
+    )
+    return {
+      success: response.data?.success ?? true,
+      message: response.data?.message,
+    }
+  } catch (error: unknown) {
+    return {
+      success: false,
+      message: getApiErrorMessage(error, "Failed to apply promotion."),
+    }
+  }
+}
+

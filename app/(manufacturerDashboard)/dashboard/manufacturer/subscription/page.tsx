@@ -9,16 +9,13 @@ import { useSubscription, PlanId } from "@/lib/subscription-context"
 import { toast } from "sonner"
 import { 
   Check, 
-  CreditCard, 
-  Download, 
-  Calendar,
-  AlertCircle,
-  Zap,
-  Package,
-  Eye,
-  MessageSquare,
-  Crown,
-  Loader2
+  AlertCircle, 
+  Zap, 
+  Package, 
+  Eye, 
+  MessageSquare, 
+  Crown, 
+  Loader2 
 } from "lucide-react"
 
 export default function SubscriptionPage() {
@@ -49,14 +46,7 @@ export default function SubscriptionPage() {
     }
   }
 
-  const activePrice = subscription?.priceAmount ? parseFloat(subscription.priceAmount) : 299
 
-  const dynamicInvoices = [
-    { id: "INV-001", date: subscription?.currentPeriodStart ? formatDate(subscription.currentPeriodStart) : "Mar 1, 2026", amount: activePrice, status: "Paid" },
-    { id: "INV-002", date: "Feb 1, 2026", amount: activePrice, status: "Paid" },
-    { id: "INV-003", date: "Jan 1, 2026", amount: activePrice, status: "Paid" },
-    { id: "INV-004", date: "Dec 1, 2025", amount: activePrice, status: "Paid" },
-  ]
 
   const [upgrading, setUpgrading] = useState<PlanId | null>(null)
   const [canceling, setCanceling] = useState(false)
@@ -457,62 +447,7 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
-      {/* Payment Method */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Payment Method
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-16 items-center justify-center rounded-lg border bg-muted">
-                <span className="text-xs font-semibold">VISA</span>
-              </div>
-              <div>
-                <p className="font-medium">Visa ending in 4242</p>
-                <p className="text-sm text-muted-foreground">Expires 12/2027</p>
-              </div>
-            </div>
-            <Button variant="outline">Update</Button>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Billing History */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Billing History
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {dynamicInvoices.map((invoice) => (
-              <div key={invoice.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <p className="font-medium">{invoice.id}</p>
-                    <p className="text-sm text-muted-foreground">{invoice.date}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="font-medium">${invoice.amount}</span>
-                  <Badge variant="outline" className="text-green-600 border-green-600">
-                    {invoice.status}
-                  </Badge>
-                  <Button variant="ghost" size="sm">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Danger Zone */}
       {subscription && !subscription.cancelAtPeriodEnd && (

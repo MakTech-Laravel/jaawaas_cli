@@ -17,6 +17,10 @@ import {
   normalizeUserRole,
   type UserRole,
 } from "@/lib/roles/dashboard-route"
+import {
+  clearAdditionalInfoStorage,
+  syncAdditionalInfoFromUser,
+} from "@/lib/additional-information-storage"
 
 export type { UserRole }
 
@@ -181,12 +185,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!nextUser) {
       setUserState(null)
       localStorage.removeItem("sourcenest_user")
+      clearAdditionalInfoStorage()
       return
     }
 
     const normalizedUser = toAuthUser(nextUser)
     setUserState(normalizedUser)
     localStorage.setItem("sourcenest_user", JSON.stringify(normalizedUser))
+
+    if ("additional_information_requests" in nextUser) {
+      syncAdditionalInfoFromUser(nextUser)
+    }
   }
 
   useEffect(() => {
@@ -480,6 +489,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null)
     setToken(null)
+    clearAdditionalInfoStorage()
   }
 
   const getDashboardPath = () => {

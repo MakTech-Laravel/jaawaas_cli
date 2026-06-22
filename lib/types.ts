@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { AdditionalInformationRequest } from "@/lib/api/manufacturer-additional-information";
 
 export const LoginSchema = z.object({
   email: z.string().email({
@@ -22,6 +23,7 @@ export interface User {
   created_at: string;
   updated_at: string | null;
   manufacture_status?: string | null;
+  additional_information_requests?: AdditionalInformationRequest[];
 }
 
 /** Present on successful login and immediate post-register (e.g. buyer). */

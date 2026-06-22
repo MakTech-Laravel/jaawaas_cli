@@ -17,7 +17,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Check, X, ArrowRight, Shield, HelpCircle, Sparkles, Users, CheckCircle, AlertCircle, X as XIcon, Loader2 } from "lucide-react"
 import { fetchPublicPlans, type PublicPlan } from "@/lib/api/public-plans"
-import { fetchActivePromotion, type ActivePromotion } from "@/lib/api/public-promotions"
+import { fetchActivePromotion, enrollInPromotion, type ActivePromotion } from "@/lib/api/public-promotions"
 import { useAuth } from "@/lib/auth-context"
 
 import { useRouter } from "next/navigation"
@@ -203,13 +203,13 @@ export default function PricingPage() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Spots remaining:</span>
                     <span className="font-semibold text-secondary">
-                      {activePromotion ? `${activePromotion.stats.spots_remaining} / ${activePromotion.slots}` : '127 / 300'}
+                      {activePromotion ? `${activePromotion.stats.spots_remaining} / ${activePromotion.slots}` : '0 / 0'}
                     </span>
                   </div>
                   <div className="mt-2 h-2 rounded-full bg-secondary/20 overflow-hidden">
                     <div 
                       className="h-full rounded-full bg-secondary transition-all" 
-                      style={{ width: activePromotion ? `${activePromotion.stats.fill_percentage}%` : '57.6%' }}
+                      style={{ width: activePromotion ? `${activePromotion.stats.fill_percentage}%` : '0%' }}
                     />
                   </div>
                 </div>
@@ -228,8 +228,7 @@ export default function PricingPage() {
                       "Export markets section",
                       "Advanced analytics",
                       "Priority visibility in manufacturer discovery",
-                      "Featured supplier badge",
-                      "Up to 3 team users"
+                      "Featured supplier badge"
                     ].map((feature, i) => (
                       <li key={i} className="flex items-start gap-3 text-sm">
                         <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
@@ -255,13 +254,56 @@ export default function PricingPage() {
                           cancelButtonText: 'Cancel'
                         }).then(async (result) => {
                           if (result.isConfirmed) {
+                            Swal.fire({
+                              title: 'Applying Promotion...',
+                              text: 'Please wait while we register your promotion...',
+                              allowOutsideClick: false,
+                              didOpen: () => {
+                                Swal.showLoading()
+                              }
+                            })
+
                             try {
                               if (activePromotion) {
-                                await upgradePlan(activePromotion.plan.name.toLowerCase() as PlanId)
-                                toast.success('Founding Manufacturer Promo Applied!')
+                                const enrollRes = await enrollInPromotion(activePromotion.id)
+                                if (enrollRes.success) {
+                                  const rawPlanName = activePromotion.plan.name.toLowerCase()
+                                  let matchedPlanId: PlanId = "growth"
+                                  if (rawPlanName.includes("starter")) matchedPlanId = "starter"
+                                  else if (rawPlanName.includes("growth")) matchedPlanId = "growth"
+                                  else if (rawPlanName.includes("enterprise")) matchedPlanId = "enterprise"
+                                  else if (rawPlanName.includes("free")) matchedPlanId = "free"
+
+                                  await upgradePlan(matchedPlanId)
+
+                                  Swal.fire({
+                                    icon: 'success',
+                                    title: 'Promotion Applied!',
+                                    text: enrollRes.message || 'Founding Manufacturer Promo Applied!',
+                                    confirmButtonColor: 'var(--color-secondary)'
+                                  }).then(() => {
+                                    if (user.manufacturerStatus === 'approved') {
+                                      router.push('/dashboard/manufacturer')
+                                    } else {
+                                      router.push('/review')
+                                    }
+                                  })
+                                } else {
+                                  Swal.fire({
+                                    icon: 'error',
+                                    title: 'Failed to Apply',
+                                    text: enrollRes.message || 'Failed to apply promo',
+                                    confirmButtonColor: '#d33'
+                                  })
+                                }
                               }
-                            } catch (e) {
-                              toast.error('Failed to apply promo')
+                            } catch (e: any) {
+                              Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: e?.message || 'Failed to apply promo',
+                                confirmButtonColor: '#d33'
+                              })
                             }
                           }
                         })
