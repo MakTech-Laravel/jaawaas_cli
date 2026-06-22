@@ -203,13 +203,13 @@ export default function PricingPage() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Spots remaining:</span>
                     <span className="font-semibold text-secondary">
-                      {activePromotion ? `${activePromotion.stats.spots_remaining} / ${activePromotion.slots}` : '127 / 300'}
+                      {activePromotion ? `${activePromotion.stats.spots_remaining} / ${activePromotion.slots}` : '0 / 0'}
                     </span>
                   </div>
                   <div className="mt-2 h-2 rounded-full bg-secondary/20 overflow-hidden">
                     <div 
                       className="h-full rounded-full bg-secondary transition-all" 
-                      style={{ width: activePromotion ? `${activePromotion.stats.fill_percentage}%` : '57.6%' }}
+                      style={{ width: activePromotion ? `${activePromotion.stats.fill_percentage}%` : '0%' }}
                     />
                   </div>
                 </div>

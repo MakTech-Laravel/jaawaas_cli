@@ -1,12 +1,18 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Suspense, useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import AdditionalInformationSubmit from "@/components/manufacturers/additional-information-submit"
+import {
+  resolveAdditionalInfoRequest,
+} from "@/lib/additional-information-storage"
+import type { AdditionalInformationRequest } from "@/lib/api/manufacturer-additional-information"
 import { 
   CheckCircle2, 
   Clock, 
@@ -17,42 +23,28 @@ import {
   ShieldCheck, 
   Mail,
   FileWarning,
-  Loader2,
   XCircle
 } from "lucide-react"
 
-export default function ManufacturerAccountReviewPage() {
-  const { user, isLoading, logout } = useAuth()
+function ManufacturerAccountReviewContent() {
+  const { user, logout } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const [additionalInfoRequest, setAdditionalInfoRequest] =
+    useState<AdditionalInformationRequest | null>(null)
 
   useEffect(() => {
-    // Redirect if user status changes to approved or is not a manufacturer
-    if (!isLoading) {
-      if (!user) {
-        router.push("/auth/signin?role=manufacturer")
-      } else if (user.role === "manufacturer" && user.manufacturerStatus === "approved") {
-        router.push("/dashboard/manufacturer")
-      } else if (user.role !== "manufacturer") {
-        router.push("/")
-      }
-    }
-  }, [user, isLoading, router])
-
-  if (isLoading || !user) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="mt-4 text-sm text-muted-foreground font-medium">Checking application status...</p>
-      </div>
-    )
-  }
+    const urlToken = searchParams.get("token")
+    const resolved = resolveAdditionalInfoRequest(urlToken)
+    setAdditionalInfoRequest(resolved?.status === "pending" ? resolved : null)
+  }, [searchParams])
 
   const handleSignOut = () => {
     logout()
     router.push("/auth/signin?role=manufacturer")
   }
 
-  const status = user.manufacturerStatus || "pending"
+  const status = user?.manufacturerStatus || "pending"
   const isNeedsInfo = status === "needs_more_info"
   const isRejected = status === "rejected"
   const isSuspended = status === "suspended"
@@ -71,14 +63,22 @@ export default function ManufacturerAccountReviewPage() {
             <span className="font-serif text-lg font-medium">SourceNest</span>
           </div>
           <div className="flex items-center gap-4">
-            <div className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex">
-              <Building2 className="h-4 w-4" />
-              <span>{user.company || "Manufacturer"}</span>
-            </div>
-            <Button variant="ghost" size="sm" className="gap-2" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </Button>
+            {user && (
+              <div className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex">
+                <Building2 className="h-4 w-4" />
+                <span>{user.company || "Manufacturer"}</span>
+              </div>
+            )}
+            {user ? (
+              <Button variant="ghost" size="sm" className="gap-2" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/auth/signin?role=manufacturer">Sign In</Link>
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -124,6 +124,37 @@ export default function ManufacturerAccountReviewPage() {
             </div>
           </div>
         </div>
+
+        {additionalInfoRequest && (
+          <div className="mb-8">
+            {!user ? (
+              <Card className="border-amber-200 shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-lg">Additional Information Required</CardTitle>
+                  <CardDescription>
+                    Sign in to submit the documents and responses requested by the admin team.
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <Button asChild>
+                    <Link
+                      href={`/auth/signin?role=manufacturer&redirect=${encodeURIComponent(
+                        `/review?token=${additionalInfoRequest.token}`
+                      )}`}
+                    >
+                      Sign In to Respond
+                    </Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            ) : (
+              <AdditionalInformationSubmit
+                request={additionalInfoRequest}
+                onSuccess={() => setAdditionalInfoRequest(null)}
+              />
+            )}
+          </div>
+        )}
 
         <div className="grid gap-6 md:grid-cols-3">
           {/* Left Column: Requirements & Messages */}
@@ -232,7 +263,7 @@ export default function ManufacturerAccountReviewPage() {
                         <div className="mb-2 flex items-center justify-between">
                           <span className="font-medium text-sm">System Admin</span>
                           <span className="text-xs text-muted-foreground">
-                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Just now"}
+                            {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Just now"}
                           </span>
                         </div>
                         <p className="text-sm text-foreground">
@@ -269,7 +300,7 @@ export default function ManufacturerAccountReviewPage() {
                     <div className="pb-6">
                       <p className="font-medium text-sm">Application Submitted</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Recently"}
+                        {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Recently"}
                       </p>
                     </div>
                   </div>
@@ -338,23 +369,23 @@ export default function ManufacturerAccountReviewPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Company</span>
-                  <span className="font-medium text-foreground">{user.company || "—"}</span>
+                  <span className="font-medium text-foreground">{user?.company || "—"}</span>
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Email</span>
-                  <span className="font-medium text-foreground">{user.email}</span>
+                  <span className="font-medium text-foreground">{user?.email || "—"}</span>
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Name</span>
-                  <span className="font-medium text-foreground">{user.name}</span>
+                  <span className="font-medium text-foreground">{user?.name || "—"}</span>
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Submitted on</span>
                   <span className="font-medium text-foreground">
-                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' }) : "—"}
+                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' }) : "—"}
                   </span>
                 </div>
               </CardContent>
@@ -367,3 +398,10 @@ export default function ManufacturerAccountReviewPage() {
   )
 }
 
+export default function ManufacturerAccountReviewPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-muted/20" />}>
+      <ManufacturerAccountReviewContent />
+    </Suspense>
+  )
+}
