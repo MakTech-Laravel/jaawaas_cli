@@ -16,7 +16,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { countries } from "@/lib/data/countries"
-import { industries } from "@/lib/data/industries"
+import { getAllPublicCategories } from "@/lib/api/categories"
 import { 
   Factory,
   Save,
@@ -48,14 +48,8 @@ export default function ManufacturerProfilePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [profileId, setProfileId] = useState<number | null>(null)
-  const [stats, setStats] = useState({
-    reviewValidUntil: "Dec 2026",
-    profileViews: "2,450",
-    inquiries: "28",
-    responseRate: "98%",
-    avgResponseTime: "2 hours",
-    overallProgress: 85
-  })
+  const [industriesList, setIndustriesList] = useState<any[]>([])
+
   
   const [certifications, setCertifications] = useState<string[]>([])
   // const [exportMarkets, setExportMarkets] = useState<string[]>([])
@@ -91,7 +85,7 @@ export default function ManufacturerProfilePage() {
     shortDescription: "",
     fullDescription: "",
     yearEstablished: "",
-    employeeCount: "500",
+    employeeCount: "101-500",
     country: "CN",
     city: "",
     address: "",
@@ -107,11 +101,20 @@ export default function ManufacturerProfilePage() {
   const loadProfile = useCallback(async () => {
     try {
       setIsLoading(true)
-      const res = await getManufacturerProfile()
+      const [res, catRes] = await Promise.all([
+        getManufacturerProfile(),
+        getAllPublicCategories()
+      ])
+
+      if (catRes.success && catRes.data) {
+        setIndustriesList(catRes.data)
+      }
       if (res.success && res.data) {
         const p = res.data
         const c = p.company
         setProfileId(p.id)
+        
+        console.log("Manufacturer Profile Company details:", c)
         
         if (c) {
           setLogoPreview(c.company_logo_url || null)
@@ -125,7 +128,7 @@ export default function ManufacturerProfilePage() {
             shortDescription: c.short_description || "",
             fullDescription: c.long_description || "",
             yearEstablished: c.company_established || "",
-            employeeCount: c.company_size || "500",
+            employeeCount: c.company_size || "101-500",
             country: getCountryByName(c.country || "")?.code || c.country || "CN",
             city: c.city || "",
             address: c.street_address || "",
@@ -196,11 +199,9 @@ export default function ManufacturerProfilePage() {
       if (customization) caps.push("Customization")
       if (privateLabelEnabled) caps.push("Private Label")
       
-      // Arrays — must use key[] bracket notation for Laravel
+      // Helper to append arrays using brackets for Laravel multipart/form-data compatibility
       const appendAsArray = (key: string, arr: string[]) => {
-        if (arr.length === 0) {
-          formDataToSend.append(`${key}[]`, "")
-        } else {
+        if (arr && arr.length > 0) {
           arr.forEach(item => {
             formDataToSend.append(`${key}[]`, item)
           })
@@ -209,7 +210,6 @@ export default function ManufacturerProfilePage() {
 
       appendAsArray("capabilities", caps)
       appendAsArray("certifications", certifications)
-      // appendAsArray("export_markets", exportMarkets)
       appendAsArray("language_spoken", languages)
       appendAsArray("payments_term", paymentTerms)
       
@@ -217,10 +217,10 @@ export default function ManufacturerProfilePage() {
       formDataToSend.append("factory_production", "1")
       formDataToSend.append("mulitple_factories", "0")
 
-      // Industries — send as comma-separated IDs
-      const selectedIndustry = industries.find(i => i.slug === formData.industry)
+      // Industries — send as array for Laravel multipart/form-data
+      const selectedIndustry = industriesList.find(i => i.slug === formData.industry)
       if (selectedIndustry) {
-        formDataToSend.append("industries_id", selectedIndustry.id.toString())
+        formDataToSend.append("industries_id[]", selectedIndustry.id.toString())
       }
       
       formDataToSend.append("factory_size", formData.factorySize || "5000")
@@ -267,7 +267,24 @@ export default function ManufacturerProfilePage() {
         confirmButtonColor: '#0f172a',
       })
     } catch (err: any) {
-      toast({ title: "Update failed", description: getApiErrorMessage(err) || String(err), variant: "destructive" })
+      const errorMsg = getApiErrorMessage(err) || String(err)
+      let detailedMsg = errorMsg
+
+      // Extract detailed validation errors if returned by the backend
+      if (err && err.response && err.response.data && typeof err.response.data.errors === 'object') {
+        const errors = err.response.data.errors
+        const allErrors = Object.values(errors).flat() as string[]
+        if (allErrors.length > 0) {
+          detailedMsg = allErrors.join("<br/>")
+        }
+      }
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        html: `<div style="text-align: left; font-size: 14px; line-height: 1.5;">${detailedMsg}</div>`,
+        confirmButtonColor: '#0f172a',
+      })
     } finally {
       setIsSaving(false)
     }
@@ -353,11 +370,12 @@ export default function ManufacturerProfilePage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="50">1-50</SelectItem>
-                      <SelectItem value="200">51-200</SelectItem>
-                      <SelectItem value="500">201-500</SelectItem>
-                      <SelectItem value="1000">501-1000</SelectItem>
-                      <SelectItem value="5000">1000+</SelectItem>
+                      <SelectItem value="1-10">1-10</SelectItem>
+                      <SelectItem value="11-50">11-50</SelectItem>
+                      <SelectItem value="51-100">51-100</SelectItem>
+                      <SelectItem value="101-500">101-500</SelectItem>
+                      <SelectItem value="501-1000">501-1000</SelectItem>
+                      <SelectItem value="1000+">1000+</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -432,8 +450,8 @@ export default function ManufacturerProfilePage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {industries.map((industry) => (
-                      <SelectItem key={industry.slug} value={industry.slug}>
+                    {industriesList.map((industry) => (
+                      <SelectItem key={industry.slug || industry.id} value={industry.slug || ""}>
                         {industry.name}
                       </SelectItem>
                     ))}
@@ -470,289 +488,15 @@ export default function ManufacturerProfilePage() {
                 </div>
               </div>
 
-              {/* Business Type */}
-              <div className="pt-4 border-t border-border">
-                <Label className="text-base">Business Type</Label>
-                <p className="text-sm text-muted-foreground mt-1">Select all that apply to your company</p>
-                <div className="mt-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-foreground">Manufacturer</p>
-                      <p className="text-sm text-muted-foreground">Direct factory production</p>
-                    </div>
-                    <Switch 
-                      checked={businessTypes.manufacturer} 
-                      onCheckedChange={(checked) => setBusinessTypes({...businessTypes, manufacturer: checked})} 
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-foreground">Trading Company</p>
-                      <p className="text-sm text-muted-foreground">Source from multiple factories</p>
-                    </div>
-                    <Switch 
-                      checked={businessTypes.tradingCompany} 
-                      onCheckedChange={(checked) => setBusinessTypes({...businessTypes, tradingCompany: checked})} 
-                    />
-                  </div>
-                </div>
-              </div>
 
-              {/* Manufacturing Capabilities */}
-              <div className="pt-4 border-t border-border">
-                <Label className="text-base">Manufacturing Capabilities</Label>
-                <p className="text-sm text-muted-foreground mt-1">Services you offer to buyers</p>
-                <div className="mt-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-foreground">OEM Services</p>
-                      <p className="text-sm text-muted-foreground">Original Equipment Manufacturing</p>
-                    </div>
-                    <Switch checked={oem} onCheckedChange={setOem} />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-foreground">ODM Services</p>
-                      <p className="text-sm text-muted-foreground">Original Design Manufacturing</p>
-                    </div>
-                    <Switch checked={odm} onCheckedChange={setOdm} />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-foreground">Private Label</p>
-                      <p className="text-sm text-muted-foreground">White-label manufacturing services</p>
-                    </div>
-                    <Switch checked={privateLabelEnabled} onCheckedChange={setPrivateLabelEnabled} />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-foreground">Customization</p>
-                      <p className="text-sm text-muted-foreground">Custom modifications and specifications</p>
-                    </div>
-                    <Switch checked={customization} onCheckedChange={setCustomization} />
-                  </div>
-                </div>
-              </div>
+
+
             </CardContent>
           </Card>
 
-          {/* Factory Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Factory className="h-5 w-5" />
-                Factory Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label>Factory Size (sqm)</Label>
-                  <Input 
-                    type="number"
-                    value={formData.factorySize}
-                    onChange={(e) => setFormData({ ...formData, factorySize: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label>Production Lines</Label>
-                  <Input 
-                    type="number"
-                    value={formData.productionLines}
-                    onChange={(e) => setFormData({ ...formData, productionLines: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Certifications */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5" />
-                Certifications
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {certifications.map((cert) => (
-                  <Badge key={cert} variant="secondary" className="gap-1 pr-1">
-                    {cert}
-                    <button 
-                      onClick={() => setCertifications(certifications.filter(c => c !== cert))}
-                      className="ml-1 rounded-full p-0.5 hover:bg-background/50"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="Add certification..."
-                  value={newCert}
-                  onChange={(e) => setNewCert(e.target.value)}
-                />
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => {
-                    if (newCert.trim()) {
-                      setCertifications([...certifications, newCert.trim()])
-                      setNewCert("")
-                    }
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                You can upload certification documents in the Certifications section
-              </p>
-            </CardContent>
-          </Card>
 
-          {/* Export Markets — disabled until export_markets_section plan feature is enabled
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
-                Export Markets
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {exportMarkets.map((market) => (
-                  <Badge key={market} variant="outline" className="gap-1 pr-1">
-                    {market}
-                    <button 
-                      onClick={() => setExportMarkets(exportMarkets.filter(m => m !== market))}
-                      className="ml-1 rounded-full p-0.5 hover:bg-muted"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="Add export market..."
-                  value={newMarket}
-                  onChange={(e) => setNewMarket(e.target.value)}
-                />
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => {
-                    if (newMarket.trim()) {
-                      setExportMarkets([...exportMarkets, newMarket.trim()])
-                      setNewMarket("")
-                    }
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          */}
 
-          {/* Languages */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Languages className="h-5 w-5" />
-                Languages Spoken
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {languages.map((lang) => (
-                  <Badge key={lang} variant="secondary" className="gap-1 pr-1">
-                    {lang}
-                    <button 
-                      onClick={() => setLanguages(languages.filter(l => l !== lang))}
-                      className="ml-1 rounded-full p-0.5 hover:bg-background/50"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="Add language..."
-                  value={newLanguage}
-                  onChange={(e) => setNewLanguage(e.target.value)}
-                />
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => {
-                    if (newLanguage.trim()) {
-                      setLanguages([...languages, newLanguage.trim()])
-                      setNewLanguage("")
-                    }
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Languages your team can communicate in
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Payment Terms */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Payment Terms Accepted
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {paymentTerms.map((term) => (
-                  <Badge key={term} variant="outline" className="gap-1 pr-1">
-                    {term}
-                    <button 
-                      onClick={() => setPaymentTerms(paymentTerms.filter(t => t !== term))}
-                      className="ml-1 rounded-full p-0.5 hover:bg-muted"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="Add payment term..."
-                  value={newPaymentTerm}
-                  onChange={(e) => setNewPaymentTerm(e.target.value)}
-                />
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => {
-                    if (newPaymentTerm.trim()) {
-                      setPaymentTerms([...paymentTerms, newPaymentTerm.trim()])
-                      setNewPaymentTerm("")
-                    }
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Common options: T/T, L/C, D/P, D/A, PayPal, Western Union
-              </p>
-            </CardContent>
-          </Card>
 
           {/* Factory Photos */}
           <Card>
@@ -900,73 +644,9 @@ export default function ManufacturerProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Profile Completeness */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Completeness</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Overall Progress</span>
-                  <span className="text-sm font-medium text-foreground">85%</span>
-                </div>
-                <div className="h-2 rounded-full bg-muted">
-                  <div className="h-full w-[85%] rounded-full bg-secondary" />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Complete your profile to attract more buyers
-                </p>
-              </div>
-              <div className="mt-4 space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-secondary" />
-                  <span className="text-muted-foreground">Basic information</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-secondary" />
-                  <span className="text-muted-foreground">Company logo</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-secondary" />
-                  <span className="text-muted-foreground">Certifications</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="h-4 w-4 rounded-full border-2 border-muted-foreground" />
-                  <span className="text-muted-foreground">Factory photos</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="h-4 w-4 rounded-full border-2 border-muted-foreground" />
-                  <span className="text-muted-foreground">Video introduction</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Quick Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Profile Views (30d)</span>
-                <span className="font-medium text-foreground">2,450</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Inquiries (30d)</span>
-                <span className="font-medium text-foreground">28</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Response Rate</span>
-                <span className="font-medium text-foreground">98%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Avg Response Time</span>
-                <span className="font-medium text-foreground">2 hours</span>
-              </div>
-            </CardContent>
-          </Card>
+
+
         </div>
       </div>
     </div>
