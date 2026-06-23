@@ -41,6 +41,7 @@ import {
   type BackendCategory,
   type BackendSubcategory,
 } from "@/lib/api/categories"
+import { useTranslation } from "@/lib/i18n"
 import { 
   Search,
   Plus,
@@ -96,6 +97,8 @@ interface Industry {
 }
 
 export default function AdminIndustriesPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.industries
   const [industries, setIndustries] = useState<Industry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -608,9 +611,9 @@ export default function AdminIndustriesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-medium text-foreground">Industries & Categories</h1>
+          <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
           <p className="mt-1 text-muted-foreground">
-            This page controls main categories, categories, and subcategories.
+            {p.subtitle}
           </p>
         </div>
         <Button onClick={() => setShowAddIndustryDialog(true)}>

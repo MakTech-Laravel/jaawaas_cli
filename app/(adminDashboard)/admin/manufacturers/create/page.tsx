@@ -44,8 +44,11 @@ import {
   Package,
   Users
 } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 
 export default function AdminCreateManufacturerPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.createManufacturer
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
@@ -341,9 +344,9 @@ export default function AdminCreateManufacturerPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Create Manufacturer Account</h1>
+          <h1 className="text-2xl font-bold text-foreground">{p.title}</h1>
           <p className="text-muted-foreground">
-            Step {currentStep} of 4 - Add a new manufacturer to the platform
+            {p.subtitle.replace("{step}", String(currentStep)).replace("{total}", "4")}
           </p>
         </div>
       </div>

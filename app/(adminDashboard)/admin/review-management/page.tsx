@@ -43,6 +43,7 @@ import {
   REVIEW_TYPE_LABELS,
   REVIEW_STATUS_LABELS,
 } from "@/lib/api/admin-reviews"
+import { useTranslation } from "@/lib/i18n"
 import ReviewSubmissionsPanel, {
   ReviewStatusBadge,
 } from "@/components/admin/review-submissions-panel"
@@ -50,6 +51,8 @@ import ReviewSubmissionsPanel, {
 const PER_PAGE = 10
 
 export default function ReviewManagementPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.reviewManagement
   const { toast } = useToast()
   const [reviews, setReviews] = useState<ReviewRequest[]>([])
   const [loading, setLoading] = useState(true)
@@ -117,10 +120,10 @@ export default function ReviewManagementPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <h1 className="font-serif text-2xl font-medium tracking-tight text-foreground md:text-3xl">
-            Review Management
+            {p.title}
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground md:text-base">
-            Manage official review requests and factory verification submissions
+            {p.subtitle}
           </p>
         </div>
 

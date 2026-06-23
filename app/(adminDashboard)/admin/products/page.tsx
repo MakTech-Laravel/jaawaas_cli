@@ -22,6 +22,7 @@ import {
 import * as Icons from "lucide-react"
 import { getAdminProducts, updateAdminProductApprovalStatus, deleteAdminProduct } from "@/lib/api/admin-products"
 import type { AdminProduct } from "@/lib/api/admin-products"
+import { useTranslation } from "@/lib/i18n"
 
 const iconMap: Record<string, React.ReactNode> = {
   Factory: <Icons.Factory className="h-7 w-7" />,
@@ -46,6 +47,9 @@ function getDynamicIcon(iconName: string) {
 }
 
 export default function AdminProductsPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.products
+  const c = t.admin.common
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -216,10 +220,10 @@ export default function AdminProductsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-serif text-2xl font-medium text-foreground">
-          Products
+          {p.title}
         </h1>
         <p className="mt-1 text-muted-foreground">
-          Review and manage product listings
+          {p.subtitle}
         </p>
       </div>
 
@@ -228,7 +232,7 @@ export default function AdminProductsPage() {
         <div className="relative flex-1 max-w-sm">
           <Icons.Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search products..."
+            placeholder={c.searchProducts}
             value={search}
             onChange={(e) =>
               updateQueryParams({ search: e.target.value, page: 1 })

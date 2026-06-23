@@ -53,6 +53,7 @@ import {
   BackendReview,
   AdminReviewsStatsData
 } from "@/lib/api/admin-product-reviews"
+import { useTranslation } from "@/lib/i18n"
 import {
   Search,
   Star,
@@ -74,6 +75,8 @@ const statusConfig = {
 }
 
 export default function AdminReviewsPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.reviews
   const [reviews, setReviews] = useState<BackendReview[]>([])
   const [loadingReviews, setLoadingReviews] = useState(true)
   const [totalReviews, setTotalReviews] = useState(0)
@@ -192,10 +195,10 @@ export default function AdminReviewsPage() {
       <div>
         <h1 className="font-serif text-2xl font-medium text-foreground flex items-center gap-2">
           <Star className="h-6 w-6 text-amber-500" />
-          Reviews Management
+          {p.title}
         </h1>
         <p className="mt-1 text-muted-foreground">
-          Moderate and manage supplier reviews
+          {p.subtitle}
         </p>
       </div>
 

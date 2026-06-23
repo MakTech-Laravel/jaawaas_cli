@@ -4,6 +4,7 @@ import React, { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api/client"
 import { getApiErrorMessage } from "@/lib/api/errors"
+import { useTranslation } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -149,6 +150,8 @@ const initialArticles: InsightArticle[] = [
 ]
 
 export default function AdminInsightsPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.insights
   const [articles, setArticles] = useState<InsightArticle[]>([]) // Start empty, fetch from server on mount
   const [articlesLoading, setArticlesLoading] = useState(false)
   const [articlesError, setArticlesError] = useState<string | null>(null)
@@ -613,8 +616,8 @@ export default function AdminInsightsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Insights Management</h1>
-          <p className="text-muted-foreground">Manage articles, guides, and resources</p>
+          <h1 className="text-2xl font-bold text-foreground">{p.title}</h1>
+          <p className="text-muted-foreground">{p.subtitle}</p>
         </div>
         <Button onClick={openNewArticle}>
           <Plus className="mr-2 h-4 w-4" />

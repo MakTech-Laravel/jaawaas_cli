@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { getAdminDashboard, AdminDashboardData } from "@/lib/api/admin-dashboard"
 import { approveManufacturer, rejectManufacturer } from "@/lib/api/admin-manufacturer-registrations"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,9 @@ const getStatIcon = (key: string) => {
 }
 
 export default function AdminDashboardPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.dashboard
+  const c = t.admin.common
   const { toast } = useToast()
   const [data, setData] = useState<AdminDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -91,13 +95,13 @@ export default function AdminDashboardPage() {
       if (item.type === 'manufacturer' || item.type === 'supplier' || item.type === 'Supplier' || item.type === 'Manufacturer' || !item.type) {
         await approveManufacturer(id)
         toast({
-          title: "Approved",
-          description: `${item.name} has been approved.`,
+          title: c.approved,
+          description: c.approvedDesc.replace("{name}", item.name),
         })
       } else {
         toast({
-          title: "Notice",
-          description: `Approval for type ${item.type} is not fully wired yet. Removed from list.`,
+          title: c.notice,
+          description: c.approvalNotWired.replace("{type}", item.type),
         })
       }
 
@@ -107,8 +111,8 @@ export default function AdminDashboardPage() {
       })
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to approve application.",
+        title: c.error,
+        description: error.message || c.approveFailed,
         variant: "destructive"
       })
     } finally {
@@ -120,8 +124,8 @@ export default function AdminDashboardPage() {
     if (!currentItem || !data) return
     if (!rejectReason.trim()) {
       toast({
-        title: "Error",
-        description: "Please provide a reason for rejection.",
+        title: c.error,
+        description: c.rejectReasonRequired,
         variant: "destructive"
       })
       return
@@ -174,10 +178,8 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-serif text-2xl font-medium text-foreground">Admin Dashboard</h1>
-        <p className="mt-1 text-muted-foreground">
-          Overview of platform activity and pending tasks
-        </p>
+        <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
+        <p className="mt-1 text-muted-foreground">{p.subtitle}</p>
       </div>
 
       {/* Stats Grid */}
@@ -206,7 +208,7 @@ export default function AdminDashboardPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Pending Approvals
+            {p.pendingApprovals}
           </CardTitle>
           <Button variant="outline" size="sm" asChild>
             <Link href="/admin/suppliers">
@@ -290,7 +292,7 @@ export default function AdminDashboardPage() {
       {/* Recent Activity */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
+          <CardTitle>{p.recentActivity}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

@@ -50,6 +50,7 @@ import {
   updateAdminFaq,
   updateAdminFaqCategory,
 } from "@/lib/api/admin-faqs"
+import { useTranslation } from "@/lib/i18n"
 import Swal from "sweetalert2"
 import {
   DndContext,
@@ -147,6 +148,8 @@ function showErrorAlert(message: string) {
 }
 
 export default function AdminFaqPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.faq
   const [categories, setCategories] = useState<FAQCategory[]>([])
   const [expandedCategories, setExpandedCategories] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -588,9 +591,9 @@ export default function AdminFaqPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">FAQ Management</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{p.title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage frequently asked questions displayed on the FAQ page
+            {p.subtitle}
           </p>
         </div>
         <Button

@@ -94,7 +94,7 @@ export default function AdminLayout({
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
+          <p className="mt-4 text-muted-foreground">{t.admin.layout.loading}</p>
         </div>
       </div>
     )
@@ -126,7 +126,7 @@ export default function AdminLayout({
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive">
                 <Shield className="h-4 w-4 text-destructive-foreground" />
               </div>
-              <span className="font-serif text-lg font-medium text-sidebar-foreground">Admin Panel</span>
+              <span className="font-serif text-lg font-medium text-sidebar-foreground">{t.admin.layout.panelTitle}</span>
             </Link>
             <button 
               className="lg:hidden text-sidebar-foreground"
@@ -176,7 +176,7 @@ export default function AdminLayout({
                 <p className="text-sm font-medium text-sidebar-foreground">
                   {user.firstName} {user.lastName}
                 </p>
-                <p className="text-xs text-sidebar-foreground/60">Super Admin</p>
+                <p className="text-xs text-sidebar-foreground/60">{t.admin.layout.superAdmin}</p>
               </div>
             </div>
             <Button 

@@ -70,6 +70,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 import {
   CertificateType,
   createAdminCertificateType,
@@ -221,6 +222,8 @@ function groupCertificationsByManufacturer(
 }
 
 export default function AdminCertificateTypePage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.certificatetype
   const { toast } = useToast()
 
   const [activeTab, setActiveTab] = useState("certificates")
@@ -574,10 +577,10 @@ export default function AdminCertificateTypePage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-serif text-2xl font-medium text-foreground">
-          Certifications Management
+          {p.title}
         </h1>
         <p className="mt-1 text-muted-foreground">
-          Review manufacturer certificates and manage certificate types
+          {p.subtitle}
         </p>
       </div>
 

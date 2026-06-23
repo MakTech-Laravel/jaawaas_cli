@@ -58,8 +58,11 @@ import {
 } from "@/lib/api/admin-promotions"
 import { fetchPlans, type PricingPlan } from "@/lib/api/admin-pricing"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 
 export default function PromotionsPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.promotions
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [plans, setPlans] = useState<PricingPlan[]>([])
   const [loading, setLoading] = useState(true)
@@ -228,8 +231,8 @@ export default function PromotionsPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Promotional Offers</h1>
-          <p className="text-muted-foreground">Manage special offers and founding programs</p>
+          <h1 className="text-2xl font-bold text-foreground">{p.title}</h1>
+          <p className="text-muted-foreground">{p.subtitle}</p>
         </div>
         <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-700">
           <p className="font-semibold">Error loading promotions</p>
@@ -250,8 +253,8 @@ export default function PromotionsPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Promotional Offers</h1>
-          <p className="text-muted-foreground">Manage special offers and founding programs</p>
+          <h1 className="text-2xl font-bold text-foreground">{p.title}</h1>
+          <p className="text-muted-foreground">{p.subtitle}</p>
         </div>
       </div>
 

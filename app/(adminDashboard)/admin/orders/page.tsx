@@ -12,6 +12,7 @@ import {
   type OrderStatus,
 } from "@/lib/orders-context"
 import { getAdminOrders, getAdminOrderStats, type ApiOrder, type OrderStats } from "@/lib/api/orders"
+import { useTranslation } from "@/lib/i18n"
 import {
   PackageCheck,
   Package,
@@ -37,6 +38,9 @@ const statusColors: Record<string, string> = {
 }
 
 export default function AdminOrdersPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.orders
+  const c = t.admin.common
   const [orders, setOrders] = useState<ApiOrder[]>([])
   const [stats, setStats] = useState<OrderStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -102,9 +106,9 @@ export default function AdminOrdersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-serif text-2xl font-medium text-foreground">Orders</h1>
+        <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
         <p className="mt-1 text-muted-foreground">
-          Monitor all product orders across the platform
+          {p.subtitle}
         </p>
       </div>
 
@@ -150,7 +154,7 @@ export default function AdminOrdersPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by ID, title, buyer, or seller..."
+            placeholder={c.searchOrders}
             className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>

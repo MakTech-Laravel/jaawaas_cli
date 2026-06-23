@@ -34,6 +34,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 import type { ManufacturerApplication, ManufacturerRegistrationResponse } from "@/lib/api/admin-manufacturer-registrations"
 import { fetchManufacturerRegistrations, deleteManufacturer, approveManufacturer, rejectManufacturer } from "@/lib/api/admin-manufacturer-registrations"
 import { ManufacturerApplicationDetailDialog } from "@/components/admin/manufacturer-application-detail-dialog"
@@ -80,6 +81,8 @@ function isPending(row: ManufacturerApplication) {
 }
 
 export default function ManufacturerRegistrationsPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.mfgRegistrations
   const { toast } = useToast()
   const [currentPage, setCurrentPage] = useState(1)
   const [data, setData] = useState<ManufacturerRegistrationResponse | null>(null)
@@ -421,10 +424,10 @@ export default function ManufacturerRegistrationsPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <h1 className="font-serif text-2xl font-medium tracking-tight text-foreground md:text-3xl">
-            Manufacturer registrations
+            {p.title}
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground md:text-base">
-            Review pending applications, approve, or remove entries
+            {p.subtitle}
           </p>
         </div>
       </div>

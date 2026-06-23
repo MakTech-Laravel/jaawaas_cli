@@ -61,6 +61,7 @@ import {
   Shield,
   BookOpen
 } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 import {
   defaultSocialLinks,
   defaultLegalPages,
@@ -107,6 +108,8 @@ const getCategoryIconComponent = (iconName: string) => {
 }
 
 export default function SiteSettingsPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.siteSettings
   const [socialLinks, setSocialLinks] = useState<SocialMediaLink[]>(defaultSocialLinks)
   const [legalPages, setLegalPages] = useState<LegalPage[]>(defaultLegalPages)
   const [aboutPage, setAboutPage] = useState<AboutPageData>(defaultAboutPage)
@@ -518,9 +521,9 @@ export default function SiteSettingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Site Settings</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{p.title}</h1>
           <p className="text-muted-foreground">
-            Manage content pages, Help Center, legal documents, and social media links
+            {p.subtitle}
           </p>
         </div>
         <Button onClick={handleSave} disabled={isSaving} className="gap-2">

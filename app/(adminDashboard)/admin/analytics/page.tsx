@@ -33,6 +33,7 @@ import {
   type ChartConfig
 } from "@/components/ui/chart"
 import { getAdminAnalyticsMetrics, getAdminAnalyticsGrowth, getAdminAnalyticsCountries, getAdminAnalyticsIndustries, AdminAnalyticsMetricItem, GrowthItem, CountryDistributionItem, IndustryItem } from "@/lib/api/admin-analytics"
+import { useTranslation } from "@/lib/i18n"
 
 const metricIcons: Record<string, React.ComponentType<any>> = {
   total_revenue: DollarSign,
@@ -59,6 +60,8 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export default function AdminAnalyticsPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.analytics
   const [metrics, setMetrics] = useState<AdminAnalyticsMetricItem[]>([])
   const [growthData, setGrowthData] = useState<GrowthItem[]>([])
   const [countries, setCountries] = useState<CountryDistributionItem[]>([])
@@ -131,9 +134,9 @@ export default function AdminAnalyticsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-serif text-2xl font-medium text-foreground">Analytics</h1>
+        <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
         <p className="mt-1 text-muted-foreground">
-          Platform performance and insights
+          {p.subtitle}
         </p>
       </div>
 
