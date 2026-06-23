@@ -44,6 +44,7 @@ import {
   Shield
   ,Loader2
 } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 
 type UserStatus = "active" | "pending" | "suspended" | "deactivated" | "deleted"
 type UserRole = "buyer" | "manufacturer" | "admin"
@@ -119,6 +120,9 @@ const roleConfig: Record<UserRole, { label: string; icon: typeof User; color: st
 }
 
 export default function AdminUsersPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.users
+  const c = t.admin.common
   const router = useRouter()
   const { toast } = useToast()
   const { user: currentAuthUser } = useAuth()
@@ -426,9 +430,9 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-serif text-2xl font-medium text-foreground">Users</h1>
+        <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
         <p className="mt-1 text-muted-foreground">
-          Manage all platform users
+          {p.subtitle}
           <span className="ml-3">
             <Badge variant="outline" className="mr-2">{buyerCount} Buyers</Badge>
             <Badge variant="outline">{manufacturerCount} Manufacturers</Badge>
@@ -441,7 +445,7 @@ export default function AdminUsersPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search users..."
+            placeholder={c.searchUsers}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"

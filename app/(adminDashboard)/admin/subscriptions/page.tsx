@@ -33,6 +33,7 @@ import {
   AdminSubscription,
   AdminSubscriptionStats
 } from "@/lib/api/admin-subscriptions"
+import { useTranslation } from "@/lib/i18n"
 import { format } from "date-fns"
 import { SubscriptionDetailModal } from "@/components/admin/subscription-detail-modal"
 
@@ -45,6 +46,8 @@ const statusConfig: Record<string, { color: string }> = {
 }
 
 export default function AdminSubscriptionsPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.subscriptions
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   
@@ -88,9 +91,9 @@ export default function AdminSubscriptionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-serif text-2xl font-medium text-foreground">Subscriptions</h1>
+        <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
         <p className="mt-1 text-muted-foreground">
-          Monitor and manage manufacturer subscriptions
+          {p.subtitle}
         </p>
       </div>
 

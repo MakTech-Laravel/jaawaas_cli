@@ -34,8 +34,11 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { fetchAdminPromotionById, fetchAdminPromotionParticipants, enrollAdminPromotionParticipant, type Promotion, type PromotionParticipant } from "@/lib/api/admin-promotions"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 
 export default function PromotionDetailsPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.promotions
   const params = useParams()
   const router = useRouter()
   const promotionId = params.id as string
@@ -138,7 +141,7 @@ export default function PromotionDetailsPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Promotion Details</h1>
+          <h1 className="text-2xl font-bold text-foreground">{p.detailsTitle}</h1>
           <p className="text-muted-foreground">Manage promotion & participants</p>
         </div>
       </div>

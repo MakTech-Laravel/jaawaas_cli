@@ -34,6 +34,7 @@ import {
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/orders-context"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
+import { useTranslation } from "@/lib/i18n"
 
 const statusStyles: Record<RfqStatus, { color: string; icon: typeof Clock }> = {
   pending: { color: "bg-amber-100 text-amber-700", icon: Clock },
@@ -48,8 +49,8 @@ export interface RfqListConfig {
   basePath: string
   role: "buyer" | "manufacturer" | "admin"
   roleId?: string // buyer email, or manufacturer id
-  listTitle: string
-  listSubtitle: string
+  listTitle?: string
+  listSubtitle?: string
   createLabel?: string
 }
 
@@ -135,6 +136,11 @@ function RfqCard({ rfq, config }: { rfq: Rfq; config: RfqListConfig }) {
 }
 
 export function RfqList({ config }: { config: RfqListConfig }) {
+  const { t } = useTranslation()
+  const adminPages = t.admin.pages.rfqs
+  const adminRfqs = t.admin.rfqs
+  const listTitle = config.listTitle ?? adminPages.title
+  const listSubtitle = config.listSubtitle ?? adminPages.subtitle
   const { getRfqsForBuyer, getRfqsForManufacturer, getRfqsForAdmin } = useRfqs()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -170,8 +176,8 @@ export function RfqList({ config }: { config: RfqListConfig }) {
     <div className={cn("mx-auto", config.role === "admin" ? "w-full" : "max-w-5xl")}>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl font-medium text-foreground">{config.listTitle}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{config.listSubtitle}</p>
+          <h1 className="font-serif text-2xl font-medium text-foreground">{listTitle}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{listSubtitle}</p>
         </div>
         {config.role === "buyer" && config.createLabel && (
           <Button asChild className="gap-2">
@@ -212,7 +218,7 @@ export function RfqList({ config }: { config: RfqListConfig }) {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder={`Search by product, ID, or company...`}
+            placeholder={config.role === "admin" ? adminRfqs.searchPlaceholder : "Search by product, ID, or company..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -220,10 +226,10 @@ export function RfqList({ config }: { config: RfqListConfig }) {
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full sm:w-52">
-            <SelectValue placeholder="All statuses" />
+            <SelectValue placeholder={config.role === "admin" ? adminRfqs.allStatus : "All statuses"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="all">{config.role === "admin" ? adminRfqs.allStatus : "All statuses"}</SelectItem>
             {Object.entries(RFQ_STATUS_LABELS).map(([k, v]) => (
               <SelectItem key={k} value={k}>
                 {v}
@@ -245,7 +251,9 @@ export function RfqList({ config }: { config: RfqListConfig }) {
             <FileText className="h-6 w-6 text-muted-foreground" />
           </div>
           <h3 className="mt-4 font-medium text-foreground">
-            {myRfqs.length === 0 ? `No RFQs yet` : `No RFQs match your filters`}
+            {myRfqs.length === 0
+              ? (config.role === "admin" ? adminRfqs.noRfqs : "No RFQs yet")
+              : (config.role === "admin" ? adminRfqs.noRfqs : "No RFQs match your filters")}
           </h3>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">
             {myRfqs.length === 0

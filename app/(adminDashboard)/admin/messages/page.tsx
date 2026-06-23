@@ -7,8 +7,12 @@ import { Badge } from "@/components/ui/badge"
 import { Shield, AlertTriangle, Loader2 } from "lucide-react"
 import { getConversations, getMessages, sendMessage, markAsRead } from "@/lib/api/messages"
 import { getEcho } from "@/lib/echo"
+import { useTranslation } from "@/lib/i18n"
 
 export default function AdminMessagesPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.messages
+  const c = t.admin.common
   const { user, isAuthenticated } = useAuth()
   const [selectedConvId, setSelectedConvId] = useState<string | undefined>()
   const [conversations, setConversations] = useState<ChatConversation[]>([])
@@ -225,19 +229,19 @@ export default function AdminMessagesPage() {
     <div className="space-y-6 h-[calc(100dvh-140px)] flex flex-col">
       <div className="flex items-center justify-between shrink-0">
         <div>
-          <h1 className="font-serif text-2xl font-medium text-foreground">Message Center</h1>
+          <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Monitor and moderate conversations between buyers and manufacturers
+            {p.subtitle}
           </p>
         </div>
         <div className="flex gap-2">
           <Badge variant="outline" className="gap-1">
             <Shield className="h-3.5 w-3.5 text-secondary" />
-            Moderation Active
+            {c.moderationActive}
           </Badge>
           <Badge variant="destructive" className="gap-1">
             <AlertTriangle className="h-3.5 w-3.5" />
-            {conversations.filter(c => (c as any).flagged).length} Flagged
+            {conversations.filter(conv => (conv as any).flagged).length} {c.flagged}
           </Badge>
         </div>
       </div>

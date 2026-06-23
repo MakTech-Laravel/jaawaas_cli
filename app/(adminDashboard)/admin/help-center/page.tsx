@@ -36,6 +36,7 @@ import {
   type HelpCenterCategory,
   type HelpCenterArticle
 } from "@/lib/api/admin-help-center"
+import { useTranslation } from "@/lib/i18n"
 
 function showSuccessAlert(message: string) {
   void Swal.fire({
@@ -58,6 +59,8 @@ function showErrorAlert(message: string) {
 }
 
 export default function AdminHelpCenterPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.helpCenter
   const [categories, setCategories] = useState<HelpCenterCategory[]>([])
   const [articlesData, setArticlesData] = useState<Record<number, HelpCenterArticle[]>>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -281,9 +284,9 @@ export default function AdminHelpCenterPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Help Center Management</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{p.title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage the content, articles, and settings for the public Help Center page.
+            {p.subtitle}
           </p>
         </div>
         <div className="flex gap-2">

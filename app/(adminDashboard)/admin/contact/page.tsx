@@ -35,8 +35,11 @@ import {
 } from "@/components/ui/dialog"
 import Swal from "sweetalert2"
 import { getAdminContacts, getAdminContactById, deleteAdminContact, updateAdminContactReadStatus, type AdminContact } from "@/lib/api/admin-contacts"
+import { useTranslation } from "@/lib/i18n"
 
 export default function AdminContactsPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.contact
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -175,10 +178,10 @@ export default function AdminContactsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-medium text-foreground">
-            Contact Submissions
+            {p.title}
           </h1>
           <p className="mt-1 text-muted-foreground">
-            View and manage inquiries received from the contact page.
+            {p.subtitle}
           </p>
         </div>
       </div>

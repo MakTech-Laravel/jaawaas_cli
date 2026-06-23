@@ -46,6 +46,7 @@ import {
   type CustomerSupportTicketStatus,
   type CustomerSupportTicketPriority,
 } from "@/lib/api/admin-customer-support-tickets"
+import { useTranslation } from "@/lib/i18n"
 
 type CustomerRole = "buyer" | "supplier" | "provider" | "unknown"
 
@@ -56,19 +57,14 @@ const ROLE_CONFIG: Record<CustomerRole, { label: string; icon: typeof UserIcon; 
   unknown: { label: "User", icon: UserIcon, ring: "ring-primary/20", bg: "bg-primary/10 text-primary" },
 }
 
-const CANNED_REPLIES = [
-  "Thanks for reaching out — I'm looking into this now.",
-  "Could you share a bit more detail so I can help faster?",
-  "I've escalated this to the relevant team and will update you shortly.",
-  "Glad that's sorted! Let me know if there's anything else.",
-]
+const CANNED_REPLY_KEYS = ["cannedReply1", "cannedReply2", "cannedReply3", "cannedReply4"] as const
 
-const FILTERS: { key: CustomerSupportTicketStatus | "all" | "unresolved"; label: string }[] = [
-  { key: "unresolved", label: "Active" },
-  { key: "open", label: "Open" },
-  { key: "waiting_on_customer", label: "Waiting" },
-  { key: "resolved", label: "Resolved" },
-  { key: "all", label: "All" },
+const FILTERS: { key: CustomerSupportTicketStatus | "all" | "unresolved"; labelKey: "active" | "open" | "waiting" | "resolved" | "all" }[] = [
+  { key: "unresolved", labelKey: "active" },
+  { key: "open", labelKey: "open" },
+  { key: "waiting_on_customer", labelKey: "waiting" },
+  { key: "resolved", labelKey: "resolved" },
+  { key: "all", labelKey: "all" },
 ]
 
 export const STATUS_CONFIG: Record<CustomerSupportTicketStatus | "unknown", { label: string; pill: string; dot: string }> = {
@@ -191,6 +187,10 @@ interface AdminSupportChatViewProps {
 }
 
 export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupportChatViewProps) {
+  const { t } = useTranslation()
+  const p = t.admin.pages.supportTickets
+  const s = t.admin.support
+  const cannedReplies = CANNED_REPLY_KEYS.map((key) => s[key])
   const router = useRouter()
   const { toast } = useToast()
 
@@ -362,14 +362,14 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
             <LifeBuoy className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="font-serif text-2xl font-medium text-foreground">Support Center</h1>
-            <p className="text-sm text-muted-foreground">Every customer message, handled in one calm inbox.</p>
+            <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
+            <p className="text-sm text-muted-foreground">{p.subtitle}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Kpi icon={Inbox} label="Open" value={stats.open} tone="bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300" />
-          <Kpi icon={Clock} label="Awaiting reply" value={stats.waiting} tone="bg-muted text-muted-foreground" />
-          <Kpi icon={CheckCircle2} label="Resolved" value={stats.resolved} tone="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300" />
+          <Kpi icon={Inbox} label={s.open} value={stats.open} tone="bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300" />
+          <Kpi icon={Clock} label={s.waiting} value={stats.waiting} tone="bg-muted text-muted-foreground" />
+          <Kpi icon={CheckCircle2} label={s.resolved} value={stats.resolved} tone="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300" />
           <Kpi icon={Timer} label="Avg. first reply" value={"—"} tone="bg-secondary/15 text-secondary" />
         </div>
       </div>
@@ -392,7 +392,7 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
-                placeholder="Search conversations"
+                placeholder={s.searchTickets}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -410,7 +410,7 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
                       : "bg-muted text-muted-foreground hover:bg-muted/70",
                   )}
                 >
-                  {f.label}
+                  {s[f.labelKey]}
                   {counts[f.key] ? (
                     <span
                       className={cn(
@@ -506,7 +506,7 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
           ) : !active ? (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
               <LifeBuoy className="h-10 w-10 opacity-40" />
-              Select a conversation to get started.
+              {s.selectTicket}
             </div>
           ) : (
             <>
@@ -538,12 +538,12 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
                   {active.status === "resolved" || active.status === "closed" ? (
                     <Button size="sm" className="gap-1.5" onClick={() => updateStatus(active.id, "open")}>
                       <RotateCcw className="h-4 w-4" />
-                      Reopen
+                      {s.reopen}
                     </Button>
                   ) : (
                     <Button size="sm" className="gap-1.5" onClick={() => updateStatus(active.id, "resolved")}>
                       <CheckCircle2 className="h-4 w-4" />
-                      Resolve
+                      {s.markResolved}
                     </Button>
                   )}
                   <Select value={active.status} onValueChange={(v) => updateStatus(active.id, v as CustomerSupportTicketStatus)}>
@@ -637,14 +637,14 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
                         <Sparkles className="h-3 w-3" />
                         Quick replies
                       </span>
-                      {CANNED_REPLIES.map((r, i) => (
+                      {CANNED_REPLY_KEYS.map((key, i) => (
                         <button
-                          key={i}
-                          onClick={() => setReply((prevReply) => (prevReply ? `${prevReply} ${r}` : r))}
+                          key={key}
+                          onClick={() => setReply((prevReply) => (prevReply ? `${prevReply} ${cannedReplies[i]}` : cannedReplies[i]))}
                           className="max-w-[200px] truncate rounded-full border border-border bg-card px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                          title={r}
+                          title={cannedReplies[i]}
                         >
-                          {r}
+                          {cannedReplies[i]}
                         </button>
                       ))}
                     </div>
@@ -670,7 +670,7 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
                         </span>
                         <Button onClick={sendReply} disabled={!reply.trim() || isReplying} size="sm" className="gap-1.5">
                           {isReplying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                          Send
+                          {s.sendReply}
                         </Button>
                       </div>
                     </div>
@@ -716,7 +716,7 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-2 text-sm text-muted-foreground">
                   <CircleDot className="h-4 w-4" />
-                  Priority
+                  {s.priority}
                 </span>
                 <Select value={active.priority} onValueChange={(v) => updatePriority(active.id, v as CustomerSupportTicketPriority)}>
                   <SelectTrigger className="h-7 w-[110px] text-xs">

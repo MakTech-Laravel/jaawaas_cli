@@ -37,6 +37,7 @@ import {
   type AdminQuickFilterType,
   updateAdminQuickFilterOption,
 } from "@/lib/api/admin-quick-filters"
+import { useTranslation } from "@/lib/i18n"
 import Swal from "sweetalert2"
 import { 
   Plus,
@@ -157,6 +158,8 @@ const initialFilters: FilterCategory[] = [
 ]
 
 export default function AdminFiltersPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.filters
   const [filters, setFilters] = useState<FilterCategory[]>(initialFilters)
   const [activeTab, setActiveTab] = useState("countries")
   const [counts, setCounts] = useState<AdminQuickFilterCounts | null>(null)
@@ -431,9 +434,9 @@ export default function AdminFiltersPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-medium text-foreground">Quick Filters</h1>
+          <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
           <p className="mt-1 text-muted-foreground">
-            Manage filter options displayed on supplier and industry pages
+            {p.subtitle}
           </p>
         </div>
       </div>

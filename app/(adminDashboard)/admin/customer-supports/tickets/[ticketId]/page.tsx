@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -75,6 +76,8 @@ function displayMessageName(message: CustomerSupportTicketMessage): string {
 }
 
 export default function AdminCustomerSupportTicketDetailsPage() {
+  const { t } = useTranslation()
+  const c = t.admin.common
   const params = useParams<{ ticketId: string }>()
   const ticketId = parseTicketId(params?.ticketId)
   const { user } = useAuth()
@@ -250,7 +253,7 @@ export default function AdminCustomerSupportTicketDetailsPage() {
               Back To Tickets
             </Link>
           </Button>
-          <h1 className="font-serif text-2xl font-medium text-foreground">Ticket #{ticket.id}</h1>
+          <h1 className="font-serif text-2xl font-medium text-foreground">{c.ticketNumber.replace("{id}", String(ticket.id))}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{ticket.subject}</p>
         </div>
         <div className="flex items-center gap-2">

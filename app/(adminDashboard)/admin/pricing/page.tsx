@@ -43,6 +43,7 @@ import {
   Search
 } from "lucide-react"
 import { fetchPlans, createPlan, updatePlan, deletePlan as deleteApiPlan, fetchPlanFeatures, togglePopularPlan, updatePlanFeature, type PricingPlan as BackendPricingPlan, type PlanFeature } from "@/lib/api/admin-pricing"
+import { useTranslation } from "@/lib/i18n"
 
 interface PricingFeature {
   rowId: string
@@ -241,6 +242,8 @@ function EditableFeatureRow(props: {
 }
 
 export default function AdminPricingPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.pricing
   const [plans, setPlans] = useState<PricingPlan[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
@@ -618,8 +621,8 @@ export default function AdminPricingPage() {
         <>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Pricing Management</h1>
-          <p className="text-muted-foreground">Manage subscription plans and pricing</p>
+          <h1 className="text-2xl font-bold text-foreground">{p.title}</h1>
+          <p className="text-muted-foreground">{p.subtitle}</p>
         </div>
         <div className="flex gap-3">
           <Button onClick={() => {

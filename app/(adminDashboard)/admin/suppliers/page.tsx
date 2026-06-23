@@ -60,6 +60,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
+import { useTranslation } from "@/lib/i18n"
 
 type SupplierStatus = "draft" | "pending" | "approved" | "rejected" | "suspended" | "needs_info" | "active" | "deactivated"
 
@@ -92,6 +93,9 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
 const PER_PAGE = 10
 
 export default function AdminSuppliersPage() {
+  const { t } = useTranslation()
+  const p = t.admin.pages.suppliers
+  const c = t.admin.common
   const { user } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
@@ -295,9 +299,9 @@ export default function AdminSuppliersPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-medium text-foreground">Suppliers</h1>
+          <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
           <p className="mt-1 text-muted-foreground">
-            Manage supplier accounts and reviews
+            {p.subtitle}
           </p>
         </div>
       </div>
@@ -307,7 +311,7 @@ export default function AdminSuppliersPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search suppliers..."
+            placeholder={c.searchSuppliers}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
