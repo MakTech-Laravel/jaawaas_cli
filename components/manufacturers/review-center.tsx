@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 import {
   Camera,
   Clock,
@@ -260,6 +261,7 @@ function AdditionalInfoRequestDetails({
 
 export default function ReviewCenter() {
   const { toast } = useToast()
+  const { t } = useTranslation()
   const [reviews, setReviews] = useState<ReviewRequest[]>([])
   const [user, setUser] = useState<ReviewCenterUser | null>(null)
   const [verification, setVerification] = useState<ReviewCenterVerification | null>(null)
@@ -565,14 +567,14 @@ export default function ReviewCenter() {
       {/* Header */}
       <div>
         <h1 className="font-serif text-2xl font-medium tracking-tight text-foreground md:text-3xl">
-          Review Center
+          {t.mfg.reviewCenter.title}
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground md:text-base">
           {actionableAdditionalRequests.length > 0
             ? "The admin team needs more information. Use the form below to respond with text, documents, or live camera capture."
             : latestAdditionalRequest
               ? "View your admin requests below. Open the submission form to use the live camera."
-              : "Track your verification status and past admin requests."}
+              : t.mfg.reviewCenter.subtitle}
         </p>
         {latestAdditionalRequest && (
           <div className="mt-4">
@@ -596,14 +598,14 @@ export default function ReviewCenter() {
         <Card>
           <CardContent className="flex flex-col items-center py-16 text-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="mt-4 font-medium text-foreground">Loading review center...</p>
+            <p className="mt-4 font-medium text-foreground">{t.mfg.inquiries.loading}</p>
           </CardContent>
         </Card>
       ) : !hasContent ? (
         <Card>
           <CardContent className="flex flex-col items-center py-16 text-center">
             <ScanEye className="h-12 w-12 text-muted-foreground/40" />
-            <p className="mt-4 font-medium text-foreground">No review activity</p>
+            <p className="mt-4 font-medium text-foreground">{t.mfg.reviewCenter.noReviews}</p>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
               You don&apos;t have any review requests or additional information requests at the moment.
             </p>

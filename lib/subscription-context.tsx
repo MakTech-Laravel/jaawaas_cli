@@ -43,6 +43,7 @@ export interface SubscriptionPlan {
   description: string
   monthlyPrice: number | null
   yearlyPrice: number | null
+  backendId?: number
   limits: PlanLimits
   features: PlanFeatures
   rawFeatures?: Array<{
@@ -258,6 +259,14 @@ interface SubscriptionContextType {
     auto_renew: boolean
     paid_amount: number
   }) => Promise<{ success: boolean; message: string }>
+  upgradeSubscription: (payload: {
+    plan_id: number
+    payment_method: string
+    billing_interval: string
+    payment_id: string
+    auto_renew: boolean
+    paid_amount: number
+  }) => Promise<{ success: boolean; message: string }>
   
   // Usage tracking
   incrementUsage: (key: keyof SubscriptionUsage) => void
@@ -352,7 +361,8 @@ function transformBackendPlanToSubscriptionPlan(backendPlan: any): SubscriptionP
     yearlyPrice: parseFloat(backendPlan.yearly_price?.amount || "0"),
     limits,
     features,
-    rawFeatures: backendPlan.features
+    rawFeatures: backendPlan.features,
+    backendId: backendPlan.id
   };
 }
 
@@ -694,22 +704,57 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     return true
   }
 
-  // Cancel subscription
+  // Cancel subscription — real API call
   const cancelSubscription = async (): Promise<boolean> => {
     if (!user || !subscription) return false
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    const newSub: Subscription = {
-      ...subscription,
-      cancelAtPeriodEnd: true
+    try {
+      console.log("[SubscriptionContext] POST /manufacturer/subscriptions/cancel")
+      const response = await apiClient.post('/manufacturer/subscriptions/cancel')
+      const success = response?.data?.success ?? true
+
+      if (success) {
+        // Re-fetch subscription state from backend
+        try {
+          const subResponse = await apiClient.get('/manufacturer/subscriptions')
+          if (subResponse.data?.success && subResponse.data?.data) {
+            const subData = subResponse.data.data
+            let mappedPlanId: PlanId = "growth"
+            if (subData.plan?.name) {
+              const name = subData.plan.name.toLowerCase()
+              if (["starter", "growth", "enterprise"].includes(name)) {
+                mappedPlanId = name as PlanId
+              }
+            }
+            setSubscription({
+              planId: mappedPlanId,
+              status: subData.status,
+              billingCycle: subData.billing_interval === "year" ? "yearly" : "monthly",
+              currentPeriodStart: subData.starts_at,
+              currentPeriodEnd: subData.ends_at,
+              cancelAtPeriodEnd: !subData.auto_renew,
+              daysRemaining: subData.days_remaining,
+              priceAmount: subData.billing_interval === "year"
+                ? subData.plan?.yearly_price?.amount
+                : subData.plan?.monthly_price?.amount,
+              priceCurrency: subData.billing_interval === "year"
+                ? (subData.plan?.yearly_price?.currency || "USD")
+                : (subData.plan?.monthly_price?.currency || "USD"),
+              autoRenew: subData.auto_renew
+            })
+          } else {
+            setSubscription(null)
+          }
+        } catch (refetchErr) {
+          console.error("[SubscriptionContext] Failed to refetch subscription after cancel:", refetchErr)
+        }
+      }
+
+      return success
+    } catch (error: any) {
+      console.error("[SubscriptionContext] Cancel subscription error:", error?.response?.data || error)
+      return false
     }
-    
-    setSubscription(newSub)
-    localStorage.setItem(`sourcenest_subscription_${user.id}`, JSON.stringify(newSub))
-    
-    return true
   }
 
   // Subscribe to plan via backend
@@ -776,6 +821,64 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Upgrade subscription via real API — POST /manufacturer/subscriptions/upgrade
+  const upgradeSubscription = async (payload: {
+    plan_id: number
+    payment_method: string
+    billing_interval: string
+    payment_id: string
+    auto_renew: boolean
+    paid_amount: number
+  }): Promise<{ success: boolean; message: string }> => {
+    try {
+      console.log("[SubscriptionContext] POST /manufacturer/subscriptions/upgrade", payload)
+      const response = await apiClient.post('/manufacturer/subscriptions/upgrade', payload)
+      console.log("[SubscriptionContext] Upgrade response:", response.data)
+      const success = response?.data?.success ?? true
+      const message = response?.data?.message || "Plan upgraded successfully"
+
+      if (success) {
+        try {
+          const subResponse = await apiClient.get('/manufacturer/subscriptions')
+          if (subResponse.data?.success && subResponse.data?.data) {
+            const subData = subResponse.data.data
+            let mappedPlanId: PlanId = "growth"
+            if (subData.plan?.name) {
+              const name = subData.plan.name.toLowerCase()
+              if (["starter", "growth", "enterprise"].includes(name)) {
+                mappedPlanId = name as PlanId
+              }
+            }
+            setSubscription({
+              planId: mappedPlanId,
+              status: subData.status,
+              billingCycle: subData.billing_interval === "year" ? "yearly" : "monthly",
+              currentPeriodStart: subData.starts_at,
+              currentPeriodEnd: subData.ends_at,
+              cancelAtPeriodEnd: !subData.auto_renew,
+              daysRemaining: subData.days_remaining,
+              priceAmount: subData.billing_interval === "year"
+                ? subData.plan?.yearly_price?.amount
+                : subData.plan?.monthly_price?.amount,
+              priceCurrency: subData.billing_interval === "year"
+                ? (subData.plan?.yearly_price?.currency || "USD")
+                : (subData.plan?.monthly_price?.currency || "USD"),
+              autoRenew: subData.auto_renew
+            })
+          }
+        } catch (refetchErr) {
+          console.error("[SubscriptionContext] Failed to refetch subscription after upgrade:", refetchErr)
+        }
+      }
+
+      return { success, message }
+    } catch (error: any) {
+      console.error("[SubscriptionContext] Upgrade API error:", error?.response?.data || error)
+      const msg = error?.response?.data?.message || "Failed to upgrade subscription"
+      return { success: false, message: msg }
+    }
+  }
+
   // Increment usage
   const incrementUsage = (key: keyof SubscriptionUsage) => {
     if (!user) return
@@ -820,6 +923,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       downgradePlan,
       cancelSubscription,
       subscribeToPlan,
+      upgradeSubscription,
       incrementUsage,
       resetMonthlyUsage
     }}>

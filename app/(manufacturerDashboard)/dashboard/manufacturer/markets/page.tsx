@@ -46,8 +46,11 @@ import {
   type ExportCountry, 
   type MarketStats 
 } from "@/lib/api/manufacturer-markets"
+import { useTranslation } from "@/lib/i18n"
 
 export default function ExportMarketsPage() {
+  const { t } = useTranslation()
+  const m = t.mfg.markets
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [stats, setStats] = useState<MarketStats | null>(null)
@@ -88,7 +91,7 @@ export default function ExportMarketsPage() {
         setInitialSelectedCountries(selected)
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load export markets data")
+      toast.error(err instanceof Error ? err.message : m.loadError)
     } finally {
       setLoading(false)
     }
@@ -147,7 +150,7 @@ export default function ExportMarketsPage() {
       })
 
       if (regionsToCreate.length === 0 && regionsToUpdate.length === 0 && regionsToDelete.length === 0) {
-        toast.info("No changes to save.")
+        toast.info(m.noChanges)
         return
       }
 
@@ -160,14 +163,14 @@ export default function ExportMarketsPage() {
 
       const failures = results.filter(r => !r.success)
       if (failures.length > 0) {
-        toast.error("Failed to save some export market modifications.")
+        toast.error(m.saveFailed)
       } else {
-        toast.success("Export markets updated successfully")
+        toast.success(m.successUpdate)
       }
       
       await loadData()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update export markets")
+      toast.error(err instanceof Error ? err.message : m.updateFailed)
     } finally {
       setSaving(false)
     }
@@ -175,7 +178,7 @@ export default function ExportMarketsPage() {
 
   const handleAddMarket = async () => {
     if (!newMarketRegion) {
-      toast.error("Please select a region.")
+      toast.error(m.selectRegionError)
       return
     }
     try {
@@ -196,10 +199,10 @@ export default function ExportMarketsPage() {
         toast.success(`Region ${newMarketRegion} updated successfully`)
         await loadData()
       } else {
-        toast.error(res.message || "Failed to add/update region")
+        toast.error(res.message || m.addRegionFailed)
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to add/update region")
+      toast.error(err instanceof Error ? err.message : m.addRegionFailed)
     } finally {
       setSaving(false)
       setShowAddDialog(false)
@@ -218,10 +221,10 @@ export default function ExportMarketsPage() {
         toast.success(`Region ${regionName} removed successfully`)
         await loadData()
       } else {
-        toast.error(res.message || "Failed to remove region")
+        toast.error(res.message || m.removeRegionFailed)
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to remove region")
+      toast.error(err instanceof Error ? err.message : m.removeRegionFailed)
     } finally {
       setSaving(false)
       setShowManageDialog(false)
@@ -309,25 +312,25 @@ export default function ExportMarketsPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Export Markets</h1>
-          <p className="text-muted-foreground">Define your target export regions and countries</p>
+          <h1 className="text-2xl font-semibold text-foreground">{m.title}</h1>
+          <p className="text-muted-foreground">{m.subtitle}</p>
         </div>
         <Button onClick={() => setShowAddDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add New Market
+          {m.addNewMarket}
         </Button>
       </div>
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-4">
         <ManufacturerStatCard
-          title="Active Markets"
+          title={m.activeMarkets}
           value={selectedCountries.length}
           icon={Globe}
           layout="horizontal"
         />
         <ManufacturerStatCard
-          title="Total Inquiries"
+          title={m.totalInquiries}
           value={stats?.total_inquiries ?? 0}
           icon={Users}
           iconClassName="text-primary"
@@ -335,7 +338,7 @@ export default function ExportMarketsPage() {
           layout="horizontal"
         />
         <ManufacturerStatCard
-          title="Orders"
+          title={m.orders}
           value={stats?.total_orders ?? 0}
           icon={Package}
           iconClassName="text-green-600"
@@ -343,7 +346,7 @@ export default function ExportMarketsPage() {
           layout="horizontal"
         />
         <ManufacturerStatCard
-          title="Growth Rate"
+          title={m.growthRate}
           value={stats?.growth_rate.value ?? "+0.0%"}
           icon={TrendingUp}
           iconClassName="text-amber-600"
@@ -355,8 +358,8 @@ export default function ExportMarketsPage() {
       {/* Current Markets */}
       <Card>
         <CardHeader>
-          <CardTitle>Active Export Regions</CardTitle>
-          <CardDescription>Markets where you are currently receiving inquiries</CardDescription>
+          <CardTitle>{m.activeRegions}</CardTitle>
+          <CardDescription>{m.activeRegionsDesc}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -377,7 +380,7 @@ export default function ExportMarketsPage() {
                         <p className="text-sm text-muted-foreground truncate">
                           {activeCountriesInRegion.length > 0 
                             ? activeCountriesInRegion.join(", ") 
-                            : "No countries selected"}
+                            : m.noCountriesSelected}
                         </p>
                       </div>
                     </div>
@@ -386,11 +389,11 @@ export default function ExportMarketsPage() {
                       <div className="flex justify-between sm:justify-end w-full sm:w-auto gap-4">
                         <div className="text-left sm:text-right">
                           <p className="font-medium">{market.inquiries}</p>
-                          <p className="text-xs text-muted-foreground">Inquiries</p>
+                          <p className="text-xs text-muted-foreground">{m.inquiries}</p>
                         </div>
                         <div className="text-left sm:text-right">
                           <p className="font-medium">{market.orders}</p>
-                          <p className="text-xs text-muted-foreground">Orders</p>
+                          <p className="text-xs text-muted-foreground">{m.orders}</p>
                         </div>
                       </div>
                       <Button 
@@ -402,7 +405,7 @@ export default function ExportMarketsPage() {
                           setShowManageDialog(true)
                         }}
                       >
-                        Manage
+                        {m.manage}
                       </Button>
                     </div>
                   </div>
@@ -410,7 +413,7 @@ export default function ExportMarketsPage() {
               })
             ) : (
               <p className="text-sm text-muted-foreground text-center py-6">
-                No active export regions defined. Click "Add New Market" to get started.
+                {m.noActiveRegions}
               </p>
             )}
           </div>
@@ -420,8 +423,8 @@ export default function ExportMarketsPage() {
       {/* Suggested Markets */}
       <Card>
         <CardHeader>
-          <CardTitle>Suggested Markets</CardTitle>
-          <CardDescription>Recommended regions based on your product categories</CardDescription>
+          <CardTitle>{m.suggestedMarkets}</CardTitle>
+          <CardDescription>{m.suggestedMarketsDesc}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
@@ -469,7 +472,7 @@ export default function ExportMarketsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input 
-                placeholder="Search countries..." 
+                placeholder={m.searchCountries} 
                 className="pl-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -522,7 +525,7 @@ export default function ExportMarketsPage() {
             </p>
             <Button onClick={handleSaveChanges} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+              {saving ? m.saving : m.saveMarkets}
             </Button>
           </div>
         </CardContent>
@@ -545,7 +548,7 @@ export default function ExportMarketsPage() {
                 onValueChange={setNewMarketRegion}
               >
                 <SelectTrigger className="mt-2">
-                  <SelectValue placeholder="Select a region" />
+                  <SelectValue placeholder={m.selectRegion} />
                 </SelectTrigger>
                 <SelectContent>
                   {regionOptions.map((region) => (

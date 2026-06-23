@@ -42,8 +42,11 @@ import { getCountryByName, getCountryByCode } from "@/lib/data/countries"
 import { getManufacturerProfile, updateManufacturerProfile } from "@/lib/api/manufacturer-profile"
 import { useToast } from "@/components/ui/use-toast"
 import { getApiErrorMessage } from "@/lib/api/errors"
+import { useTranslation } from "@/lib/i18n"
 
 export default function ManufacturerProfilePage() {
+  const { t } = useTranslation()
+  const p = t.mfg.profile
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -161,7 +164,7 @@ export default function ManufacturerProfilePage() {
         }
       }
     } catch (err: any) {
-      toast({ title: "Failed to load profile", description: getApiErrorMessage(err) || String(err), variant: "destructive" })
+      toast({ title: p.loadError, description: getApiErrorMessage(err) || String(err), variant: "destructive" })
     } finally {
       setIsLoading(false)
     }
@@ -262,8 +265,8 @@ export default function ManufacturerProfilePage() {
       
       Swal.fire({
         icon: 'success',
-        title: 'Success!',
-        text: res?.message || 'Profile updated successfully',
+        title: p.successTitle,
+        text: res?.message || p.successUpdate,
         confirmButtonColor: '#0f172a',
       })
     } catch (err: any) {
@@ -281,7 +284,7 @@ export default function ManufacturerProfilePage() {
 
       Swal.fire({
         icon: 'error',
-        title: 'Update Failed',
+        title: p.updateFailed,
         html: `<div style="text-align: left; font-size: 14px; line-height: 1.5;">${detailedMsg}</div>`,
         confirmButtonColor: '#0f172a',
       })
@@ -302,15 +305,13 @@ export default function ManufacturerProfilePage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-medium text-foreground">Company Profile</h1>
-          <p className="mt-1 text-muted-foreground">
-            Manage how your company appears to potential buyers
-          </p>
+          <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
+          <p className="mt-1 text-muted-foreground">{p.subtitle}</p>
         </div>
         <div className="flex gap-3">
           <Button className="gap-2" onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save Changes
+            {isSaving ? p.saving : p.saveProfile}
           </Button>
         </div>
       </div>
@@ -322,12 +323,12 @@ export default function ManufacturerProfilePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                Basic Information
+                {p.basicInfo}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Company Name</Label>
+                <Label>{p.companyName}</Label>
                 <Input 
                   value={formData.companyName}
                   onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
@@ -335,7 +336,7 @@ export default function ManufacturerProfilePage() {
                 />
               </div>
               <div>
-                <Label>Short Description</Label>
+                <Label>{p.shortDescription}</Label>
                 <Input 
                   value={formData.shortDescription}
                   onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
@@ -343,7 +344,7 @@ export default function ManufacturerProfilePage() {
                 />
               </div>
               <div>
-                <Label>Full Description</Label>
+                <Label>{p.fullDescription}</Label>
                 <Textarea 
                   value={formData.fullDescription}
                   onChange={(e) => setFormData({ ...formData, fullDescription: e.target.value })}
@@ -352,7 +353,7 @@ export default function ManufacturerProfilePage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>Year Established</Label>
+                  <Label>{p.yearEstablished}</Label>
                   <Input 
                     type="number"
                     value={formData.yearEstablished}
@@ -361,7 +362,7 @@ export default function ManufacturerProfilePage() {
                   />
                 </div>
                 <div>
-                  <Label>Employee Count</Label>
+                  <Label>{p.employeeCount}</Label>
                   <Select 
                     value={formData.employeeCount}
                     onValueChange={(value) => setFormData({ ...formData, employeeCount: value })}

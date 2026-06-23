@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslation } from "@/lib/i18n"
 import {
   createCustomerSupportTicket,
   getMyCustomerSupportTickets,
@@ -128,6 +129,11 @@ export function initials(name: string) {
 
 function StatusPill({ status, className }: { status: CustomerTicketStatus | "unknown"; className?: string }) {
   const c = STATUS_CONFIG[status] || STATUS_CONFIG.unknown
+  const { t } = useTranslation()
+  const label = status === "open" ? t.mfg.supportTickets.open :
+                status === "in_progress" ? t.mfg.supportTickets.inProgress :
+                status === "resolved" ? t.mfg.supportTickets.resolved :
+                status === "closed" ? t.mfg.supportTickets.closed : c.label
   return (
     <span
       className={cn(
@@ -137,7 +143,7 @@ function StatusPill({ status, className }: { status: CustomerTicketStatus | "unk
       )}
     >
       <span className={cn("h-1.5 w-1.5 rounded-full", c.dot)} />
-      {c.label}
+      {label}
     </span>
   )
 }
@@ -151,6 +157,7 @@ interface CustomerSupportChatViewProps {
 export function CustomerSupportChatView({ title, basePath, initialTicketId }: CustomerSupportChatViewProps) {
   const { user } = useAuth()
   const { toast } = useToast()
+  const { t } = useTranslation()
 
   const [tickets, setTickets] = useState<CustomerTicket[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -270,13 +277,13 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
             <Headset className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="font-serif text-2xl font-medium text-foreground">Support</h1>
-            <p className="text-sm text-muted-foreground">Get help from the SourceNest team.</p>
+            <h1 className="font-serif text-2xl font-medium text-foreground">{t.mfg.supportTickets.title}</h1>
+            <p className="text-sm text-muted-foreground">{t.mfg.supportTickets.subtitle}</p>
           </div>
         </div>
         <Button onClick={startNew} className="gap-1.5 self-start sm:self-auto">
           <Plus className="h-4 w-4" />
-          New conversation
+          {t.mfg.supportTickets.createTicket}
         </Button>
       </div>
 
@@ -290,7 +297,7 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
           )}
         >
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <span className="text-sm font-semibold text-foreground">Your conversations</span>
+            <span className="text-sm font-semibold text-foreground">{t.mfg.messages.title || "Your conversations"}</span>
             <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground tabular-nums">
               {tickets.length}
             </span>
@@ -304,10 +311,10 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
             ) : tickets.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
                 <MessageSquare className="h-8 w-8 opacity-40" />
-                No conversations yet.
+                {t.mfg.supportTickets.noTickets}
                 <Button variant="outline" size="sm" className="mt-1 gap-1.5 bg-transparent" onClick={startNew}>
                   <Plus className="h-4 w-4" />
-                  Start one
+                  {t.mfg.dashboard.viewAll || "Start one"}
                 </Button>
               </div>
             ) : (
@@ -361,7 +368,7 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
           {/* Reassurance footer */}
           <div className="flex items-center gap-2 border-t border-border px-4 py-3 text-xs text-muted-foreground">
             <ShieldCheck className="h-4 w-4 text-secondary" />
-            Avg. first reply under an hour
+            {t.mfg.supportTickets.responseTime}
           </div>
         </div>
 
@@ -391,10 +398,10 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
           ) : !activeId ? (
             <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
               <LifeBuoy className="h-10 w-10 opacity-40" />
-              Select a conversation, or start a new one.
+              {t.mfg.messages.selectChat}
               <Button onClick={startNew} className="gap-1.5">
                 <Plus className="h-4 w-4" />
-                New conversation
+                {t.mfg.supportTickets.createTicket}
               </Button>
             </div>
           ) : isLoadingDetail ? (
@@ -431,7 +438,7 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
                 {activeDetail.status === "resolved" && (
                   <div className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    Support marked this resolved — reply to reopen
+                    {t.mfg.supportTickets.resolved}
                   </div>
                 )}
                 {activeDetail.messages.map((m, i) => {
@@ -492,7 +499,7 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
               <div className="border-t border-border p-3">
                 <div className="rounded-xl border border-border bg-background focus-within:ring-2 focus-within:ring-ring">
                   <Textarea
-                    placeholder="Write a message to support…"
+                    placeholder={t.mfg.supportTicketDetails.typeReply}
                     value={reply}
                     onChange={(e) => setReply(e.target.value)}
                     onKeyDown={(e) => {
@@ -511,7 +518,7 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
                     </span>
                     <Button onClick={sendReply} disabled={!reply.trim() || isReplying} size="sm" className="ml-auto gap-1.5">
                       {isReplying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                      Send
+                      {t.mfg.messages.send}
                     </Button>
                   </div>
                 </div>
@@ -547,6 +554,7 @@ function NewConversationForm({
   canSubmit: boolean
   isCreating: boolean
 }) {
+  const { t } = useTranslation()
   return (
     <>
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
@@ -557,15 +565,15 @@ function NewConversationForm({
           <Sparkles className="h-4 w-4" />
         </div>
         <div>
-          <p className="font-semibold text-foreground">New conversation</p>
-          <p className="text-xs text-muted-foreground">Tell us what you need help with.</p>
+          <p className="font-semibold text-foreground">{t.mfg.supportTickets.createTicket}</p>
+          <p className="text-xs text-muted-foreground">{t.mfg.supportTickets.subtitle}</p>
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
         <div className="mx-auto max-w-xl space-y-5">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Topic</label>
+            <label className="text-sm font-medium text-foreground">{t.mfg.supportTickets.ticketCategory}</label>
             <div className="flex flex-wrap gap-2">
               {TOPICS.map((t) => (
                 <button
@@ -586,7 +594,7 @@ function NewConversationForm({
 
           <div className="space-y-2">
             <label htmlFor="support-subject" className="text-sm font-medium text-foreground">
-              Subject <span className="font-normal text-muted-foreground">(optional)</span>
+              {t.mfg.supportTickets.ticketSubject} <span className="font-normal text-muted-foreground">(optional)</span>
             </label>
             <input
               id="support-subject"
@@ -599,7 +607,7 @@ function NewConversationForm({
 
           <div className="space-y-2">
             <label htmlFor="support-body" className="text-sm font-medium text-foreground">
-              How can we help?
+              {t.mfg.supportTickets.ticketDescription}
             </label>
             <Textarea
               id="support-body"
@@ -612,7 +620,7 @@ function NewConversationForm({
 
           <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground">
             <Clock className="h-4 w-4 shrink-0 text-secondary" />
-            Our support team typically replies within an hour during business hours.
+            {t.mfg.supportTickets.responseTime}
           </div>
         </div>
       </div>
@@ -620,7 +628,7 @@ function NewConversationForm({
       <div className="flex items-center justify-end gap-2 border-t border-border p-3">
         <Button onClick={onSubmit} disabled={!canSubmit || isCreating} className="gap-1.5">
           {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          Send to support
+          {t.mfg.supportTickets.submitTicket}
         </Button>
       </div>
     </>

@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ArrowLeft, FileText, Plus, X, Building2, Mail, MapPin, Loader2 } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 
 interface CreateConfig {
   kind: string
@@ -31,6 +32,7 @@ interface CreateConfig {
 export function SellerOrderCreate({ config }: { config: CreateConfig }) {
   const router = useRouter()
   const { postOrderCreated } = useMessages()
+  const { t } = useTranslation()
   const isService = config.kind === "service"
 
   const [products, setProducts] = useState<SelectProduct[]>([])
@@ -148,7 +150,7 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
       <Button asChild variant="ghost" size="sm" className="mb-4 gap-1.5 text-muted-foreground">
         <Link href={config.basePath}>
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t.common.back}
         </Link>
       </Button>
 
@@ -158,8 +160,8 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
       </div>
 
       <div className="space-y-6">
-        <Section title={isService ? "Engagement" : "Order"}>
-          <Field label={isService ? "Engagement title" : "Order title"} required>
+        <Section title={isService ? "Engagement" : (t.mfg.orders.title || "Order")}>
+          <Field label={isService ? "Engagement title" : (t.mfg.orderDetails.title || "Order Title")} required>
             <Input
               placeholder={isService ? "e.g., Brand identity & packaging design" : "e.g., Premium ceramic mugs — 320ml"}
               value={form.title}
@@ -186,7 +188,7 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
               </Select>
             </Field>
 
-            <Field label="Select connected buyer" required>
+            <Field label={t.mfg.orderNew.selectBuyer} required>
               <Select value={selectedBuyerId} onValueChange={setSelectedBuyerId} disabled={!selectedProductId || isLoadingBuyers}>
                 <SelectTrigger>
                   <SelectValue placeholder={
@@ -210,7 +212,7 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={isService ? "Scope / deliverables" : "Quantity"} required>
+            <Field label={isService ? "Scope / deliverables" : t.mfg.orderDetails.quantity} required>
               <div className="flex gap-2">
                 <Input
                   placeholder={isService ? "e.g., Logo, 3 packaging SKUs, brand guide" : "e.g., 5000"}
@@ -262,40 +264,40 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
           </div>
         )}
 
-        <Section title="Commercial terms">
+        <Section title={t.mfg.orderNew.commercialTerms}>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Total amount" required>
+            <Field label={t.mfg.orderDetails.total} required>
               <Input type="number" placeholder="0.00" value={form.totalAmount} onChange={(e) => set("totalAmount", e.target.value)} />
             </Field>
             <Field label="Currency">
               <Input value={form.currency} onChange={(e) => set("currency", e.target.value)} />
             </Field>
-            <Field label={isService ? "Delivery date" : "Est. delivery"} required>
+            <Field label={isService ? "Delivery date" : t.mfg.orderDetails.estDelivery} required>
               <Input type="date" value={form.estimatedDelivery} onChange={(e) => set("estimatedDelivery", e.target.value)} />
             </Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={isService ? "Timeline" : "Production lead time"}>
+            <Field label={isService ? "Timeline" : t.mfg.orderDetails.productionTime}>
               <Input placeholder={isService ? "e.g., 3 weeks" : "e.g., 30 days"} value={form.productionTime} onChange={(e) => set("productionTime", e.target.value)} />
             </Field>
-            <Field label="Payment terms">
+            <Field label={t.mfg.orderDetails.paymentTerms}>
               <Input placeholder="e.g., 50% upfront, 50% on delivery" value={form.paymentTerms} onChange={(e) => set("paymentTerms", e.target.value)} />
             </Field>
           </div>
           {!isService && (
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Shipping terms">
+              <Field label={t.mfg.orderDetails.shippingTerms}>
                 <Input placeholder="e.g., FOB Shanghai" value={form.shippingTerms} onChange={(e) => set("shippingTerms", e.target.value)} />
               </Field>
-              <Field label="Destination">
+              <Field label={t.mfg.orderDetails.destination}>
                 <Input placeholder="e.g., Los Angeles, USA" value={form.destination} onChange={(e) => set("destination", e.target.value)} />
               </Field>
             </div>
           )}
         </Section>
 
-        <Section title="Documents & notes">
-          <Field label="Attach documents">
+        <Section title={t.mfg.orderNew.documentsNotes}>
+          <Field label={t.mfg.orderNew.attachDocuments}>
             <div className="flex flex-wrap items-center gap-2">
               {docs.map((d, i) => (
                 <span key={i} className="flex items-center gap-1.5 rounded-full border border-border bg-muted/30 px-3 py-1 text-xs text-foreground">
@@ -320,11 +322,11 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
               />
               <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={() => fileInputRef.current?.click()}>
                 <Plus className="h-3.5 w-3.5" />
-                Add document
+                {t.mfg.orderDetails.attachFile}
               </Button>
             </div>
           </Field>
-          <Field label="Notes">
+          <Field label={t.mfg.inquiryDetails.notes || "Notes"}>
             <Textarea
               placeholder={isService ? "Any additional context about this engagement..." : "Any additional context about this order..."}
               value={form.notes}
@@ -335,12 +337,12 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
         </Section>
 
         {showError && !required && (
-          <p className="text-sm text-destructive">Please fill in all required fields marked with *.</p>
+          <p className="text-sm text-destructive">{t.mfg.orderNew.requiredFieldsError}</p>
         )}
 
         <div className="flex justify-end gap-3">
           <Button asChild variant="outline" disabled={isSubmitting}>
-            <Link href={config.basePath}>Cancel</Link>
+            <Link href={config.basePath}>{t.common.cancel}</Link>
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

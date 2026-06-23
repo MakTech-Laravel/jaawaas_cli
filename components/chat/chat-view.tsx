@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ChatProductCard } from "./chat-product-card"
+import { useTranslation } from "@/lib/i18n"
 
 export interface ChatProductReference {
   name: string
@@ -76,6 +77,7 @@ export function ChatView({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { t } = useTranslation()
 
   useEffect(() => {
     if (initialMessage) {
@@ -147,7 +149,7 @@ export function ChatView({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search conversations..."
+              placeholder={t.mfg.messages.searchChats || "Search conversations..."}
               className="pl-9 bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-secondary"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -242,7 +244,7 @@ export function ChatView({
                     {otherParticipant?.role === "manufacturer" && (
                       <Badge variant="secondary" className="h-5 px-1 text-[10px] bg-emerald-100 text-emerald-700">
                         <CheckCircle className="mr-0.5 h-3 w-3" />
-                        Approved
+                        {t.mfg.inquiries.accepted || "Approved"}
                       </Badge>
                     )}
                   </div>
@@ -415,7 +417,7 @@ export function ChatView({
 
                 <div className="relative flex-1 bg-muted/30">
                   <Textarea
-                    placeholder="Type a message..."
+                    placeholder={t.mfg.messages.typeMessage || "Type a message..."}
                     className="pr-12 border-none focus-visible:ring-0 min-h-[60px] py-3 resize-none bg-transparent"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
@@ -466,12 +468,12 @@ export function ChatView({
             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-secondary/10">
               <MessageSquare className="h-10 w-10 text-secondary" />
             </div>
-            <h3 className="text-xl font-serif font-medium text-foreground">Your Messages</h3>
+            <h3 className="text-xl font-serif font-medium text-foreground">{t.mfg.messages.title || "Your Messages"}</h3>
             <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-              Select a conversation from the list to start messaging with buyers and manufacturers.
+              {t.mfg.messages.selectChat || "Select a conversation from the list to start messaging."}
             </p>
             <Button variant="outline" className="mt-6 border-secondary text-secondary hover:bg-secondary/10 md:hidden" onClick={() => setShowSidebar(true)}>
-              View Conversations
+              {t.mfg.dashboard.viewAll || "View Conversations"}
             </Button>
           </div>
         )}

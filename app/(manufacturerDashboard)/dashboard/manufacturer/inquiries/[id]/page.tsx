@@ -58,6 +58,7 @@ import {
 
 import { getManufacturerRFQ, type ManufacturerRFQ } from "@/lib/api/rfqs"
 import { format } from "date-fns"
+import { useTranslation } from "@/lib/i18n"
 
 export default function InquiryDetailPage() {
   const params = useParams()
@@ -66,6 +67,7 @@ export default function InquiryDetailPage() {
   
   const [inquiry, setInquiry] = useState<ManufacturerRFQ | null>(null)
   const [loading, setLoading] = useState(true)
+  const { t } = useTranslation()
 
   useEffect(() => {
     async function loadInquiry() {
@@ -245,11 +247,11 @@ export default function InquiryDetailPage() {
   }
 
   if (loading) {
-    return <div className="py-12 text-center text-muted-foreground">Loading inquiry details...</div>
+    return <div className="py-12 text-center text-muted-foreground">{t.mfg.inquiries.loading}</div>
   }
 
   if (!inquiry) {
-    return <div className="py-12 text-center text-muted-foreground">Inquiry not found</div>
+    return <div className="py-12 text-center text-muted-foreground">{t.mfg.inquiries.noInquiriesFound}</div>
   }
 
   return (
@@ -265,23 +267,31 @@ export default function InquiryDetailPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="font-serif text-2xl font-medium text-foreground">
-                Inquiry {inquiry.rfq_number}
+                {t.mfg.inquiryDetails.rfqNumber} {inquiry.rfq_number}
               </h1>
-              <Badge className={statusColors[inquiry.status] || ""}>{inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}</Badge>
+              <Badge className={statusColors[inquiry.status] || ""}>
+                {inquiry.status === "pending" ? t.mfg.inquiries.pending :
+                 inquiry.status === "quoted" ? t.mfg.inquiries.quoted :
+                 inquiry.status === "accepted" ? t.mfg.inquiries.accepted :
+                 inquiry.status === "rejected" ? t.mfg.inquiries.rejected :
+                 inquiry.status === "expired" ? t.mfg.inquiries.expired : inquiry.status}
+              </Badge>
             </div>
             <p className="mt-1 text-muted-foreground">
-              Received {format(new Date(inquiry.created_at), 'PPP')}
+              {t.mfg.supportTicketDetails.created} {format(new Date(inquiry.created_at), 'PPP')}
             </p>
           </div>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Message Buyer
+          <Button variant="outline" className="gap-2" asChild>
+            <Link href={`/dashboard/manufacturer/messages?buyer=${inquiry.buyer.id}`}>
+              <MessageSquare className="h-4 w-4" />
+              {t.mfg.inquiries.message}
+            </Link>
           </Button>
           <Button className="gap-2" onClick={() => setShowQuoteDialog(true)}>
             <FileText className="h-4 w-4" />
-            Send Quote
+            {t.mfg.inquiries.sendQuote}
           </Button>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { getManufacturerDashboard, ManufacturerDashboardStats } from "@/lib/api/manufacturer-dashboard"
 import ManufacturerStatCard from "@/components/manufacturer/manufacturer-stat-card"
+import { useTranslation } from "@/lib/i18n"
 import { 
   MessageSquare, 
   FileText, 
@@ -25,6 +26,7 @@ import {
 export default function ManufacturerDashboardPage() {
   const [data, setData] = useState<ManufacturerDashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const { t } = useTranslation()
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -49,7 +51,7 @@ export default function ManufacturerDashboardPage() {
   if (!data) {
     return (
       <div className="flex h-[400px] flex-col items-center justify-center">
-        <p className="text-muted-foreground">Failed to load dashboard data.</p>
+        <p className="text-muted-foreground">{t.common.error || "Failed to load dashboard data."}</p>
       </div>
     )
   }
@@ -60,15 +62,15 @@ export default function ManufacturerDashboardPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-medium text-foreground sm:text-3xl">
-            Dashboard Overview
+            {t.mfg.dashboard.title}
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Monitor your business performance and buyer inquiries.
+            {t.mfg.dashboard.subtitle}
           </p>
         </div>
         <Badge variant="secondary" className="w-fit gap-1 bg-emerald-100 text-emerald-700">
           <CheckCircle className="h-3 w-3" />
-          Profile {data.profile_completeness.percent}% Complete
+          {t.mfg.dashboard.profileComplete.replace('{percent}', String(data.profile_completeness.percent))}
         </Badge>
       </div>
 
@@ -102,7 +104,7 @@ export default function ManufacturerDashboardPage() {
         />
 
         <ManufacturerStatCard
-          title={`Average Rating (${data.stats.average_rating.review_count} reviews)`}
+          title={t.mfg.dashboard.ratingReviews.replace('{count}', String(data.stats.average_rating.review_count))}
           icon={Star}
         >
           <div className="flex items-center gap-2">
@@ -116,7 +118,7 @@ export default function ManufacturerDashboardPage() {
               ))}
             </div>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">Average Rating</p>
+          <p className="text-sm text-muted-foreground mt-1">{t.mfg.reviewCenter.averageRating}</p>
         </ManufacturerStatCard>
       </div>
 
@@ -125,10 +127,10 @@ export default function ManufacturerDashboardPage() {
         {/* Recent Inquiries */}
         <div className="md:col-span-2 lg:col-span-2 rounded-xl border border-border bg-card overflow-hidden">
           <div className="flex items-center justify-between gap-4 border-b border-border p-5 min-w-0">
-            <h2 className="font-semibold text-foreground truncate">Recent Inquiries</h2>
+            <h2 className="font-semibold text-foreground truncate">{t.mfg.dashboard.recentInquiries}</h2>
             <Button variant="ghost" size="sm" className="gap-1 text-secondary" asChild>
               <Link href="/dashboard/manufacturer/inquiries">
-                View all
+                {t.mfg.dashboard.viewAll}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -162,7 +164,7 @@ export default function ManufacturerDashboardPage() {
                   <div className="shrink-0">
                     <Button size="sm" variant="outline" className="h-8 px-2 sm:h-9 sm:px-4" asChild>
                       <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id}`}>
-                        <span className="hidden sm:inline">View</span>
+                        <span className="hidden sm:inline">{t.mfg.inquiries.viewDetails}</span>
                         <Eye className="h-4 w-4 sm:hidden" />
                       </Link>
                     </Button>
@@ -171,7 +173,7 @@ export default function ManufacturerDashboardPage() {
               ))
             ) : (
               <div className="p-8 text-center text-muted-foreground">
-                <p>No recent inquiries.</p>
+                <p>{t.mfg.dashboard.noRecentInquiries}</p>
               </div>
             )}
           </div>
@@ -181,11 +183,11 @@ export default function ManufacturerDashboardPage() {
         <div className="space-y-6 md:col-span-2 lg:col-span-1 min-w-0">
           {/* Response Rate */}
           <div className="rounded-xl border border-border bg-card p-5 w-full overflow-hidden">
-            <h2 className="font-semibold text-foreground truncate">Response Metrics</h2>
+            <h2 className="font-semibold text-foreground truncate">{t.mfg.dashboard.responseMetrics}</h2>
             <div className="mt-4 space-y-4">
               <div>
                 <div className="flex items-center justify-between gap-2 text-sm min-w-0">
-                  <span className="text-muted-foreground truncate">Response Rate</span>
+                  <span className="text-muted-foreground truncate">{t.mfg.dashboard.responseRate}</span>
                   <span className="font-medium text-foreground shrink-0">{data.response_metrics.response_rate}%</span>
                 </div>
                 <div className="mt-2 h-2 rounded-full bg-muted">
@@ -194,7 +196,7 @@ export default function ManufacturerDashboardPage() {
               </div>
               <div>
                 <div className="flex items-center justify-between gap-2 text-sm min-w-0">
-                  <span className="text-muted-foreground truncate">Quote Conversion</span>
+                  <span className="text-muted-foreground truncate">{t.mfg.dashboard.quoteConversion}</span>
                   <span className="font-medium text-foreground shrink-0">{data.response_metrics.quote_conversion}%</span>
                 </div>
                 <div className="mt-2 h-2 rounded-full bg-muted">
@@ -203,9 +205,9 @@ export default function ManufacturerDashboardPage() {
               </div>
               <div>
                 <div className="flex items-center justify-between gap-2 text-sm min-w-0">
-                  <span className="text-muted-foreground truncate">On-time Delivery</span>
+                  <span className="text-muted-foreground truncate">{t.mfg.dashboard.onTimeDelivery}</span>
                   <span className="font-medium text-foreground shrink-0">
-                    {data.response_metrics.on_time_delivery !== null ? `${data.response_metrics.on_time_delivery}%` : 'N/A'}
+                    {data.response_metrics.on_time_delivery !== null ? `${data.response_metrics.on_time_delivery}%` : t.mfg.dashboard.na}
                   </span>
                 </div>
                 <div className="mt-2 h-2 rounded-full bg-muted">
@@ -217,24 +219,24 @@ export default function ManufacturerDashboardPage() {
 
           {/* Quick Stats */}
           <div className="rounded-xl border border-border bg-card p-5 w-full overflow-hidden">
-            <h2 className="font-semibold text-foreground truncate">Quick Stats</h2>
+            <h2 className="font-semibold text-foreground truncate">{t.mfg.dashboard.quickStats}</h2>
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between gap-2 min-w-0">
-                <span className="text-sm text-muted-foreground truncate">Active Products</span>
+                <span className="text-sm text-muted-foreground truncate">{t.mfg.dashboard.activeProducts}</span>
                 <span className="font-medium text-foreground shrink-0">{data.quick_stats.active_products}</span>
               </div>
               <div className="flex items-center justify-between gap-2 min-w-0">
-                <span className="text-sm text-muted-foreground truncate">Pending Quotes</span>
+                <span className="text-sm text-muted-foreground truncate">{t.mfg.dashboard.pendingQuotes}</span>
                 <span className="font-medium text-foreground shrink-0">{data.quick_stats.pending_quotes}</span>
               </div>
               <div className="flex items-center justify-between gap-2 min-w-0">
-                <span className="text-sm text-muted-foreground truncate">Unread Messages</span>
+                <span className="text-sm text-muted-foreground truncate">{t.mfg.dashboard.unreadMessages}</span>
                 <span className="font-medium text-foreground shrink-0">{data.quick_stats.unread_messages}</span>
               </div>
               <div className="flex items-center justify-between gap-2 min-w-0">
-                <span className="text-sm text-muted-foreground truncate">Avg. Response Time</span>
+                <span className="text-sm text-muted-foreground truncate">{t.mfg.dashboard.avgResponseTime}</span>
                 <span className="font-medium text-foreground shrink-0">
-                  {data.quick_stats.avg_response_time || "N/A"}
+                  {data.quick_stats.avg_response_time || t.mfg.dashboard.na}
                 </span>
               </div>
             </div>
@@ -245,7 +247,7 @@ export default function ManufacturerDashboardPage() {
       {/* Recent Activity */}
       <div className="rounded-xl border border-border bg-card w-full overflow-hidden">
         <div className="flex items-center justify-between gap-4 border-b border-border p-5 min-w-0">
-          <h2 className="font-semibold text-foreground truncate">Recent Activity</h2>
+          <h2 className="font-semibold text-foreground truncate">{t.mfg.dashboard.recentActivity}</h2>
         </div>
         <div className="p-5">
           <div className="space-y-4">
@@ -262,7 +264,7 @@ export default function ManufacturerDashboardPage() {
                 </div>
               ))
             ) : (
-              <p className="text-muted-foreground text-center">No recent activity.</p>
+              <p className="text-muted-foreground text-center">{t.mfg.dashboard.noRecentActivity}</p>
             )}
           </div>
         </div>
