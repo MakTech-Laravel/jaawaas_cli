@@ -42,11 +42,12 @@ import {
   deleteCertificate,
   Certificate,
 } from "@/lib/api/manufacturer-certificates"
+import { useTranslation } from "@/lib/i18n"
 
-const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
-  valid: { label: "Valid", color: "bg-emerald-100 text-emerald-700", icon: CheckCircle },
-  expiring: { label: "Expiring Soon", color: "bg-amber-100 text-amber-700", icon: AlertTriangle },
-  expired: { label: "Expired", color: "bg-red-100 text-red-700", icon: AlertTriangle },
+const statusColors: Record<string, { color: string; icon: typeof CheckCircle }> = {
+  valid: { color: "bg-emerald-100 text-emerald-700", icon: CheckCircle },
+  expiring: { color: "bg-amber-100 text-amber-700", icon: AlertTriangle },
+  expired: { color: "bg-red-100 text-red-700", icon: AlertTriangle },
 }
 
 function calculateCertStatus(expiryDate: string): "valid" | "expiring" | "expired" {
@@ -68,7 +69,15 @@ function calculateCertStatus(expiryDate: string): "valid" | "expiring" | "expire
 }
 
 export default function ManufacturerCertificationsPage() {
+  const { t } = useTranslation()
+  const c = t.mfg.certifications
   const { toast } = useToast()
+
+  const statusLabels: Record<string, string> = {
+    valid: c.valid,
+    expiring: c.expiringSoon,
+    expired: c.expired,
+  }
   const [certs, setCerts] = useState<Certificate[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -91,9 +100,9 @@ export default function ManufacturerCertificationsPage() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: t.common.error || "Error",
         description:
-          error instanceof Error ? error.message : "Failed to load certifications",
+          error instanceof Error ? error.message : c.loadError,
       })
     } finally {
       setIsLoading(false)
@@ -115,14 +124,14 @@ export default function ManufacturerCertificationsPage() {
   const handleDeleteCert = async (id: number) => {
     try {
       await deleteCertificate(id)
-      toast({ title: "Deleted", description: "Certification deleted successfully" })
+      toast({ title: c.deleted, description: c.deleteSuccess })
       const targetPage = certs.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage
       void loadCertifications(targetPage)
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete certification",
+        title: t.common.error || "Error",
+        description: error instanceof Error ? error.message : c.deleteError,
       })
     } finally {
       setDeletingCertId(null)
@@ -143,14 +152,12 @@ export default function ManufacturerCertificationsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-medium text-foreground">Certifications</h1>
-          <p className="mt-1 text-muted-foreground">
-            Manage your company certifications and compliance documents
-          </p>
+          <h1 className="font-serif text-2xl font-medium text-foreground">{c.title}</h1>
+          <p className="mt-1 text-muted-foreground">{c.subtitle}</p>
         </div>
         <Button onClick={() => setShowAddModal(true)} className="gap-2">
           <Plus className="h-4 w-4" />
-          Add Certification
+          {c.addCertification}
         </Button>
       </div>
 
@@ -158,7 +165,7 @@ export default function ManufacturerCertificationsPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="mt-4 text-muted-foreground">Loading certifications...</p>
+            <p className="mt-4 text-muted-foreground">{c.loading}</p>
           </CardContent>
         </Card>
       ) : (
@@ -172,7 +179,7 @@ export default function ManufacturerCertificationsPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">{validCount}</p>
-                    <p className="text-sm text-muted-foreground">Valid Certifications</p>
+                    <p className="text-sm text-muted-foreground">{c.validCount}</p>
                   </div>
                 </div>
               </CardContent>
@@ -185,7 +192,7 @@ export default function ManufacturerCertificationsPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">{expiringCount}</p>
-                    <p className="text-sm text-muted-foreground">Expiring Soon</p>
+                    <p className="text-sm text-muted-foreground">{c.expiringSoon}</p>
                   </div>
                 </div>
               </CardContent>
@@ -198,7 +205,7 @@ export default function ManufacturerCertificationsPage() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">{expiredCount}</p>
-                    <p className="text-sm text-muted-foreground">Expired</p>
+                    <p className="text-sm text-muted-foreground">{c.expired}</p>
                   </div>
                 </div>
               </CardContent>
@@ -208,7 +215,8 @@ export default function ManufacturerCertificationsPage() {
           <div className="grid gap-4">
             {certs.map((cert) => {
               const status = calculateCertStatus(cert.expiry_date)
-              const { icon: StatusIcon, label: statusLabel, color: statusColor } = statusConfig[status]
+              const { icon: StatusIcon, color: statusColor } = statusColors[status]
+              const statusLabel = statusLabels[status]
               return (
                 <Card key={cert.id} className="w-full">
                   <CardContent className="p-4 sm:p-5">
@@ -221,7 +229,7 @@ export default function ManufacturerCertificationsPage() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-semibold text-foreground">
                               {cert.certificateType?.name ||
-                                `Certificate #${cert.certificate_type_id}`}
+                                c.certificateFallback.replace("{id}", String(cert.certificate_type_id))}
                             </h3>
                             <Badge className={`${statusColor} shrink-0`}>
                               <StatusIcon className="mr-1 h-3 w-3" />
@@ -229,16 +237,16 @@ export default function ManufacturerCertificationsPage() {
                             </Badge>
                           </div>
                           <p className="mt-0.5 text-sm text-muted-foreground">
-                            Issued by {cert.issuing_body} • {cert.certificate_number}
+                            {c.issuedBy} {cert.issuing_body} • {cert.certificate_number}
                           </p>
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              Issued: {new Date(cert.issue_date).toLocaleDateString()}
+                              {c.issued}: {new Date(cert.issue_date).toLocaleDateString()}
                             </span>
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              Expires: {new Date(cert.expiry_date).toLocaleDateString()}
+                              {c.expires}: {new Date(cert.expiry_date).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
@@ -249,7 +257,7 @@ export default function ManufacturerCertificationsPage() {
                           <Button variant="outline" size="sm" className="gap-1.5" asChild>
                             <a href={cert.certificate_pdf_url ?? cert.certificate_pdf} target="_blank" rel="noopener noreferrer">
                               <Eye className="h-3.5 w-3.5" />
-                              View Document
+                              {c.viewDocument}
                             </a>
                           </Button>
                         )}
@@ -260,7 +268,7 @@ export default function ManufacturerCertificationsPage() {
                           onClick={() => setEditingCert(cert)}
                         >
                           <Upload className="h-3.5 w-3.5" />
-                          Update
+                          {c.update}
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -274,7 +282,7 @@ export default function ManufacturerCertificationsPage() {
                               onClick={() => setDeletingCertId(cert.id)}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              {c.delete}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -289,9 +297,9 @@ export default function ManufacturerCertificationsPage() {
               <Card>
                 <CardContent className="py-12 text-center">
                   <Award className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                  <p className="mt-4 text-muted-foreground">No certifications added yet</p>
+                  <p className="mt-4 text-muted-foreground">{c.noCertifications}</p>
                   <Button onClick={() => setShowAddModal(true)} className="mt-4">
-                    Add Your First Certification
+                    {c.addFirst}
                   </Button>
                 </CardContent>
               </Card>
@@ -301,7 +309,10 @@ export default function ManufacturerCertificationsPage() {
           {lastPage > 1 && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Showing {(currentPage - 1) * perPage + 1}–{Math.min(currentPage * perPage, total)} of {total}
+                {c.showing
+                  .replace("{from}", String((currentPage - 1) * perPage + 1))
+                  .replace("{to}", String(Math.min(currentPage * perPage, total)))
+                  .replace("{total}", String(total))}
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -311,10 +322,10 @@ export default function ManufacturerCertificationsPage() {
                   disabled={currentPage <= 1 || isLoading}
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  Previous
+                  {c.previous}
                 </Button>
                 <span className="text-sm text-muted-foreground">
-                  Page {currentPage} of {lastPage}
+                  {c.pageOf.replace("{page}", String(currentPage)).replace("{lastPage}", String(lastPage))}
                 </span>
                 <Button
                   variant="outline"
@@ -322,7 +333,7 @@ export default function ManufacturerCertificationsPage() {
                   onClick={() => void loadCertifications(currentPage + 1)}
                   disabled={currentPage >= lastPage || isLoading}
                 >
-                  Next
+                  {c.next}
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -350,18 +361,16 @@ export default function ManufacturerCertificationsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Certification</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this certification? This action cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{c.deleteTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{c.deleteDesc}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingCertId && handleDeleteCert(deletingCertId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {c.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

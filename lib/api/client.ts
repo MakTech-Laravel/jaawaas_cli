@@ -16,7 +16,8 @@ function readPreferredLanguage(): string {
 
   for (const candidate of languageCandidates) {
     if (typeof candidate === "string" && candidate.trim()) {
-      return candidate.trim();
+      const code = candidate.trim();
+      return code === "es" ? "zh" : code;
     }
   }
 

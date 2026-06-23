@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import ManufacturerStatCard from "@/components/manufacturer/manufacturer-stat-card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { useTranslation } from "@/lib/i18n"
 import {
   Select,
   SelectContent,
@@ -52,6 +53,7 @@ export default function ManufacturerInquiriesPage() {
   
   const [inquiries, setInquiries] = useState<ManufacturerRFQ[]>([])
   const [loading, setLoading] = useState(true)
+  const { t } = useTranslation()
 
   useEffect(() => {
     async function loadInquiries() {
@@ -82,28 +84,28 @@ export default function ManufacturerInquiriesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="font-serif text-2xl font-medium text-foreground">Buyer Inquiries</h1>
+        <h1 className="font-serif text-2xl font-medium text-foreground">{t.mfg.inquiries.title}</h1>
         <p className="mt-1 text-muted-foreground">
-          Manage and respond to buyer requests
+          {t.mfg.inquiries.subtitle}
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4">
         <ManufacturerStatCard
-          title="Total Inquiries"
+          title={t.mfg.inquiries.totalInquiries}
           value={inquiries.length}
         />
         <ManufacturerStatCard
-          title="Pending"
+          title={t.mfg.inquiries.pending}
           value={<span className="text-secondary">{inquiries.filter(i => i.status === "pending").length}</span>}
         />
         <ManufacturerStatCard
-          title="Quoted"
+          title={t.mfg.inquiries.quoted}
           value={<span className="text-emerald-600">{inquiries.filter(i => i.status === "quoted").length}</span>}
         />
         <ManufacturerStatCard
-          title="Accepted"
+          title={t.mfg.inquiries.accepted}
           value={<span className="text-blue-600">{inquiries.filter(i => i.status === "accepted").length}</span>}
         />
       </div>
@@ -114,7 +116,7 @@ export default function ManufacturerInquiriesPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search by buyer, product, or inquiry ID..."
+            placeholder={t.mfg.inquiries.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -122,15 +124,15 @@ export default function ManufacturerInquiriesPage() {
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="All Status" />
+            <SelectValue placeholder={t.mfg.inquiries.allStatus} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="quoted">Quoted</SelectItem>
-            <SelectItem value="accepted">Accepted</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-            <SelectItem value="expired">Expired</SelectItem>
+            <SelectItem value="all">{t.mfg.inquiries.allStatus}</SelectItem>
+            <SelectItem value="pending">{t.mfg.inquiries.pending}</SelectItem>
+            <SelectItem value="quoted">{t.mfg.inquiries.quoted}</SelectItem>
+            <SelectItem value="accepted">{t.mfg.inquiries.accepted}</SelectItem>
+            <SelectItem value="rejected">{t.mfg.inquiries.rejected}</SelectItem>
+            <SelectItem value="expired">{t.mfg.inquiries.expired}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -138,7 +140,7 @@ export default function ManufacturerInquiriesPage() {
       {/* Inquiries List */}
       {loading ? (
         <div className="py-12 text-center text-muted-foreground">
-          Loading inquiries...
+          {t.mfg.inquiries.loading}
         </div>
       ) : (
       <div className="space-y-4">
@@ -159,7 +161,11 @@ export default function ManufacturerInquiriesPage() {
                       <span className="text-sm font-medium text-muted-foreground">{inquiry.rfq_number}</span>
                       <Badge className={statusConfig[inquiry.status]?.color || "bg-gray-100 text-gray-700"}>
                         <StatusIcon className="mr-1 h-3 w-3" />
-                        {inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}
+                        {inquiry.status === "pending" ? t.mfg.inquiries.pending :
+                         inquiry.status === "quoted" ? t.mfg.inquiries.quoted :
+                         inquiry.status === "accepted" ? t.mfg.inquiries.accepted :
+                         inquiry.status === "rejected" ? t.mfg.inquiries.rejected :
+                         inquiry.status === "expired" ? t.mfg.inquiries.expired : inquiry.status}
                       </Badge>
                     </div>
                     
@@ -187,28 +193,28 @@ export default function ManufacturerInquiriesPage() {
                         {inquiry.target_price && (
                           <div className="flex items-center gap-2">
                             <Tag className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Target Price:</span>
+                            <span className="text-muted-foreground">{t.mfg.inquiries.targetPrice}:</span>
                             <span className="text-foreground">{inquiry.target_price} {inquiry.target_currency_code}</span>
                           </div>
                         )}
                         {inquiry.required_delivery_date && (
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Delivery By:</span>
+                            <span className="text-muted-foreground">{t.mfg.inquiries.deliveryBy}:</span>
                             <span className="text-foreground">{format(new Date(inquiry.required_delivery_date), 'PP')}</span>
                           </div>
                         )}
                         {inquiry.shipping_terms && (
                           <div className="flex items-center gap-2">
                             <Package className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Terms:</span>
+                            <span className="text-muted-foreground">{t.mfg.inquiries.terms}:</span>
                             <span className="text-foreground">{inquiry.shipping_terms}</span>
                           </div>
                         )}
                         {inquiry.destination_port_city && (
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Port:</span>
+                            <span className="text-muted-foreground">{t.mfg.inquiries.port}:</span>
                             <span className="text-foreground">{inquiry.destination_port_city}</span>
                           </div>
                         )}
@@ -228,20 +234,20 @@ export default function ManufacturerInquiriesPage() {
                       <Button variant="outline" size="sm" className="gap-1" asChild>
                         <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id}`}>
                           <Eye className="h-4 w-4" />
-                          View Details
+                          {t.mfg.inquiries.viewDetails}
                         </Link>
                       </Button>
                       <Button variant="outline" size="sm" className="gap-1" asChild>
                         <Link href={`/dashboard/manufacturer/messages?buyer=${inquiry.buyer.id}`}>
                           <MessageSquare className="h-4 w-4" />
-                          Message
+                          {t.mfg.inquiries.message}
                         </Link>
                       </Button>
                       {inquiry.status === "pending" && (
                         <Button size="sm" className="gap-1" asChild>
                           <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id}`}>
                             <Send className="h-4 w-4" />
-                            Send Quote
+                            {t.mfg.inquiries.sendQuote}
                           </Link>
                         </Button>
                       )}
@@ -258,11 +264,11 @@ export default function ManufacturerInquiriesPage() {
       {!loading && filteredInquiries.length === 0 && (
         <div className="rounded-xl border border-dashed border-border py-12 text-center">
           <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
-          <h3 className="mt-4 font-semibold text-foreground">No inquiries found</h3>
+          <h3 className="mt-4 font-semibold text-foreground">{t.mfg.inquiries.noInquiriesFound}</h3>
           <p className="mt-2 text-muted-foreground">
             {searchQuery || statusFilter !== "all" 
-              ? "Try adjusting your filters" 
-              : "New buyer inquiries will appear here"}
+              ? t.mfg.inquiries.adjustFilters 
+              : t.mfg.inquiries.newInquiriesAppear}
           </p>
         </div>
       )}

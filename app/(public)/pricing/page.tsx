@@ -151,187 +151,189 @@ export default function PricingPage() {
         </section>
 
         {/* Special Launch Plan - Founding Manufacturer */}
-        <section className="py-16 lg:py-20 bg-linear-to-b from-secondary/5 to-background">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-3xl text-center mb-12">
-              <Badge className="bg-secondary/20 text-secondary border-secondary/30 mb-4">
-                <Sparkles className="mr-1.5 inline-block h-3 w-3" />
-                First 300 Manufacturers Only
-              </Badge>
-              <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground">
-                Founding Manufacturer
-              </h2>
-              <p className="mt-4 text-muted-foreground">
-                Early Supplier Program
-              </p>
-            </div>
-
-            <div className="max-w-lg mx-auto">
-              <div className="relative rounded-2xl border-2 border-secondary bg-card p-8 shadow-lg">
-                <Badge className="absolute -top-3 left-6 bg-secondary text-secondary-foreground">
-                  <Users className="mr-1.5 inline-block h-3 w-3" />
+        {!promotionLoading && activePromotion && (
+          <section className="py-16 lg:py-20 bg-linear-to-b from-secondary/5 to-background">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto max-w-3xl text-center mb-12">
+                <Badge className="bg-secondary/20 text-secondary border-secondary/30 mb-4">
+                  <Sparkles className="mr-1.5 inline-block h-3 w-3" />
                   First 300 Manufacturers Only
                 </Badge>
-                
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10">
-                    <Sparkles className="h-6 w-6 text-secondary" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-foreground">Founding Manufacturer</h3>
-                    <p className="text-sm text-muted-foreground">Early Supplier Program</p>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-foreground">$0</span>
-                    <span className="text-muted-foreground">for 6 months</span>
-                  </div>
-                  <p className="mt-2 text-sm text-secondary font-medium">No credit card required</p>
-                </div>
-
-                <div className="mb-4 rounded-lg bg-secondary/10 p-4 border border-secondary/20">
-                  <p className="text-sm text-foreground leading-relaxed">
-                    Get full Growth Plan features free for 6 months. <br/>
-                    <span className="text-muted-foreground mt-1 inline-block">After the trial, continue with any paid plan to keep your manufacturer account active.</span>
-                  </p>
-                </div>
-                
-                {/* Spots remaining section */}
-                <div className="mb-6 rounded-lg bg-muted/50 p-4 border border-border">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Spots remaining:</span>
-                    <span className="font-semibold text-secondary">
-                      {activePromotion ? `${activePromotion.stats.spots_remaining} / ${activePromotion.slots}` : '0 / 0'}
-                    </span>
-                  </div>
-                  <div className="mt-2 h-2 rounded-full bg-secondary/20 overflow-hidden">
-                    <div 
-                      className="h-full rounded-full bg-secondary transition-all" 
-                      style={{ width: activePromotion ? `${activePromotion.stats.fill_percentage}%` : '0%' }}
-                    />
-                  </div>
-                </div>
-                
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold text-foreground mb-3">Included Features</h4>
-                  <ul className="space-y-3">
-                    {[
-                      "Professional company profile",
-                      "Up to 100 products",
-                      "Internal messaging",
-                      "Buyer inquiry inbox",
-                      "RFQ reception",
-                      "Catalog upload",
-                      "Certifications section",
-                      "Export markets section",
-                      "Advanced analytics",
-                      "Priority visibility in manufacturer discovery",
-                      "Featured supplier badge"
-                    ].map((feature, i) => (
-                      <li key={i} className="flex items-start gap-3 text-sm">
-                        <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
-                        <span className="text-foreground">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <Button
-                  className="w-full gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90 py-6 text-base"
-                  onClick={() => {
-                    if (user) {
-                      if (user.role === 'manufacturer') {
-                        Swal.fire({
-                          title: 'Apply Founding Manufacturer Promo?',
-                          text: 'You will receive a 6‑month free Growth plan. Continue?',
-                          icon: 'question',
-                          showCancelButton: true,
-                          confirmButtonColor: 'var(--color-secondary)',
-                          cancelButtonColor: '#d33',
-                          confirmButtonText: 'Yes, apply',
-                          cancelButtonText: 'Cancel'
-                        }).then(async (result) => {
-                          if (result.isConfirmed) {
-                            Swal.fire({
-                              title: 'Applying Promotion...',
-                              text: 'Please wait while we register your promotion...',
-                              allowOutsideClick: false,
-                              didOpen: () => {
-                                Swal.showLoading()
-                              }
-                            })
-
-                            try {
-                              if (activePromotion) {
-                                const enrollRes = await enrollInPromotion(activePromotion.id)
-                                if (enrollRes.success) {
-                                  const rawPlanName = activePromotion.plan.name.toLowerCase()
-                                  let matchedPlanId: PlanId = "growth"
-                                  if (rawPlanName.includes("starter")) matchedPlanId = "starter"
-                                  else if (rawPlanName.includes("growth")) matchedPlanId = "growth"
-                                  else if (rawPlanName.includes("enterprise")) matchedPlanId = "enterprise"
-                                  else if (rawPlanName.includes("free")) matchedPlanId = "free"
-
-                                  await upgradePlan(matchedPlanId)
-
-                                  Swal.fire({
-                                    icon: 'success',
-                                    title: 'Promotion Applied!',
-                                    text: enrollRes.message || 'Founding Manufacturer Promo Applied!',
-                                    confirmButtonColor: 'var(--color-secondary)'
-                                  }).then(() => {
-                                    if (user.manufacturerStatus === 'approved') {
-                                      router.push('/dashboard/manufacturer')
-                                    } else {
-                                      router.push('/review')
-                                    }
-                                  })
-                                } else {
-                                  Swal.fire({
-                                    icon: 'error',
-                                    title: 'Failed to Apply',
-                                    text: enrollRes.message || 'Failed to apply promo',
-                                    confirmButtonColor: '#d33'
-                                  })
-                                }
-                              }
-                            } catch (e: any) {
-                              Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: e?.message || 'Failed to apply promo',
-                                confirmButtonColor: '#d33'
-                              })
-                            }
-                          }
-                        })
-                      } else {
-                        Swal.fire({
-                          icon: "info",
-                          title: "Buyer Account Detected",
-                          text: "You are currently logged in as a Buyer. To apply as a Manufacturer, please create a new manufacturer account or contact support.",
-                          confirmButtonColor: "var(--color-secondary)",
-                          confirmButtonText: "Got it"
-                        })
-                      }
-                    } else {
-                      router.push(activePromotion ? `/auth/signup?role=manufacturer&plan=${activePromotion.plan.id}&promo=${activePromotion.id}` : '/auth/signup?role=manufacturer')
-                    }
-                  }}
-                  disabled={activePromotion?.stats?.is_full}
-                >
-                  {activePromotion?.stats?.is_full ? "Promotion Full" : "Apply as Founding Manufacturer"}
-                  {!activePromotion?.stats?.is_full && <ArrowRight className="h-4 w-4" />}
-                </Button>
-                <p className="mt-4 text-xs text-center text-muted-foreground">
-                  Subject to admin review and approval.
+                <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground">
+                  Founding Manufacturer
+                </h2>
+                <p className="mt-4 text-muted-foreground">
+                  Early Supplier Program
                 </p>
               </div>
+
+              <div className="max-w-lg mx-auto">
+                <div className="relative rounded-2xl border-2 border-secondary bg-card p-8 shadow-lg">
+                  <Badge className="absolute -top-3 left-6 bg-secondary text-secondary-foreground">
+                    <Users className="mr-1.5 inline-block h-3 w-3" />
+                    First 300 Manufacturers Only
+                  </Badge>
+                  
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10">
+                      <Sparkles className="h-6 w-6 text-secondary" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-foreground">Founding Manufacturer</h3>
+                      <p className="text-sm text-muted-foreground">Early Supplier Program</p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-bold text-foreground">$0</span>
+                      <span className="text-muted-foreground">for 6 months</span>
+                    </div>
+                    <p className="mt-2 text-sm text-secondary font-medium">No credit card required</p>
+                  </div>
+
+                  <div className="mb-4 rounded-lg bg-secondary/10 p-4 border border-secondary/20">
+                    <p className="text-sm text-foreground leading-relaxed">
+                      Get full Growth Plan features free for 6 months. <br/>
+                      <span className="text-muted-foreground mt-1 inline-block">After the trial, continue with any paid plan to keep your manufacturer account active.</span>
+                    </p>
+                  </div>
+                  
+                  {/* Spots remaining section */}
+                  <div className="mb-6 rounded-lg bg-muted/50 p-4 border border-border">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Spots remaining:</span>
+                      <span className="font-semibold text-secondary">
+                        {activePromotion ? `${activePromotion.stats.spots_remaining} / ${activePromotion.slots}` : '0 / 0'}
+                      </span>
+                    </div>
+                    <div className="mt-2 h-2 rounded-full bg-secondary/20 overflow-hidden">
+                      <div 
+                        className="h-full rounded-full bg-secondary transition-all" 
+                        style={{ width: activePromotion ? `${activePromotion.stats.fill_percentage}%` : '0%' }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mb-6">
+                    <h4 className="text-sm font-semibold text-foreground mb-3">Included Features</h4>
+                    <ul className="space-y-3">
+                      {[
+                        "Professional company profile",
+                        "Up to 100 products",
+                        "Internal messaging",
+                        "Buyer inquiry inbox",
+                        "RFQ reception",
+                        "Catalog upload",
+                        "Certifications section",
+                        "Export markets section",
+                        "Advanced analytics",
+                        "Priority visibility in manufacturer discovery",
+                        "Featured supplier badge"
+                      ].map((feature, i) => (
+                        <li key={i} className="flex items-start gap-3 text-sm">
+                          <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
+                          <span className="text-foreground">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <Button
+                    className="w-full gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90 py-6 text-base"
+                    onClick={() => {
+                      if (user) {
+                        if (user.role === 'manufacturer') {
+                          Swal.fire({
+                            title: 'Apply Founding Manufacturer Promo?',
+                            text: 'You will receive a 6‑month free Growth plan. Continue?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: 'var(--color-secondary)',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: 'Yes, apply',
+                            cancelButtonText: 'Cancel'
+                          }).then(async (result) => {
+                            if (result.isConfirmed) {
+                              Swal.fire({
+                                title: 'Applying Promotion...',
+                                text: 'Please wait while we register your promotion...',
+                                allowOutsideClick: false,
+                                didOpen: () => {
+                                  Swal.showLoading()
+                                }
+                              })
+
+                              try {
+                                if (activePromotion) {
+                                  const enrollRes = await enrollInPromotion(activePromotion.id)
+                                  if (enrollRes.success) {
+                                    const rawPlanName = activePromotion.plan.name.toLowerCase()
+                                    let matchedPlanId: PlanId = "growth"
+                                    if (rawPlanName.includes("starter")) matchedPlanId = "starter"
+                                    else if (rawPlanName.includes("growth")) matchedPlanId = "growth"
+                                    else if (rawPlanName.includes("enterprise")) matchedPlanId = "enterprise"
+                                    else if (rawPlanName.includes("free")) matchedPlanId = "free"
+
+                                    await upgradePlan(matchedPlanId)
+
+                                    Swal.fire({
+                                      icon: 'success',
+                                      title: 'Promotion Applied!',
+                                      text: enrollRes.message || 'Founding Manufacturer Promo Applied!',
+                                      confirmButtonColor: 'var(--color-secondary)'
+                                    }).then(() => {
+                                      if (user.manufacturerStatus === 'approved') {
+                                        router.push('/dashboard/manufacturer')
+                                      } else {
+                                        router.push('/review')
+                                      }
+                                    })
+                                  } else {
+                                    Swal.fire({
+                                      icon: 'error',
+                                      title: 'Failed to Apply',
+                                      text: enrollRes.message || 'Failed to apply promo',
+                                      confirmButtonColor: '#d33'
+                                    })
+                                  }
+                                }
+                              } catch (e: any) {
+                                Swal.fire({
+                                  icon: 'error',
+                                  title: 'Error',
+                                  text: e?.message || 'Failed to apply promo',
+                                  confirmButtonColor: '#d33'
+                                })
+                              }
+                            }
+                          })
+                        } else {
+                          Swal.fire({
+                            icon: "info",
+                            title: "Buyer Account Detected",
+                            text: "You are currently logged in as a Buyer. To apply as a Manufacturer, please create a new manufacturer account or contact support.",
+                            confirmButtonColor: "var(--color-secondary)",
+                            confirmButtonText: "Got it"
+                          })
+                        }
+                      } else {
+                        router.push(activePromotion ? `/auth/signup?role=manufacturer&plan=${activePromotion.plan.id}&promo=${activePromotion.id}` : '/auth/signup?role=manufacturer')
+                      }
+                    }}
+                    disabled={activePromotion?.stats?.is_full}
+                  >
+                    {activePromotion?.stats?.is_full ? "Promotion Full" : "Apply as Founding Manufacturer"}
+                    {!activePromotion?.stats?.is_full && <ArrowRight className="h-4 w-4" />}
+                  </Button>
+                  <p className="mt-4 text-xs text-center text-muted-foreground">
+                    Subject to admin review and approval.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Pricing Toggle & Cards */}
         <section className="py-16 lg:py-24">
