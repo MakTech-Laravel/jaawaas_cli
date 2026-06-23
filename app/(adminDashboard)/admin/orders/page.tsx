@@ -7,9 +7,7 @@ import { cn } from "@/lib/utils"
 import {
   formatCurrency,
   formatOrderDate,
-  getStatusLabel,
   ORDER_STATUS_FLOW,
-  type OrderStatus,
 } from "@/lib/orders-context"
 import { getAdminOrders, getAdminOrderStats, type ApiOrder, type OrderStats } from "@/lib/api/orders"
 import { useTranslation } from "@/lib/i18n"
@@ -41,6 +39,13 @@ export default function AdminOrdersPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.orders
   const c = t.admin.common
+  const orderStatus = t.admin.orderStatus
+
+  const getOrderStatusLabel = (status: string) => {
+    const key = status.replace(/-/g, "_") as keyof typeof orderStatus
+    return orderStatus[key] ?? status
+  }
+
   const [orders, setOrders] = useState<ApiOrder[]>([])
   const [stats, setStats] = useState<OrderStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -117,28 +122,28 @@ export default function AdminOrdersPage() {
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <AdminStatCard 
             icon={Layers} 
-            title="Total Orders" 
+            title={p.totalOrders} 
             value={stats.total} 
             layout="vertical"
             contentClassName="pt-6 pb-6 px-6"
           />
           <AdminStatCard 
             icon={Clock} 
-            title="Active Orders" 
+            title={p.activeOrders} 
             value={stats.active} 
             layout="vertical"
             contentClassName="pt-6 pb-6 px-6"
           />
           <AdminStatCard 
             icon={CheckCircle2} 
-            title="Completed Orders" 
+            title={p.completedOrders} 
             value={stats.completed} 
             layout="vertical"
             contentClassName="pt-6 pb-6 px-6"
           />
           <AdminStatCard 
             icon={DollarSign} 
-            title="Total Value" 
+            title={p.totalValue} 
             value={formatCurrency(stats.totalValue, "USD")} 
             layout="vertical"
             contentClassName="pt-6 pb-6 px-6"
@@ -164,13 +169,13 @@ export default function AdminOrdersPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            <option value="all">All statuses</option>
+            <option value="all">{orderStatus.all}</option>
             {ORDER_STATUS_FLOW.map((s) => (
               <option key={s} value={s}>
-                {getStatusLabel(s)}
+                {getOrderStatusLabel(s)}
               </option>
             ))}
-            <option value="cancelled">Cancelled</option>
+            <option value="cancelled">{orderStatus.cancelled}</option>
           </select>
         </div>
       </div>
@@ -181,13 +186,13 @@ export default function AdminOrdersPage() {
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-foreground">ID</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Title</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden md:table-cell">Buyer</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden lg:table-cell">Seller</th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-foreground hidden sm:table-cell">Value</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden xl:table-cell">Created</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-foreground">{p.tableId}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-foreground">{p.tableTitle}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden md:table-cell">{p.tableBuyer}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden lg:table-cell">{p.tableSeller}</th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-foreground hidden sm:table-cell">{p.tableValue}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-foreground">{p.tableStatus}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden xl:table-cell">{p.tableCreated}</th>
               </tr>
             </thead>
             <tbody>
@@ -202,7 +207,7 @@ export default function AdminOrdersPage() {
                   <td colSpan={7} className="px-4 py-8 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <PackageCheck className="h-8 w-8 text-muted-foreground/50" />
-                      <p className="mt-2 text-sm text-muted-foreground">No matching orders found</p>
+                      <p className="mt-2 text-sm text-muted-foreground">{p.noMatching}</p>
                     </div>
                   </td>
                 </tr>
@@ -225,7 +230,7 @@ export default function AdminOrdersPage() {
                           </span>
                           <div className="min-w-0">
                             <p className="truncate font-medium text-foreground">{o.title}</p>
-                            <p className="text-xs text-muted-foreground">Product order</p>
+                            <p className="text-xs text-muted-foreground">{c.productOrder}</p>
                           </div>
                         </div>
                       </td>
@@ -246,7 +251,7 @@ export default function AdminOrdersPage() {
                       </td>
                       <td className="px-4 py-3">
                         <Badge className={statusColors[o.status] || statusColors.created} variant="secondary">
-                          {getStatusLabel(o.status)}
+                          {getOrderStatusLabel(o.status)}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground hidden xl:table-cell">
@@ -262,7 +267,7 @@ export default function AdminOrdersPage() {
           {hasMore && !isLoading && (
             <div className="border-t border-border p-4 text-center">
               <Button variant="outline" size="sm" onClick={loadMore}>
-                Load More Orders
+                {p.loadMore}
               </Button>
             </div>
           )}

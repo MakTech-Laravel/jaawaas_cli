@@ -78,13 +78,6 @@ const categoryIconByType: Record<string, React.ElementType> = {
   export_markets: MapPin,
 }
 
-const categoryDescriptionByType: Record<string, string> = {
-  countries: "Filter suppliers by manufacturing country",
-  certifications: "Filter by quality and compliance certifications",
-  moq_ranges: "Minimum Order Quantity ranges",
-  export_markets: "Filter by export destination regions",
-}
-
 // Initial filter data
 const initialFilters: FilterCategory[] = [
   {
@@ -160,6 +153,7 @@ const initialFilters: FilterCategory[] = [
 export default function AdminFiltersPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.filters
+  const c = t.admin.common
   const [filters, setFilters] = useState<FilterCategory[]>(initialFilters)
   const [activeTab, setActiveTab] = useState("countries")
   const [counts, setCounts] = useState<AdminQuickFilterCounts | null>(null)
@@ -227,6 +221,7 @@ export default function AdminFiltersPage() {
         return {
           ...existing,
           name: type.label || existing.name,
+          description: c.manageFilterDesc,
         }
       }
 
@@ -235,11 +230,11 @@ export default function AdminFiltersPage() {
         name: type.label || type.value,
         slug: type.value,
         icon: categoryIconByType[type.value] || Filter,
-        description: categoryDescriptionByType[type.value] || "Manage quick filter options for this category",
+        description: c.manageFilterDesc,
         items: [],
       }
     })
-  }, [categoryByType, visibleTypes])
+  }, [categoryByType, visibleTypes, c.manageFilterDesc])
 
   useEffect(() => {
     if (!resolvedCategories.some((category) => category.id === activeTab)) {
@@ -260,7 +255,7 @@ export default function AdminFiltersPage() {
 
     const response = await getAdminQuickFilterOptions(type)
     if (!response.success) {
-      setOptionsError(response.message || "Failed to fetch options for this tab.")
+      setOptionsError(response.message || c.failedToFetchOptions)
       setIsOptionsLoading(false)
       return false
     }
@@ -295,7 +290,7 @@ export default function AdminFiltersPage() {
           name: currentType?.label || type,
           slug: type,
           icon: categoryIconByType[type] || Filter,
-          description: categoryDescriptionByType[type] || "Manage quick filter options for this category",
+          description: c.manageFilterDesc,
           items: normalizedItems,
         },
       ]
@@ -303,7 +298,7 @@ export default function AdminFiltersPage() {
 
     setIsOptionsLoading(false)
     return true
-  }, [types])
+  }, [types, c.failedToFetchOptions, c.manageFilterDesc])
 
   useEffect(() => {
     let mounted = true
@@ -338,7 +333,7 @@ export default function AdminFiltersPage() {
       })
 
       if (!response.success) {
-        setOptionsError(response.message || "Failed to create option.")
+        setOptionsError(response.message || c.failedToCreateOption)
         setIsMutatingOptions(false)
         return
       }
@@ -350,9 +345,9 @@ export default function AdminFiltersPage() {
 
       void Swal.fire({
         icon: "success",
-        title: "Successfully done",
-        text: response.message || "Option created successfully.",
-        confirmButtonText: "OK",
+        title: p.successDone,
+        text: response.message || c.optionCreatedSuccess,
+        confirmButtonText: c.ok,
         confirmButtonColor: "#3d2e1f",
       })
     })()
@@ -369,7 +364,7 @@ export default function AdminFiltersPage() {
     })
 
     if (!response.success) {
-      setOptionsError(response.message || "Failed to update option.")
+      setOptionsError(response.message || c.failedToUpdateOption)
       setIsMutatingOptions(false)
       return
     }
@@ -384,7 +379,7 @@ export default function AdminFiltersPage() {
     setIsMutatingOptions(true)
     const response = await toggleAdminQuickFilterOption(item.id, !item.enabled)
     if (!response.success) {
-      setOptionsError(response.message || "Failed to toggle option status.")
+      setOptionsError(response.message || c.failedToToggleOption)
       setIsMutatingOptions(false)
       return
     }
@@ -401,7 +396,7 @@ export default function AdminFiltersPage() {
       isEnabled: item.enabled,
     })
     if (!response.success) {
-      setOptionsError(response.message || "Failed to delete option.")
+      setOptionsError(response.message || c.failedToDeleteOption)
       setIsMutatingOptions(false)
       return
     }
@@ -414,7 +409,7 @@ export default function AdminFiltersPage() {
     setIsMutatingOptions(true)
     const response = await sortAdminQuickFilterOption(item.id, direction)
     if (!response.success) {
-      setOptionsError(response.message || "Failed to sort option.")
+      setOptionsError(response.message || c.failedToSortOption)
       setIsMutatingOptions(false)
       return
     }
@@ -444,7 +439,7 @@ export default function AdminFiltersPage() {
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4">
         <AdminStatCard
-          title="Filter Categories"
+          title={p.filterCategories}
           value={filterTypeCount}
           icon={Filter}
           iconClassName="text-secondary"
@@ -453,7 +448,7 @@ export default function AdminFiltersPage() {
           contentClassName="p-6"
         />
         <AdminStatCard
-          title="Total Options"
+          title={p.totalOptions}
           value={totalOptionsCount}
           icon={Package}
           iconClassName="text-blue-700"
@@ -462,7 +457,7 @@ export default function AdminFiltersPage() {
           contentClassName="p-6"
         />
         <AdminStatCard
-          title="Enabled"
+          title={p.enabled}
           value={enabledCount}
           icon={Filter}
           iconClassName="text-emerald-700"
@@ -471,7 +466,7 @@ export default function AdminFiltersPage() {
           contentClassName="p-6"
         />
         <AdminStatCard
-          title="Disabled"
+          title={p.disabled}
           value={disabledCount}
           icon={Filter}
           iconClassName="text-amber-700"
@@ -505,14 +500,14 @@ export default function AdminFiltersPage() {
                 </div>
                 <Button onClick={() => setShowAddDialog(true)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Option
+                  {p.addOption}
                 </Button>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   {isOptionsLoading && category.id === activeTab ? (
                     <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-                      Loading options...
+                      {c.loadingOptions}
                     </div>
                   ) : optionsError && category.id === activeTab ? (
                     <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -573,14 +568,14 @@ export default function AdminFiltersPage() {
                               setShowEditDialog(true)
                             }}>
                               <Edit className="mr-2 h-4 w-4" />
-                              Edit
+                              {c.edit}
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-destructive"
                               onClick={() => void deleteItem(item)}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              {c.delete}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -591,16 +586,16 @@ export default function AdminFiltersPage() {
                   {!isOptionsLoading && !optionsError && category.items.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
                       <category.icon className="h-12 w-12 text-muted-foreground/50" />
-                      <h3 className="mt-4 font-medium text-foreground">No options yet</h3>
+                      <h3 className="mt-4 font-medium text-foreground">{p.noOptions}</h3>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Add your first filter option to get started
+                        {c.addFirstFilterOption}
                       </p>
                       <Button 
                         className="mt-4" 
                         onClick={() => setShowAddDialog(true)}
                       >
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Option
+                        {p.addOption}
                       </Button>
                     </div>
                   )}
@@ -615,37 +610,37 @@ export default function AdminFiltersPage() {
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Filter Option</DialogTitle>
+            <DialogTitle>{p.addFilterOption}</DialogTitle>
             <DialogDescription>
-              Add a new option to the {activeCategory?.name} filter
+              {p.addFilterOptionDesc.replace("{category}", activeCategory?.name ?? "")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Display Label</Label>
+              <Label>{p.displayLabel}</Label>
               <Input 
-                placeholder="e.g., South Korea"
+                placeholder={p.displayLabelPlaceholder}
                 value={newItem.label}
                 onChange={(e) => setNewItem({ ...newItem, label: e.target.value })}
                 className="mt-2"
               />
             </div>
             <div>
-              <Label>Value (optional)</Label>
+              <Label>{p.valueOptional}</Label>
               <Input 
-                placeholder="e.g., south-korea (auto-generated if empty)"
+                placeholder={p.valueOptionalPlaceholder}
                 value={newItem.value}
                 onChange={(e) => setNewItem({ ...newItem, value: e.target.value })}
                 className="mt-2"
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                Used for filtering. If left empty, will be generated from the label.
+                {p.valueOptionalHelp}
               </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)} disabled={isMutatingOptions}>Cancel</Button>
-            <Button onClick={handleAddItem} disabled={!newItem.label || isMutatingOptions}>Add Option</Button>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)} disabled={isMutatingOptions}>{c.cancel}</Button>
+            <Button onClick={handleAddItem} disabled={!newItem.label || isMutatingOptions}>{p.addOption}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -654,15 +649,15 @@ export default function AdminFiltersPage() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Filter Option</DialogTitle>
+            <DialogTitle>{p.editOption}</DialogTitle>
             <DialogDescription>
-              Update the filter option details
+              {p.editFilterOptionDesc}
             </DialogDescription>
           </DialogHeader>
           {currentItem && (
             <div className="space-y-4">
               <div>
-                <Label>Display Label</Label>
+                <Label>{p.displayLabel}</Label>
                 <Input 
                   value={currentItem.label}
                   onChange={(e) => setCurrentItem({ ...currentItem, label: e.target.value })}
@@ -670,7 +665,7 @@ export default function AdminFiltersPage() {
                 />
               </div>
               <div>
-                <Label>Value</Label>
+                <Label>{p.valueLabel}</Label>
                 <Input 
                   value={currentItem.value}
                   onChange={(e) => setCurrentItem({ ...currentItem, value: e.target.value })}
@@ -678,7 +673,7 @@ export default function AdminFiltersPage() {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label>Enabled</Label>
+                <Label>{c.enabled}</Label>
                 <Switch 
                   checked={currentItem.enabled}
                   onCheckedChange={(checked) => setCurrentItem({ ...currentItem, enabled: checked })}
@@ -687,8 +682,8 @@ export default function AdminFiltersPage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
-            <Button onClick={() => void handleEditItem()} disabled={isMutatingOptions}>Save Changes</Button>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>{c.cancel}</Button>
+            <Button onClick={() => void handleEditItem()} disabled={isMutatingOptions}>{c.saveChanges}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -99,7 +99,7 @@ export default function AdminProductsPage() {
         setProducts(response.data)
         setLastPage(response.meta?.lastPage ?? 1)
       } else {
-        setError(response.message || "Failed to fetch products")
+        setError(response.message || p.fetchFailed)
         setProducts([])
       }
       setLoading(false)
@@ -127,9 +127,9 @@ export default function AdminProductsPage() {
       // Show success alert
       await Swal.fire({
         icon: "success",
-        title: "Success!",
-        text: `Product ${isApproved ? "approved" : "rejected"} successfully`,
-        confirmButtonText: "OK",
+        title: c.success,
+        text: isApproved ? p.productApproved : p.productRejected,
+        confirmButtonText: c.ok,
         confirmButtonColor: "#503322",
         customClass: {
           confirmButton: "rounded-lg px-6 py-2 font-semibold",
@@ -139,9 +139,9 @@ export default function AdminProductsPage() {
       // Show error alert
       await Swal.fire({
         icon: "error",
-        title: "Error",
-        text: response.message || "Failed to update product status",
-        confirmButtonText: "OK",
+        title: c.error,
+        text: response.message || p.updateStatusFailed,
+        confirmButtonText: c.ok,
         confirmButtonColor: "#6366f1",
         customClass: {
           confirmButton: "rounded-lg px-6 py-2 font-semibold",
@@ -160,11 +160,11 @@ export default function AdminProductsPage() {
   const handleDeleteProduct = async (productId: number, productName: string) => {
     const result = await Swal.fire({
       icon: "warning",
-      title: "Delete Product",
-      text: `Are you sure you want to delete "${productName}"? This action cannot be undone.`,
+      title: p.deleteProduct,
+      text: p.deleteConfirmNamed.replace("{name}", productName),
       showCancelButton: true,
-      confirmButtonText: "Delete",
-      cancelButtonText: "Cancel",
+      confirmButtonText: c.delete,
+      cancelButtonText: c.cancel,
       confirmButtonColor: "#dc2626",
       cancelButtonColor: "#6b7280",
       customClass: {
@@ -187,9 +187,9 @@ export default function AdminProductsPage() {
       // Show success alert
       await Swal.fire({
         icon: "success",
-        title: "Deleted!",
-        text: "Product has been deleted successfully",
-        confirmButtonText: "OK",
+        title: c.deleted,
+        text: p.productDeleted,
+        confirmButtonText: c.ok,
         confirmButtonColor: "#503322",
         customClass: {
           confirmButton: "rounded-lg px-6 py-2 font-semibold",
@@ -199,9 +199,9 @@ export default function AdminProductsPage() {
       // Show error alert
       await Swal.fire({
         icon: "error",
-        title: "Error",
-        text: response.message || "Failed to delete product",
-        confirmButtonText: "OK",
+        title: c.error,
+        text: response.message || p.deleteFailed,
+        confirmButtonText: c.ok,
         confirmButtonColor: "#6366f1",
         customClass: {
           confirmButton: "rounded-lg px-6 py-2 font-semibold",
@@ -247,12 +247,12 @@ export default function AdminProductsPage() {
           }
         >
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Approval Status" />
+            <SelectValue placeholder={p.approvalStatus} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="1">Approved</SelectItem>
-            <SelectItem value="0">Pending</SelectItem>
+            <SelectItem value="all">{c.allStatus}</SelectItem>
+            <SelectItem value="1">{c.approved}</SelectItem>
+            <SelectItem value="0">{c.pending}</SelectItem>
           </SelectContent>
         </Select> */}
       </div>
@@ -260,7 +260,7 @@ export default function AdminProductsPage() {
       {/* Loading State */}
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">Loading products...</p>
+          <p className="text-muted-foreground">{p.loading}</p>
         </div>
       )}
 
@@ -274,7 +274,7 @@ export default function AdminProductsPage() {
       {/* Products Grid */}
       {!loading && products.length === 0 && (
         <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">No products found</p>
+          <p className="text-muted-foreground">{p.noProducts}</p>
         </div>
       )}
 
@@ -334,7 +334,7 @@ export default function AdminProductsPage() {
                           className="cursor-pointer text-destructive"
                         >
                           <Icons.Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {c.delete}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -355,10 +355,10 @@ export default function AdminProductsPage() {
                   updateQueryParams({ page: Math.max(1, page - 1) })
                 }
               >
-                Previous
+                {c.previous}
               </Button>
               <span className="text-sm text-muted-foreground">
-                Page {page} of {lastPage}
+                {c.pageOf.replace("{page}", String(page)).replace("{lastPage}", String(lastPage))}
               </span>
               <Button
                 variant="outline"
@@ -368,7 +368,7 @@ export default function AdminProductsPage() {
                   updateQueryParams({ page: Math.min(lastPage, page + 1) })
                 }
               >
-                Next
+                {c.next}
               </Button>
             </div>
           )}

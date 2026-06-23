@@ -40,6 +40,7 @@ import { useTranslation } from "@/lib/i18n"
 export default function AdminContactsPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.contact
+  const c = t.admin.common
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -86,7 +87,7 @@ export default function AdminContactsPage() {
         setLastPage(response.meta?.lastPage ?? 1)
         setTotal(response.meta?.total ?? 0)
       } else {
-        setError(response.message || "Failed to fetch contact submissions.")
+        setError(response.message || c.failedToFetchContact)
         setContacts([])
       }
       setLoading(false)
@@ -130,11 +131,11 @@ export default function AdminContactsPage() {
     
     const result = await Swal.fire({
       icon: "warning",
-      title: "Delete Submission?",
-      text: `Are you sure you want to delete the message from ${contact.name}?`,
+      title: p.deleteTitle,
+      text: c.deleteSubmissionConfirm.replace("{name}", contact.name),
       showCancelButton: true,
-      confirmButtonText: "Delete",
-      cancelButtonText: "Cancel",
+      confirmButtonText: c.delete,
+      cancelButtonText: c.cancel,
       confirmButtonColor: "#dc2626",
       cancelButtonColor: "#6b7280",
       customClass: {
@@ -156,16 +157,16 @@ export default function AdminContactsPage() {
       
       await Swal.fire({
         icon: "success",
-        title: "Deleted!",
-        text: "The submission has been deleted.",
+        title: c.deleted,
+        text: c.submissionDeleted,
         confirmButtonColor: "#503322",
         customClass: { confirmButton: "rounded-lg px-6 py-2 font-semibold" },
       })
     } else {
       await Swal.fire({
         icon: "error",
-        title: "Error",
-        text: response.message || "Failed to delete submission.",
+        title: c.error,
+        text: response.message || c.failedToDeleteSubmission,
         confirmButtonColor: "#6366f1",
         customClass: { confirmButton: "rounded-lg px-6 py-2 font-semibold" },
       })
@@ -191,7 +192,7 @@ export default function AdminContactsPage() {
         <div className="relative w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input 
-            placeholder="Search by name, email, or company..."
+            placeholder={c.searchSubmissionsPlaceholder}
             className="pl-9 bg-background"
             defaultValue={search}
             onKeyDown={(e) => {
@@ -208,7 +209,7 @@ export default function AdminContactsPage() {
         <div className="flex items-center justify-center py-12 bg-card rounded-xl border border-border">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            <p className="text-muted-foreground font-medium">Loading submissions...</p>
+            <p className="text-muted-foreground font-medium">{p.loading}</p>
           </div>
         </div>
       )}
@@ -218,7 +219,7 @@ export default function AdminContactsPage() {
           <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
             <MessageSquare className="h-6 w-6 text-destructive" />
           </div>
-          <h3 className="text-lg font-semibold text-destructive mb-1">Failed to load data</h3>
+          <h3 className="text-lg font-semibold text-destructive mb-1">{p.loadFailed}</h3>
           <p className="text-destructive/80 max-w-md">{error}</p>
         </div>
       )}
@@ -231,11 +232,11 @@ export default function AdminContactsPage() {
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="font-semibold text-foreground pl-6">Name</TableHead>
-                  <TableHead className="font-semibold text-foreground">Email</TableHead>
-                  <TableHead className="font-semibold text-foreground">Type</TableHead>
-                  <TableHead className="font-semibold text-foreground text-center">Status</TableHead>
-                  <TableHead className="font-semibold text-foreground w-[120px] text-right pr-6">Action</TableHead>
+                  <TableHead className="font-semibold text-foreground pl-6">{p.tableName}</TableHead>
+                  <TableHead className="font-semibold text-foreground">{p.tableEmail}</TableHead>
+                  <TableHead className="font-semibold text-foreground">{p.tableType}</TableHead>
+                  <TableHead className="font-semibold text-foreground text-center">{p.tableStatus}</TableHead>
+                  <TableHead className="font-semibold text-foreground w-[120px] text-right pr-6">{p.tableAction}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -244,8 +245,8 @@ export default function AdminContactsPage() {
                     <TableCell colSpan={5} className="h-48 text-center">
                       <div className="flex flex-col items-center justify-center text-muted-foreground">
                         <MessageSquare className="h-10 w-10 mb-3 opacity-20" />
-                        <p className="font-medium text-lg text-foreground">No submissions found</p>
-                        <p className="text-sm">We couldn't find any contact inquiries matching your criteria.</p>
+                        <p className="font-medium text-lg text-foreground">{p.noSubmissions}</p>
+                        <p className="text-sm">{p.noSubmissionsDesc}</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -289,12 +290,12 @@ export default function AdminContactsPage() {
                         {contact.is_read ? (
                           <div className="flex flex-col items-center gap-1">
                             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                            <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600/70">Read</span>
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600/70">{c.read}</span>
                           </div>
                         ) : (
                           <div className="flex flex-col items-center gap-1">
                             <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-                            <span className="text-[10px] uppercase font-bold tracking-wider text-blue-600">New</span>
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-blue-600">{c.new}</span>
                           </div>
                         )}
                       </TableCell>
@@ -333,7 +334,7 @@ export default function AdminContactsPage() {
             {contacts.length === 0 ? (
               <div className="p-8 text-center flex flex-col items-center justify-center text-muted-foreground">
                 <MessageSquare className="h-10 w-10 mb-3 opacity-20" />
-                <p className="font-medium text-lg text-foreground">No submissions found</p>
+                <p className="font-medium text-lg text-foreground">{p.noSubmissions}</p>
               </div>
             ) : (
               contacts.map((contact) => (
@@ -363,12 +364,12 @@ export default function AdminContactsPage() {
                     <div className="flex flex-col items-end gap-2 shrink-0">
                       {contact.is_read ? (
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600/70">Read</span>
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600/70">{c.read}</span>
                           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                         </div>
                       ) : (
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] uppercase font-bold tracking-wider text-blue-600">New</span>
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-blue-600">{c.new}</span>
                           <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
                         </div>
                       )}
@@ -400,7 +401,7 @@ export default function AdminContactsPage() {
                         }}
                       >
                         <Eye className="h-3.5 w-3.5 mr-1" />
-                        View
+                        {c.view}
                       </Button>
                       <Button 
                         variant="ghost" 
@@ -421,7 +422,7 @@ export default function AdminContactsPage() {
           {(lastPage > 1 || total > 0) && (
             <div className="flex items-center justify-between border-t border-border p-4 bg-muted/20">
               <div className="text-sm text-muted-foreground">
-                Showing <span className="font-medium text-foreground">{contacts.length}</span> of <span className="font-medium text-foreground">{total}</span> submissions
+                {p.showingSubmissions.replace("{shown}", String(contacts.length)).replace("{total}", String(total))}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -431,7 +432,7 @@ export default function AdminContactsPage() {
                   onClick={() => updateQueryParams({ page: Math.max(1, page - 1) })}
                   className="bg-background"
                 >
-                  Previous
+                  {c.previous}
                 </Button>
                 <div className="flex items-center justify-center min-w-12 text-sm font-medium bg-background border border-border h-9 rounded-md">
                   {page} / {Math.max(1, lastPage)}
@@ -443,7 +444,7 @@ export default function AdminContactsPage() {
                   onClick={() => updateQueryParams({ page: Math.min(lastPage, page + 1) })}
                   className="bg-background"
                 >
-                  Next
+                  {c.next}
                 </Button>
               </div>
             </div>
@@ -483,7 +484,7 @@ export default function AdminContactsPage() {
           </div>
           
           <div className="p-6 overflow-y-auto flex-1 bg-background">
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Message</h4>
+            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">{c.message}</h4>
             <div className="text-foreground leading-relaxed whitespace-pre-wrap bg-muted/20 p-4 rounded-lg border border-border">
               {selectedContact?.message}
             </div>
@@ -495,7 +496,7 @@ export default function AdminContactsPage() {
               {selectedContact?.created_at && formatDate(selectedContact.created_at)}
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Close</Button>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{c.close}</Button>
               {selectedContact && (
                 <>
                   <Button variant="outline" asChild>
@@ -506,7 +507,7 @@ export default function AdminContactsPage() {
                       className="gap-2"
                     >
                       <Mail className="h-4 w-4" />
-                      Reply via Gmail
+                      {c.replyViaGmail}
                     </a>
                   </Button>
                   <Button 
@@ -517,13 +518,13 @@ export default function AdminContactsPage() {
                         toast: true,
                         position: 'top-end',
                         icon: 'success',
-                        title: 'Email copied to clipboard!',
+                        title: p.emailCopied,
                         showConfirmButton: false,
                         timer: 2000
                       });
                     }}
                   >
-                    Copy Email
+                    {c.copyEmail}
                   </Button>
                 </>
               )}

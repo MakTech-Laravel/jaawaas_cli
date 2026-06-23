@@ -1,4 +1,5 @@
 import type { TranslationKeys } from "./en";
+import adminHe from "./admin/he";
 
 // Keep translations as a constant and cast on export to avoid strict
 // literal-type mismatches with `en` while preserving runtime values.
@@ -1946,40 +1947,7 @@ const he = {
         timestamp: "חותמת זמן"
       }
     },
-  admin: {
-    layout: { panelTitle: "פאנל ניהול", superAdmin: "מנהל על", loading: "טוען...", searchPlaceholder: "חפש משתמשים, ספקים, מוצרים..." },
-    common: { success: "הצלחה", error: "שגיאה", notice: "הודעה", approved: "אושר", deleted: "נמחק!", updating: "מעדכן...", resetting: "מאפס...", buyers: "קונים", manufacturers: "יצרנים", openCount: "{count} פתוח", ticketNumber: "קריאה #{id}", stepOf: "שלב {current} מתוך {total}", stepSubtitle: "הוסף יצרן חדש לפלטפורמה", moderationActive: "ניהול פעיל", flagged: "מסומן", searchUsers: "חפש משתמשים...", searchSuppliers: "חפש ספקים...", searchProducts: "חפש מוצרים...", searchOrders: "חפש הזמנות...", all: "הכל", previous: "הקודם", next: "הבא", actions: "פעולות", status: "סטטוס", view: "הצג", edit: "ערוך", delete: "מחק", cancel: "ביטול", save: "שמור", loading: "טוען...", noResults: "לא נמצאו תוצאות", approveFailed: "אישור הבקשה נכשל.", rejectReasonRequired: "אנא ספק סיבת דחייה.", approvedDesc: "{name} אושר.", approvalNotWired: "אישור עבור סוג {type} עדיין לא מחובר. הוסר מהרשימה." },
-    pages: {
-      dashboard: { title: "לוח בקרה לניהול", subtitle: "סקירה של פעילות הפלטפורמה ומשימות ממתינות", recentActivity: "פעילות אחרונה", pendingApprovals: "אישורים ממתינים", viewAll: "הצג הכל", noPendingApprovals: "אין אישורים ממתינים", quickLinks: "קישורים מהירים" },
-      users: { title: "משתמשים", subtitle: "נהל את כל משתמשי הפלטפורמה", searchPlaceholder: "חפש משתמשים..." },
-      createManufacturer: { title: "צור חשבון יצרן", subtitle: "שלב {step} מתוך {total} - הוסף יצרן חדש לפלטפורמה" },
-      mfgRegistrations: { title: "הרשמות יצרנים", subtitle: "סקור בקשות ממתינות, אשר או הסר רשומות" },
-      reviewManagement: { title: "ניהול ביקורות", subtitle: "נהל בקשות ביקורת רשמיות והגשות אימות מפעל" },
-      suppliers: { title: "ספקים", subtitle: "נהל חשבונות ספקים וביקורות", searchPlaceholder: "חפש ספקים..." },
-      products: { title: "מוצרים", subtitle: "סקור ונהל רישומי מוצרים", searchPlaceholder: "חפש מוצרים..." },
-      industries: { title: "תעשיות וקטגוריות", subtitle: "דף זה שולט בקטגוריות ראשיות, קטגוריות ותת-קטגוריות." },
-      filters: { title: "מסננים מהירים", subtitle: "נהל אפשרויות סינון המוצגות בדפי ספקים ותעשיות" },
-      reviews: { title: "ניהול ביקורות", subtitle: "נהל וסקור ביקורות ספקים" },
-      rfqs: { title: "בקשות הצעות", subtitle: "עקוב אחר כל בקשות הקונים והצעות היצרנים" },
-      orders: { title: "הזמנות", subtitle: "עקוב אחר כל הזמנות המוצרים בפלטפורמה", searchPlaceholder: "חפש הזמנות...", totalOrders: "סה\"כ הזמנות" },
-      messages: { title: "מרכז הודעות", subtitle: "עקוב ונהל שיחות בין קונים ליצרנים" },
-      supportTickets: { title: "קריאות שירות", subtitle: "נהל בקשות תמיכת לקוחות בפלטפורמה" },
-      pricing: { title: "ניהול תמחור", subtitle: "נהל תוכניות מנוי ורמות מחירים" },
-      promotions: { title: "הצעות קידום", subtitle: "צור ונהל קמפיינים פרסומיים", detailsTitle: "פרטי קידום" },
-      subscriptions: { title: "מנויים", subtitle: "עקוב ונהל מנויי יצרנים", activeSubscriptions: "מנויים פעילים", monthlyRevenue: "הכנסה חודשית" },
-      insights: { title: "ניהול תובנות", subtitle: "נהל מאמרים ותובנות תעשייה", articles: "מאמרים" },
-      certificatetype: { title: "ניהול הסמכות", subtitle: "סקור תעודות יצרנים ונהל סוגי תעודות" },
-      analytics: { title: "אנליטיקה", subtitle: "ביצועי פלטפורמה ותובנות", performanceOverview: "סקירת ביצועים", userGrowth: "צמיחת משתמשים", revenueTrends: "מגמות הכנסות" },
-      contact: { title: "פניות יצירת קשר", subtitle: "צפה ונהל פניות שהתקבלו מדף יצירת הקשר.", deleteTitle: "למחוק פנייה?", emailCopied: "האימייל הועתק!" },
-      faq: { title: "ניהול שאלות נפוצות", subtitle: "נהל שאלות נפוצות וקטגוריות" },
-      helpCenter: { title: "ניהול מרכז עזרה", subtitle: "נהל מאמרי עזרה ותיעוד" },
-      siteSettings: { title: "הגדרות אתר", subtitle: "הגדר הגדרות פלטפורמה גלובליות" },
-      reports: { title: "דוחות", subtitle: "סקור ופתור תוכן שדווח" },
-      settings: { title: "הגדרות", subtitle: "הגדרות והעדפות הפלטפורמה" },
-    },
-    support: { active: "פעיל", open: "פתוח", waiting: "ממתין", resolved: "נפתר", all: "הכל", buyer: "קונה", supplier: "ספק", serviceProvider: "ספק שירות", user: "משתמש", searchTickets: "חפש קריאות...", selectTicket: "בחר קריאה לצפייה בפרטים", typeReply: "הקלד תגובה...", sendReply: "שלח תגובה", markResolved: "סמן כנפתר", reopen: "פתח מחדש", priority: "עדיפות", status: "סטטוס", customer: "לקוח", created: "נוצר", lastUpdated: "עודכן לאחרונה", cannedReply1: "תודה על פנייתך — אני בודק את זה עכשיו.", cannedReply2: "האם תוכל לשתף עוד פרטים כדי שאוכל לעזור מהר יותר?", cannedReply3: "העברתי את הנושא לצוות הרלוונטי ואעדכן אותך בקרוב.", cannedReply4: "שמח שזה נפתר! ספר לי אם יש עוד משהו." },
-    rfqs: { searchPlaceholder: "חפש בקשות הצעות...", allStatus: "כל הסטטוסים", noRfqs: "לא נמצאו בקשות הצעות" },
-  },
+  admin: adminHe,
 } as const;
 
 export default he as unknown as TranslationKeys;

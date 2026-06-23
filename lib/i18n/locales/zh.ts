@@ -1,4 +1,5 @@
 import type { TranslationKeys } from "./en";
+import adminZh from "./admin/zh";
 
 // NOTE: this file replaces the original Spanish translations and now provides
 // Chinese (Simplified) translations under the existing `es` locale code.
@@ -1952,40 +1953,7 @@ const es = {
         timestamp: "时间戳"
       }
     },
-  admin: {
-    layout: { panelTitle: "管理面板", superAdmin: "超级管理员", loading: "加载中...", searchPlaceholder: "搜索用户、供应商、产品..." },
-    common: { success: "成功", error: "错误", notice: "通知", approved: "已批准", deleted: "已删除！", updating: "更新中...", resetting: "重置中...", buyers: "买家", manufacturers: "制造商", openCount: "{count} 个待处理", ticketNumber: "工单 #{id}", stepOf: "第 {current} 步，共 {total} 步", stepSubtitle: "向平台添加新制造商", moderationActive: "审核已启用", flagged: "已标记", searchUsers: "搜索用户...", searchSuppliers: "搜索供应商...", searchProducts: "搜索产品...", searchOrders: "搜索订单...", all: "全部", previous: "上一页", next: "下一页", actions: "操作", status: "状态", view: "查看", edit: "编辑", delete: "删除", cancel: "取消", save: "保存", loading: "加载中...", noResults: "未找到结果", approveFailed: "批准申请失败。", rejectReasonRequired: "请提供拒绝原因。", approvedDesc: "已批准 {name}。", approvalNotWired: "类型 {type} 的批准尚未接入。已从列表中移除。" },
-    pages: {
-      dashboard: { title: "管理仪表板", subtitle: "平台活动和待处理任务概览", recentActivity: "最近活动", pendingApprovals: "待批准", viewAll: "查看全部", noPendingApprovals: "暂无待批准项", quickLinks: "快捷链接" },
-      users: { title: "用户", subtitle: "管理所有平台用户", searchPlaceholder: "搜索用户..." },
-      createManufacturer: { title: "创建制造商账户", subtitle: "第 {step} 步，共 {total} 步 - 向平台添加新制造商" },
-      mfgRegistrations: { title: "制造商注册", subtitle: "审核待处理申请、批准或删除条目" },
-      reviewManagement: { title: "评论管理", subtitle: "管理官方审核请求和工厂验证提交" },
-      suppliers: { title: "供应商", subtitle: "管理供应商账户和评论", searchPlaceholder: "搜索供应商..." },
-      products: { title: "产品", subtitle: "审核和管理产品列表", searchPlaceholder: "搜索产品..." },
-      industries: { title: "行业与类别", subtitle: "此页面控制主类别、类别和子类别。" },
-      filters: { title: "快速筛选", subtitle: "管理供应商和行业页面上显示的筛选选项" },
-      reviews: { title: "评论管理", subtitle: "审核和管理供应商评论" },
-      rfqs: { title: "平台报价申请", subtitle: "监控所有买家请求和制造商报价" },
-      orders: { title: "订单", subtitle: "监控平台上所有产品订单", searchPlaceholder: "搜索订单...", totalOrders: "订单总数" },
-      messages: { title: "消息中心", subtitle: "监控和审核买家与制造商之间的对话" },
-      supportTickets: { title: "支持工单", subtitle: "管理平台上的客户支持请求" },
-      pricing: { title: "定价管理", subtitle: "管理订阅计划和定价层级" },
-      promotions: { title: "促销活动", subtitle: "创建和管理促销活动", detailsTitle: "促销详情" },
-      subscriptions: { title: "订阅", subtitle: "监控和管理制造商订阅", activeSubscriptions: "活跃订阅", monthlyRevenue: "月收入" },
-      insights: { title: "见解管理", subtitle: "管理文章和行业见解", articles: "文章" },
-      certificatetype: { title: "认证管理", subtitle: "审核制造商证书并管理证书类型" },
-      analytics: { title: "数据分析", subtitle: "平台表现和洞察", performanceOverview: "表现概览", userGrowth: "用户增长", revenueTrends: "收入趋势" },
-      contact: { title: "联系提交", subtitle: "查看和管理来自联系页面的咨询。", deleteTitle: "删除提交？", emailCopied: "邮箱已复制到剪贴板！" },
-      faq: { title: "常见问题管理", subtitle: "管理常见问题和类别" },
-      helpCenter: { title: "帮助中心管理", subtitle: "管理帮助文章和文档" },
-      siteSettings: { title: "网站设置", subtitle: "配置全局平台设置" },
-      reports: { title: "报告", subtitle: "审核和处理被举报的内容" },
-      settings: { title: "设置", subtitle: "平台配置和偏好" },
-    },
-    support: { active: "活跃", open: "待处理", waiting: "等待中", resolved: "已解决", all: "全部", buyer: "买家", supplier: "供应商", serviceProvider: "服务提供商", user: "用户", searchTickets: "搜索工单...", selectTicket: "选择工单查看详情", typeReply: "输入回复...", sendReply: "发送回复", markResolved: "标记为已解决", reopen: "重新打开", priority: "优先级", status: "状态", customer: "客户", created: "创建时间", lastUpdated: "最后更新", cannedReply1: "感谢您的联系——我正在处理中。", cannedReply2: "能否提供更多细节以便我更快帮助您？", cannedReply3: "我已将此问题升级至相关团队，将尽快更新您。", cannedReply4: "很高兴问题已解决！如有其他需要请告诉我。" },
-    rfqs: { searchPlaceholder: "搜索报价申请...", allStatus: "全部状态", noRfqs: "未找到报价申请" },
-  },
+  admin: adminZh,
 } as const;
 
 export default es as unknown as TranslationKeys;

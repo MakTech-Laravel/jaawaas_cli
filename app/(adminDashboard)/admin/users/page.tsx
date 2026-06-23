@@ -93,36 +93,41 @@ import { useAuth } from "@/lib/auth-context"
 // Start with an empty list; the component will load data from the API.
 const initialUsers: UserItem[] = []
 
-const statusConfig: Record<UserStatus, { label: string; color: string }> = {
-  active: { label: "Active", color: "bg-emerald-100 text-emerald-700" },
-  pending: { label: "Pending", color: "bg-amber-100 text-amber-700" },
-  suspended: { label: "Suspended", color: "bg-red-100 text-red-700" },
-  deactivated: { label: "Deactivated", color: "bg-slate-100 text-slate-700" },
-  deleted: { label: "Deleted", color: "bg-rose-100 text-rose-700" },
-}
-
-function getStatusInfo(status?: string | UserStatus) {
-  const key = String(status ?? "active").toLowerCase() as UserStatus
-  const info = statusConfig[key]
-  if (info) return info
-
-  const label = typeof status === "string" && status.trim()
-    ? status.charAt(0).toUpperCase() + status.slice(1)
-    : "Unknown"
-
-  return { label, color: "bg-slate-100 text-slate-700" }
-}
-
-const roleConfig: Record<UserRole, { label: string; icon: typeof User; color: string }> = {
-  buyer: { label: "Buyer", icon: User, color: "bg-blue-100 text-blue-700" },
-  manufacturer: { label: "Manufacturer", icon: Factory, color: "bg-purple-100 text-purple-700" },
-  admin: { label: "Admin", icon: Shield, color: "bg-red-100 text-red-700" },
-}
-
 export default function AdminUsersPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.users
   const c = t.admin.common
+  const userStatus = t.admin.userStatus
+  const roles = t.admin.roles
+
+  const statusColors: Record<UserStatus, string> = {
+    active: "bg-emerald-100 text-emerald-700",
+    pending: "bg-amber-100 text-amber-700",
+    suspended: "bg-red-100 text-red-700",
+    deactivated: "bg-slate-100 text-slate-700",
+    deleted: "bg-rose-100 text-rose-700",
+  }
+
+  const getStatusInfo = (status?: string | UserStatus) => {
+    const key = String(status ?? "active").toLowerCase() as UserStatus
+    const color = statusColors[key]
+    if (color) {
+      return { label: userStatus[key], color }
+    }
+
+    const label = typeof status === "string" && status.trim()
+      ? status.charAt(0).toUpperCase() + status.slice(1)
+      : roles.unknown
+
+    return { label, color: "bg-slate-100 text-slate-700" }
+  }
+
+  const roleConfig: Record<UserRole, { label: string; icon: typeof User; color: string }> = {
+    buyer: { label: roles.buyer, icon: User, color: "bg-blue-100 text-blue-700" },
+    manufacturer: { label: roles.manufacturer, icon: Factory, color: "bg-purple-100 text-purple-700" },
+    admin: { label: roles.admin, icon: Shield, color: "bg-red-100 text-red-700" },
+  }
+
   const router = useRouter()
   const { toast } = useToast()
   const { user: currentAuthUser } = useAuth()
@@ -222,14 +227,14 @@ export default function AdminUsersPage() {
   }
 
   const updateUserStatus = async (id: string, status: UserStatus, reason?: string) => {
-    const actionText = status === 'active' ? 'Activating' : status === 'deactivated' ? 'Deactivating' : 'Updating'
-    toast({ title: `${actionText} user...` })
+    const actionText = status === 'active' ? c.activatingUserProgress : status === 'deactivated' ? c.deactivatingUserProgress : c.updatingUserProgress
+    toast({ title: actionText })
 
     try {
       if (status === 'active') {
         await apiClient.patch(`/admin/users/${id}/active`)
         setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active' } : u))
-        toast({ title: 'User activated.' })
+        toast({ title: p.userActivated })
         setReloadKey(k => k + 1)
         return
       }
@@ -237,7 +242,7 @@ export default function AdminUsersPage() {
       if (status === 'deactivated') {
         await apiClient.patch(`/admin/users/${id}/deactivate`, { reason: reason ?? undefined })
         setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'deactivated' } : u))
-        toast({ title: 'User deactivated.' })
+        toast({ title: p.userDeactivated })
         setReloadKey(k => k + 1)
         return
       }
@@ -245,15 +250,15 @@ export default function AdminUsersPage() {
       if (status === 'suspended') {
         // No API provided for suspend — perform local update only
         setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'suspended' } : u))
-        toast({ title: 'User suspended (local update).' })
+        toast({ title: c.userSuspendedLocal })
         return
       }
 
       // Fallback: local update
       setUsers(prev => prev.map(u => u.id === id ? { ...u, status } : u))
-      toast({ title: 'User status updated (local).' })
+      toast({ title: c.userStatusUpdatedLocal })
     } catch (err) {
-      toast({ title: 'Action failed', description: getApiErrorMessage(err), variant: 'destructive' })
+      toast({ title: c.actionFailed, description: getApiErrorMessage(err), variant: 'destructive' })
     }
   }
 
@@ -261,16 +266,16 @@ export default function AdminUsersPage() {
     if (selectedUsers.length === 0) return
 
     if (status === 'active') {
-      toast({ title: 'Activating users...' })
+      toast({ title: c.activatingUsers })
       try {
         await Promise.all(selectedUsers.map((id) => apiClient.patch(`/admin/users/${id}/active`)))
         setUsers(prev => prev.map(u => selectedUsers.includes(u.id) ? { ...u, status: 'active' } : u))
         setSelectedUsers([])
-        toast({ title: 'Users activated.' })
+        toast({ title: c.usersActivated })
         setReloadKey(k => k + 1)
         return
       } catch (err) {
-        toast({ title: 'Bulk activation failed', description: getApiErrorMessage(err), variant: 'destructive' })
+        toast({ title: c.bulkActivationFailed, description: getApiErrorMessage(err), variant: 'destructive' })
         return
       }
     }
@@ -284,35 +289,35 @@ export default function AdminUsersPage() {
     // For other statuses, do local update only
     setUsers(prev => prev.map(u => selectedUsers.includes(u.id) ? { ...u, status } : u))
     setSelectedUsers([])
-    toast({ title: 'Status updated (local).' })
+    toast({ title: c.statusUpdatedLocal })
   }
 
   const deleteUser = async (id: string, reason?: string) => {
-    toast({ title: 'Deleting user...' })
+    toast({ title: c.deletingUser })
     try {
       await apiClient.delete(`/admin/users/${id}`, { data: { reason: reason ?? undefined } })
       setUsers(prev => prev.filter(u => u.id !== id))
-      toast({ title: 'User deleted.' })
+      toast({ title: p.userDeleted })
       setReloadKey(k => k + 1)
     } catch (err) {
-      toast({ title: 'Delete failed', description: getApiErrorMessage(err), variant: 'destructive' })
+      toast({ title: c.deleteFailed, description: getApiErrorMessage(err), variant: 'destructive' })
     }
   }
 
   const performBulkDeactivate = async () => {
     if (selectedUsers.length === 0) return
     setActionLoading(true)
-    toast({ title: 'Deactivating users...' })
+    toast({ title: c.deactivatingUsers })
     try {
       await Promise.all(selectedUsers.map((id) => apiClient.patch(`/admin/users/${id}/deactivate`, { reason: bulkDeactivateReason ?? undefined })))
       setUsers(prev => prev.map(u => selectedUsers.includes(u.id) ? { ...u, status: 'deactivated' } : u))
       setSelectedUsers([])
-      toast({ title: 'Users deactivated.' })
+      toast({ title: c.usersDeactivated })
       setReloadKey(k => k + 1)
       setBulkDeactivateOpen(false)
       setBulkDeactivateReason("")
     } catch (err) {
-      toast({ title: 'Bulk deactivate failed', description: getApiErrorMessage(err), variant: 'destructive' })
+      toast({ title: c.bulkDeactivateFailed, description: getApiErrorMessage(err), variant: 'destructive' })
     } finally {
       setActionLoading(false)
     }
@@ -324,7 +329,7 @@ export default function AdminUsersPage() {
       const res = await apiClient.get(`/admin/users/${userId}`)
       const u = res.data?.data
       if (!u) {
-        toast({ title: "User not found", description: "The user details could not be retrieved.", variant: "destructive" })
+        toast({ title: c.userNotFound, description: c.userNotFoundDesc, variant: "destructive" })
         return
       }
 
@@ -358,7 +363,7 @@ export default function AdminUsersPage() {
 
       setCurrentUser(mapped)
     } catch (err) {
-      toast({ title: "Failed to load user details", description: getApiErrorMessage(err) || String(err), variant: "destructive" })
+      toast({ title: c.failedToLoadUserDetails, description: getApiErrorMessage(err) || String(err), variant: "destructive" })
     } finally {
       setDetailLoading(false)
     }
@@ -391,7 +396,7 @@ export default function AdminUsersPage() {
       if (existingConversation) {
         // Conversation already exists, navigate to it
         setShowUserDialog(false)
-        toast({ title: "Conversation found", description: "Opening existing conversation..." })
+        toast({ title: p.conversationFound, description: c.openingConversation })
         router.push(`/messages?conversation=${existingConversation.id}`)
       } else {
         // Create a new conversation
@@ -399,17 +404,17 @@ export default function AdminUsersPage() {
         
         if (conversation) {
           setShowUserDialog(false)
-          toast({ title: "Conversation started", description: "Redirecting to messages..." })
+          toast({ title: c.conversationStarted, description: c.redirectingToMessages })
           router.push(`/messages?conversation=${conversation.id}`)
         } else {
-          toast({ title: "Failed to start conversation", description: "Could not create conversation with this user", variant: "destructive" })
+          toast({ title: c.error, description: c.failedToStartConversation, variant: "destructive" })
         }
       }
     } catch (err) {
       const errorMsg = getApiErrorMessage(err)
       // Handle the "conversation already exists" error gracefully
       if (errorMsg?.includes("already exists")) {
-        toast({ title: "Conversation exists", description: "This conversation already exists. Opening it...", variant: "default" })
+        toast({ title: c.conversationExists, description: c.conversationExistsDesc, variant: "default" })
         // Fetch conversations again and find the one that was just checked
         const existingConversations = await getConversations()
         const existingConversation = existingConversations.find(conv => 
@@ -420,7 +425,7 @@ export default function AdminUsersPage() {
           router.push(`/messages?conversation=${existingConversation.id}`)
         }
       } else {
-        toast({ title: "Error", description: errorMsg || "Failed to contact user", variant: "destructive" })
+        toast({ title: c.error, description: errorMsg || c.failedToContactUser, variant: "destructive" })
       }
     } finally {
       setContactingUserId(null)
@@ -434,8 +439,8 @@ export default function AdminUsersPage() {
         <p className="mt-1 text-muted-foreground">
           {p.subtitle}
           <span className="ml-3">
-            <Badge variant="outline" className="mr-2">{buyerCount} Buyers</Badge>
-            <Badge variant="outline">{manufacturerCount} Manufacturers</Badge>
+            <Badge variant="outline" className="mr-2">{p.buyersBadge.replace("{count}", String(buyerCount))}</Badge>
+            <Badge variant="outline">{p.manufacturersBadge.replace("{count}", String(manufacturerCount))}</Badge>
           </span>
         </p>
       </div>
@@ -454,38 +459,38 @@ export default function AdminUsersPage() {
         <div className="flex gap-3">
           <Select value={roleFilter} onValueChange={setRoleFilter}>
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="Role" />
+              <SelectValue placeholder={c.role} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="buyer">Buyers</SelectItem>
-              <SelectItem value="manufacturer">Manufacturers</SelectItem>
-              <SelectItem value="admin">Admins</SelectItem>
+              <SelectItem value="all">{c.allRoles}</SelectItem>
+              <SelectItem value="buyer">{c.buyers}</SelectItem>
+              <SelectItem value="manufacturer">{c.manufacturers}</SelectItem>
+              <SelectItem value="admin">{c.admins}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={c.status} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="suspended">Suspended</SelectItem>
-              <SelectItem value="deactivated">Deactivated</SelectItem>
-              <SelectItem value="deleted">Deleted</SelectItem>
-              <SelectItem value="scheduled_deletion">Scheduled Deletion</SelectItem>
+              <SelectItem value="all">{c.allStatus}</SelectItem>
+              <SelectItem value="active">{userStatus.active}</SelectItem>
+              <SelectItem value="pending">{userStatus.pending}</SelectItem>
+              <SelectItem value="suspended">{userStatus.suspended}</SelectItem>
+              <SelectItem value="deactivated">{userStatus.deactivated}</SelectItem>
+              <SelectItem value="deleted">{userStatus.deleted}</SelectItem>
+              <SelectItem value="scheduled_deletion">{c.scheduledDeletion}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={String(perPage)} onValueChange={(v) => { setPerPage(Number(v)); setPage(1); }}>
             <SelectTrigger className="w-28">
-              <SelectValue placeholder="Per page" />
+              <SelectValue placeholder={c.perPage} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="5">5 / page</SelectItem>
-              <SelectItem value="10">10 / page</SelectItem>
-              <SelectItem value="25">25 / page</SelectItem>
-              <SelectItem value="50">50 / page</SelectItem>
+              <SelectItem value="5">{c.perPageOption.replace("{count}", "5")}</SelectItem>
+              <SelectItem value="10">{c.perPageOption.replace("{count}", "10")}</SelectItem>
+              <SelectItem value="25">{c.perPageOption.replace("{count}", "25")}</SelectItem>
+              <SelectItem value="50">{c.perPageOption.replace("{count}", "50")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -494,22 +499,22 @@ export default function AdminUsersPage() {
       {/* Bulk Actions */}
       {selectedUsers.length > 0 && (
         <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/50 p-3">
-          <span className="text-sm font-medium">{selectedUsers.length} selected</span>
+          <span className="text-sm font-medium">{p.selectedCount.replace("{count}", String(selectedUsers.length))}</span>
             <div className="flex gap-2">
             <Button size="sm" onClick={() => bulkUpdateStatus("active")}>
               <CheckCircle className="mr-1 h-3 w-3" />
-              Activate
+              {c.activate}
             </Button>
             {/* <Button size="sm" variant="outline" onClick={() => bulkUpdateStatus("suspended")}> 
               <Ban className="mr-1 h-3 w-3" />
               Suspend
             </Button> */}
             <Button size="sm" variant="outline" onClick={() => { setBulkDeactivateReason(""); setBulkDeactivateOpen(true); }}>
-              Deactivate
+              {c.deactivate}
             </Button>
           </div>
           <Button size="sm" variant="ghost" onClick={() => setSelectedUsers([])}>
-            Clear
+            {c.clear}
           </Button>
         </div>
       )}
@@ -517,7 +522,7 @@ export default function AdminUsersPage() {
       {isLoading && (
         <div className="text-center py-12">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-          <p className="mt-4 text-muted-foreground">Loading users...</p>
+          <p className="mt-4 text-muted-foreground">{p.loadingUsers}</p>
         </div>
       )}
 
@@ -566,17 +571,17 @@ export default function AdminUsersPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => openUserDetails(user)}>
                           <Eye className="mr-2 h-4 w-4" />
-                          View Details
+                          {c.viewDetails}
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Mail className="mr-2 h-4 w-4" />
-                          Send Email
+                          {c.sendEmail}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {user.status !== "active" && (
                           <DropdownMenuItem onClick={() => updateUserStatus(user.id, "active")}>
                             <CheckCircle className="mr-2 h-4 w-4 text-emerald-600" />
-                            Activate
+                            {c.activate}
                           </DropdownMenuItem>
                         )}
                         {/* {user.status !== "suspended" && (
@@ -587,13 +592,13 @@ export default function AdminUsersPage() {
                         )} */}
                         {user.status !== "deactivated" && (
                           <DropdownMenuItem onClick={() => { setDeactivateTarget(user.id); setDeactivateReason(""); setDeactivateOpen(true); }}>
-                            Deactivate
+                            {c.deactivate}
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={() => { setDeleteTarget(user.id); setDeleteReason(""); setDeleteOpen(true); }}>
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {c.delete}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -607,7 +612,7 @@ export default function AdminUsersPage() {
         {filteredUsers.length === 0 && (
           <div className="text-center py-12">
             <User className="mx-auto h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-4 text-muted-foreground">No users found</p>
+            <p className="mt-4 text-muted-foreground">{p.noUsers}</p>
           </div>
         )}
 
@@ -615,7 +620,10 @@ export default function AdminUsersPage() {
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              Showing {meta?.from ?? (users.length ? 1 : 0)} - {meta?.to ?? users.length} of {meta?.total ?? users.length}
+              {c.showing
+                .replace("{from}", String(meta?.from ?? (users.length ? 1 : 0)))
+                .replace("{to}", String(meta?.to ?? users.length))
+                .replace("{total}", String(meta?.total ?? users.length))}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -624,16 +632,16 @@ export default function AdminUsersPage() {
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={!!meta ? meta.current_page <= 1 : page <= 1}
               >
-                Previous
+                {c.previous}
               </Button>
-              <div className="text-sm text-muted-foreground">Page {meta?.current_page ?? page} / {meta?.last_page ?? 1}</div>
+              <div className="text-sm text-muted-foreground">{c.pageOf.replace("{page}", String(meta?.current_page ?? page)).replace("{lastPage}", String(meta?.last_page ?? 1))}</div>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => setPage((p) => p + 1)}
                 disabled={!!meta ? meta.current_page >= meta.last_page : users.length < perPage}
               >
-                Next
+                {c.next}
               </Button>
             </div>
           </div>
@@ -648,13 +656,13 @@ export default function AdminUsersPage() {
               <th className="px-4 py-3 text-left">
                 <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
               </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground">User</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden sm:table-cell">Role</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden md:table-cell">Company</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden lg:table-cell">Country</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden lg:table-cell">Joined</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Status</th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-foreground">Actions</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground">{p.tableUser}</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden sm:table-cell">{p.tableRole}</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden md:table-cell">{p.tableCompany}</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden lg:table-cell">{p.tableCountry}</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden lg:table-cell">{p.tableJoined}</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground">{p.tableStatus}</th>
+              <th className="px-4 py-3 text-right text-sm font-medium text-foreground">{p.tableActions}</th>
             </tr>
           </thead>
           <tbody>
@@ -713,17 +721,17 @@ export default function AdminUsersPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => openUserDetails(user)}>
                           <Eye className="mr-2 h-4 w-4" />
-                          View Details
+                          {c.viewDetails}
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Mail className="mr-2 h-4 w-4" />
-                          Send Email
+                          {c.sendEmail}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {user.status !== "active" && (
                           <DropdownMenuItem onClick={() => updateUserStatus(user.id, "active")}>
                             <CheckCircle className="mr-2 h-4 w-4 text-emerald-600" />
-                            Activate
+                            {c.activate}
                           </DropdownMenuItem>
                         )}
                         {/* {user.status !== "suspended" && (
@@ -734,7 +742,7 @@ export default function AdminUsersPage() {
                         )} */}
                         {user.status !== "deactivated" && (
                           <DropdownMenuItem onClick={() => { setDeactivateTarget(user.id); setDeactivateReason(""); setDeactivateOpen(true); }}>
-                            Deactivate
+                            {c.deactivate}
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
@@ -743,7 +751,7 @@ export default function AdminUsersPage() {
                           onClick={() => { setDeleteTarget(user.id); setDeleteReason(""); setDeleteOpen(true); }}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {c.delete}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -757,14 +765,17 @@ export default function AdminUsersPage() {
         {filteredUsers.length === 0 && (
           <div className="text-center py-12">
             <User className="mx-auto h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-4 text-muted-foreground">No users found</p>
+            <p className="mt-4 text-muted-foreground">{p.noUsers}</p>
           </div>
         )}
         {/* Pagination */}
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              Showing {meta?.from ?? (users.length ? 1 : 0)} - {meta?.to ?? users.length} of {meta?.total ?? users.length}
+              {c.showing
+                .replace("{from}", String(meta?.from ?? (users.length ? 1 : 0)))
+                .replace("{to}", String(meta?.to ?? users.length))
+                .replace("{total}", String(meta?.total ?? users.length))}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -773,16 +784,16 @@ export default function AdminUsersPage() {
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={!!meta ? meta.current_page <= 1 : page <= 1}
               >
-                Previous
+                {c.previous}
               </Button>
-              <div className="text-sm text-muted-foreground">Page {meta?.current_page ?? page} / {meta?.last_page ?? 1}</div>
+              <div className="text-sm text-muted-foreground">{c.pageOf.replace("{page}", String(meta?.current_page ?? page)).replace("{lastPage}", String(meta?.last_page ?? 1))}</div>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => setPage((p) => p + 1)}
                 disabled={!!meta ? meta.current_page >= meta.last_page : users.length < perPage}
               >
-                Next
+                {c.next}
               </Button>
             </div>
           </div>
@@ -795,13 +806,13 @@ export default function AdminUsersPage() {
       <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>User Details</DialogTitle>
+            <DialogTitle>{p.userDetails}</DialogTitle>
             <DialogDescription>
-              View and manage user information
+              {p.userDetailsDesc}
             </DialogDescription>
           </DialogHeader>
           {detailLoading && (
-            <div className="py-6 text-center text-sm text-muted-foreground">Loading user details...</div>
+            <div className="py-6 text-center text-sm text-muted-foreground">{p.loadingDetails}</div>
           )}
 
           {!detailLoading && currentUser && (
@@ -833,80 +844,80 @@ export default function AdminUsersPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-muted-foreground">Company:</span>
+                  <span className="text-muted-foreground">{p.companyLabel}</span>
                   <p className="font-medium">{typeof currentUser.company === 'string' ? currentUser.company : (currentUser.company?.company_name ?? "-")}</p>
                 </div>
 
                 <div>
-                  <span className="text-muted-foreground">Timezone:</span>
+                  <span className="text-muted-foreground">{p.timezoneLabel}</span>
                   <p className="font-medium">{currentUser.timezone ?? "-"}</p>
                 </div>
 
                 <div>
-                  <span className="text-muted-foreground">Preferred language:</span>
+                  <span className="text-muted-foreground">{p.languageLabel}</span>
                   <p className="font-medium">{currentUser.preferred_language ?? "-"}</p>
                 </div>
 
                 <div>
-                  <span className="text-muted-foreground">Preferred currency:</span>
+                  <span className="text-muted-foreground">{p.currencyLabel}</span>
                   <p className="font-medium">{currentUser.preferred_currency ? `${currentUser.preferred_currency.code} - ${currentUser.preferred_currency.symbol}` : "-"}</p>
                 </div>
 
                 <div>
-                  <span className="text-muted-foreground">Created at:</span>
+                  <span className="text-muted-foreground">{p.createdAtLabel}</span>
                   <p className="font-medium">{currentUser.created_at ?? currentUser.joinedAt ?? "-"}</p>
                 </div>
 
                 <div>
-                  <span className="text-muted-foreground">Last updated:</span>
+                  <span className="text-muted-foreground">{p.updatedAtLabel}</span>
                   <p className="font-medium">{currentUser.updated_at ?? "-"}</p>
                 </div>
 
                 <div>
-                  <span className="text-muted-foreground">Agreed to terms:</span>
-                  <p className="font-medium">{currentUser.agreed_to_terms ? "Yes" : "No"}</p>
+                  <span className="text-muted-foreground">{p.agreedTermsLabel}</span>
+                  <p className="font-medium">{currentUser.agreed_to_terms ? c.yes : c.no}</p>
                 </div>
 
                 <div>
-                  <span className="text-muted-foreground">Two factor enabled:</span>
-                  <p className="font-medium">{currentUser.two_factor_enabled ? "Yes" : "No"}</p>
+                  <span className="text-muted-foreground">{p.twoFactorLabel}</span>
+                  <p className="font-medium">{currentUser.two_factor_enabled ? c.yes : c.no}</p>
                 </div>
 
                 {currentUser.deactivated_at && (
                   <div className="md:col-span-2">
-                    <span className="text-muted-foreground">Deactivated at:</span>
+                    <span className="text-muted-foreground">{p.deactivatedAtLabel}</span>
                     <p className="font-medium">{currentUser.deactivated_at}</p>
                     {currentUser.deactivated_reason && (
-                      <p className="text-sm text-muted-foreground">Reason: {currentUser.deactivated_reason}</p>
+                      <p className="text-sm text-muted-foreground">{p.reasonLabel} {currentUser.deactivated_reason}</p>
                     )}
                   </div>
                 )}
 
                 <div className="md:col-span-2">
-                  <span className="text-muted-foreground">Notifications:</span>
+                  <span className="text-muted-foreground">{p.notificationsLabel}</span>
                   <div className="mt-1 flex flex-wrap gap-2">
-                    <Badge variant="outline">Quotes: {currentUser.quote_notification ?? 0}</Badge>
-                    <Badge variant="outline">Messages: {currentUser.message_notification ?? 0}</Badge>
-                    <Badge variant="outline">Supplier updates: {currentUser.supplier_update ?? 0}</Badge>
-                    <Badge variant="outline">Weekly digest: {currentUser.weekly_digest ?? 0}</Badge>
-                    <Badge variant="outline">Marketing: {currentUser.marketing_promotion ?? 0}</Badge>
+                    <Badge variant="outline">{p.notificationsQuotes.replace("{count}", String(currentUser.quote_notification ?? 0))}</Badge>
+                    <Badge variant="outline">{p.notificationsMessages.replace("{count}", String(currentUser.message_notification ?? 0))}</Badge>
+                    <Badge variant="outline">{p.notificationsSupplierUpdates.replace("{count}", String(currentUser.supplier_update ?? 0))}</Badge>
+                    <Badge variant="outline">{p.notificationsWeeklyDigest.replace("{count}", String(currentUser.weekly_digest ?? 0))}</Badge>
+                    <Badge variant="outline">{p.notificationsMarketing.replace("{count}", String(currentUser.marketing_promotion ?? 0))}</Badge>
                   </div>
                 </div>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowUserDialog(false)}>Close</Button>
+            <Button variant="outline" onClick={() => setShowUserDialog(false)}>{c.close}</Button>
             <Button onClick={contactUser} disabled={contactingUserId !== null}>
               {contactingUserId ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Contacting...
+                  {c.contacting}
                 </>
               ) : (
                 <>
                   <Mail className="mr-2 h-4 w-4" />
-                  Contact User
+                  {c.contactUser}
                 </>
               )}
             </Button>
@@ -917,15 +928,15 @@ export default function AdminUsersPage() {
       <Dialog open={deactivateOpen} onOpenChange={setDeactivateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Deactivate User</DialogTitle>
-            <DialogDescription>Provide a reason for deactivating this user.</DialogDescription>
+            <DialogTitle>{p.deactivateUser}</DialogTitle>
+            <DialogDescription>{p.deactivateDesc}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <Label>Reason</Label>
-            <Textarea value={deactivateReason} onChange={(e) => setDeactivateReason((e.target as HTMLTextAreaElement).value)} placeholder="Reason for deactivation" />
+            <Label>{c.reason}</Label>
+            <Textarea value={deactivateReason} onChange={(e) => setDeactivateReason((e.target as HTMLTextAreaElement).value)} placeholder={p.reasonForDeactivation} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeactivateOpen(false)} disabled={actionLoading}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeactivateOpen(false)} disabled={actionLoading}>{c.cancel}</Button>
             <Button onClick={async () => {
               if (!deactivateTarget) return
               setActionLoading(true)
@@ -936,7 +947,7 @@ export default function AdminUsersPage() {
               setDeactivateReason("")
             }} disabled={actionLoading}>
               {actionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Deactivate
+              {c.deactivate}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -946,15 +957,15 @@ export default function AdminUsersPage() {
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
-            <DialogDescription>Deleting a user is permanent. Provide a reason (optional).</DialogDescription>
+            <DialogTitle>{p.deleteUser}</DialogTitle>
+            <DialogDescription>{p.deleteUserDesc}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <Label>Reason</Label>
-            <Textarea value={deleteReason} onChange={(e) => setDeleteReason((e.target as HTMLTextAreaElement).value)} placeholder="Reason for deletion (optional)" />
+            <Label>{c.reason}</Label>
+            <Textarea value={deleteReason} onChange={(e) => setDeleteReason((e.target as HTMLTextAreaElement).value)} placeholder={p.reasonForDeletion} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={actionLoading}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={actionLoading}>{c.cancel}</Button>
             <Button variant="destructive" onClick={async () => {
               if (!deleteTarget) return
               setActionLoading(true)
@@ -965,7 +976,7 @@ export default function AdminUsersPage() {
               setDeleteReason("")
             }} disabled={actionLoading}>
               {actionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Delete
+              {c.delete}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -975,18 +986,18 @@ export default function AdminUsersPage() {
       <Dialog open={bulkDeactivateOpen} onOpenChange={setBulkDeactivateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Deactivate Selected Users</DialogTitle>
-            <DialogDescription>Provide a reason to deactivate the selected users.</DialogDescription>
+            <DialogTitle>{p.bulkDeactivateTitle}</DialogTitle>
+            <DialogDescription>{p.bulkDeactivateDesc}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <Label>Reason</Label>
-            <Textarea value={bulkDeactivateReason} onChange={(e) => setBulkDeactivateReason((e.target as HTMLTextAreaElement).value)} placeholder="Reason for bulk deactivation" />
+            <Label>{c.reason}</Label>
+            <Textarea value={bulkDeactivateReason} onChange={(e) => setBulkDeactivateReason((e.target as HTMLTextAreaElement).value)} placeholder={p.reasonForBulkDeactivation} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkDeactivateOpen(false)} disabled={actionLoading}>Cancel</Button>
+            <Button variant="outline" onClick={() => setBulkDeactivateOpen(false)} disabled={actionLoading}>{c.cancel}</Button>
             <Button onClick={async () => { await performBulkDeactivate(); }} disabled={actionLoading}>
               {actionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Deactivate
+              {c.deactivate}
             </Button>
           </DialogFooter>
         </DialogContent>

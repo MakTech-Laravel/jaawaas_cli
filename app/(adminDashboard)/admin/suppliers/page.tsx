@@ -79,15 +79,26 @@ interface Supplier extends ManufacturerApplication {
   verificationDocs?: VerificationDocuments
 }
 
-const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive"; color: string }> = {
-  draft: { label: "Draft", variant: "outline", color: "bg-slate-100 text-slate-700" },
-  pending: { label: "Pending Approval", variant: "secondary", color: "bg-amber-100 text-amber-700" },
-  approved: { label: "Approved", variant: "default", color: "bg-emerald-100 text-emerald-700" },
-  active: { label: "Active", variant: "default", color: "bg-emerald-100 text-emerald-700" },
-  deactivated: { label: "Deactivated", variant: "outline", color: "bg-slate-100 text-slate-700" },
-  rejected: { label: "Rejected", variant: "destructive", color: "bg-red-100 text-red-700" },
-  suspended: { label: "Suspended", variant: "destructive", color: "bg-orange-100 text-orange-700" },
-  needs_info: { label: "Needs More Info", variant: "outline", color: "bg-blue-100 text-blue-700" },
+const statusColors: Record<string, string> = {
+  draft: "bg-slate-100 text-slate-700",
+  pending: "bg-amber-100 text-amber-700",
+  approved: "bg-emerald-100 text-emerald-700",
+  active: "bg-emerald-100 text-emerald-700",
+  deactivated: "bg-slate-100 text-slate-700",
+  rejected: "bg-red-100 text-red-700",
+  suspended: "bg-orange-100 text-orange-700",
+  needs_info: "bg-blue-100 text-blue-700",
+}
+
+const statusVariants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+  draft: "outline",
+  pending: "secondary",
+  approved: "default",
+  active: "default",
+  deactivated: "outline",
+  rejected: "destructive",
+  suspended: "destructive",
+  needs_info: "outline",
 }
 
 const PER_PAGE = 10
@@ -96,6 +107,16 @@ export default function AdminSuppliersPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.suppliers
   const c = t.admin.common
+  const supplierStatus = t.admin.supplierStatus
+
+  const getStatusConfig = (statusKey: string) => {
+    const key = statusKey as keyof typeof supplierStatus
+    return {
+      label: supplierStatus[key] ?? supplierStatus.draft,
+      variant: statusVariants[statusKey] ?? "outline",
+      color: statusColors[statusKey] ?? statusColors.draft,
+    }
+  }
   const { user } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
@@ -126,8 +147,8 @@ export default function AdminSuppliersPage() {
         setSuppliers(filtered)
       } catch (err) {
         toast({
-          title: "Error",
-          description: "Failed to load suppliers",
+          title: c.error,
+          description: p.loadFailed,
           variant: "destructive",
         })
       } finally {
@@ -173,13 +194,13 @@ export default function AdminSuppliersPage() {
       setSelectedSuppliers(prev => prev.filter(x => x !== supplierId))
       
       toast({
-        title: "Success",
-        description: "Supplier deleted successfully",
+        title: c.success,
+        description: p.deleteSuccess,
       })
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Failed to delete supplier"
+      const errorMsg = error instanceof Error ? error.message : p.deleteFailed
       toast({
-        title: "Error",
+        title: c.error,
         description: errorMsg,
         variant: "destructive",
       })
@@ -216,8 +237,8 @@ export default function AdminSuppliersPage() {
     setSendingMessage(true)
     try {
       toast({
-        title: "Opening Conversation",
-        description: "Please wait while we set up the chat...",
+        title: p.openingConversation,
+        description: p.settingUpChat,
       })
       const adminId = user?.id || 1
       
@@ -245,8 +266,8 @@ export default function AdminSuppliersPage() {
       }
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: (error.response?.data?.message || JSON.stringify(error.response?.data)) || error.message || "Failed to open conversation.",
+        title: c.error,
+        description: (error.response?.data?.message || JSON.stringify(error.response?.data)) || error.message || p.openConversationFailed,
         variant: "destructive",
       })
       setSendingMessage(false)
@@ -258,8 +279,8 @@ export default function AdminSuppliersPage() {
       // Mark as needs_info (would need API call in real implementation)
       setShowInfoDialog(false)
       toast({
-        title: "Success",
-        description: "Information request sent",
+        title: c.success,
+        description: p.infoRequestSent,
       })
     }
   }
@@ -268,8 +289,8 @@ export default function AdminSuppliersPage() {
     if (!currentSupplier) return
     if (!rejectReason.trim()) {
       toast({
-        title: "Error",
-        description: "Please provide a reason for rejection.",
+        title: c.error,
+        description: c.rejectReasonRequired,
         variant: "destructive",
       })
       return
@@ -281,13 +302,13 @@ export default function AdminSuppliersPage() {
       setSuppliers(prev => prev.filter(s => s.id !== currentSupplier.id))
       setShowRejectDialog(false)
       toast({
-        title: "Success",
-        description: "Supplier rejected successfully",
+        title: c.success,
+        description: p.rejectSuccess,
       })
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to reject supplier.",
+        title: c.error,
+        description: error.message || p.rejectFailed,
         variant: "destructive",
       })
     } finally {
@@ -320,17 +341,17 @@ export default function AdminSuppliersPage() {
         <div className="flex gap-3">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-44">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={c.status} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="deactivated">Deactivated</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-              <SelectItem value="suspended">Suspended</SelectItem>
-              <SelectItem value="needs_info">Needs More Info</SelectItem>
+              <SelectItem value="all">{c.allStatus}</SelectItem>
+              <SelectItem value="draft">{supplierStatus.draft}</SelectItem>
+              <SelectItem value="approved">{supplierStatus.approved}</SelectItem>
+              <SelectItem value="active">{supplierStatus.active}</SelectItem>
+              <SelectItem value="deactivated">{supplierStatus.deactivated}</SelectItem>
+              <SelectItem value="rejected">{supplierStatus.rejected}</SelectItem>
+              <SelectItem value="suspended">{supplierStatus.suspended}</SelectItem>
+              <SelectItem value="needs_info">{supplierStatus.needs_info}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -339,15 +360,15 @@ export default function AdminSuppliersPage() {
       {/* Bulk Actions */}
       {selectedSuppliers.length > 0 && (
         <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/50 p-3">
-          <span className="text-sm font-medium">{selectedSuppliers.length} selected</span>
+          <span className="text-sm font-medium">{c.selectedCount.replace("{count}", String(selectedSuppliers.length))}</span>
           <div className="flex gap-2">
             <Button size="sm" variant="destructive" onClick={bulkDelete} disabled={deleting !== null}>
               <Trash2 className="mr-1 h-3 w-3" />
-              Delete
+              {c.delete}
             </Button>
           </div>
           <Button size="sm" variant="ghost" onClick={() => setSelectedSuppliers([])}>
-            Clear
+            {c.clear}
           </Button>
         </div>
       )}
@@ -356,12 +377,12 @@ export default function AdminSuppliersPage() {
       {loading ? (
         <div className="text-center py-12">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-          <p className="mt-4 text-muted-foreground">Loading suppliers...</p>
+          <p className="mt-4 text-muted-foreground">{p.loading}</p>
         </div>
       ) : filteredSuppliers.length === 0 ? (
         <div className="text-center py-12">
           <Factory className="mx-auto h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-muted-foreground">No suppliers found</p>
+          <p className="mt-4 text-muted-foreground">{p.noSuppliers}</p>
         </div>
       ) : (
         /* Suppliers Grid */
@@ -369,17 +390,17 @@ export default function AdminSuppliersPage() {
           {/* Header Row */}
           <div className="hidden lg:flex items-center gap-4 px-4 py-2 text-sm font-medium text-muted-foreground">
             <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
-            <div className="flex-1">Supplier</div>
-            <div className="w-32">Status</div>
-            <div className="w-24">Rating</div>
-            <div className="w-32">Actions</div>
+            <div className="flex-1">{p.tableSupplier}</div>
+            <div className="w-32">{c.status}</div>
+            <div className="w-24">{c.rating}</div>
+            <div className="w-32">{c.actions}</div>
           </div>
 
           {filteredSuppliers.map((supplier) => {
             const displayName = [supplier.first_name, supplier.last_name].filter(Boolean).join(" ") || "—"
             const displayCompany = supplier.company_name || supplier.company?.company_name || "—"
             const statusKey = (supplier.manufacture_status || supplier.status || "draft").toLowerCase()
-            const config = statusConfig[statusKey] || statusConfig.draft
+            const config = getStatusConfig(statusKey)
 
             return (
               <div key={supplier.id} className="rounded-xl border border-border bg-card p-4">
@@ -411,7 +432,7 @@ export default function AdminSuppliersPage() {
                   </div>
 
                   <div className="w-24 shrink-0 text-sm text-muted-foreground">
-                    N/A
+                    {c.na}
                   </div>
 
                   <div className="flex items-center gap-2 w-32 shrink-0">
@@ -424,11 +445,11 @@ export default function AdminSuppliersPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => openReview(supplier)}>
                           <Eye className="mr-2 h-4 w-4" />
-                          View Details
+                          {c.viewDetails}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleSendMessageAction(supplier)} disabled={sendingMessage}>
                           <MessageSquare className="mr-2 h-4 w-4" />
-                          {sendingMessage ? "Opening..." : "Send Message"}
+                          {sendingMessage ? c.opening : p.sendMessage}
                         </DropdownMenuItem>
                         {/* 
                         <DropdownMenuItem onClick={() => openInfoRequest(supplier)}>
@@ -438,7 +459,7 @@ export default function AdminSuppliersPage() {
                         */}
                         <DropdownMenuItem onClick={() => openReject(supplier)}>
                           <X className="mr-2 h-4 w-4 text-red-600" />
-                          Reject
+                          {c.reject}
                         </DropdownMenuItem>
                         {/*
                         <DropdownMenuItem>
@@ -453,7 +474,7 @@ export default function AdminSuppliersPage() {
                           disabled={deleting === supplier.id}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          {deleting === supplier.id ? "Deleting..." : "Delete"}
+                          {deleting === supplier.id ? c.deleting : c.delete}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -469,9 +490,9 @@ export default function AdminSuppliersPage() {
       <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Supplier Details</DialogTitle>
+            <DialogTitle>{p.supplierDetails}</DialogTitle>
             <DialogDescription>
-              View supplier information and documents
+              {p.supplierDetailsDesc}
             </DialogDescription>
           </DialogHeader>
           {currentSupplier && (
@@ -487,14 +508,14 @@ export default function AdminSuppliersPage() {
                   </h3>
                   <p className="text-sm text-muted-foreground">{currentSupplier.company_name || currentSupplier.company?.company_name}</p>
                 </div>
-                <Badge className={(statusConfig[(currentSupplier.manufacture_status || currentSupplier.status)?.toLowerCase() || "draft"] || statusConfig.draft).color}>
-                  {(statusConfig[(currentSupplier.manufacture_status || currentSupplier.status)?.toLowerCase() || "draft"] || statusConfig.draft).label}
+                <Badge className={getStatusConfig((currentSupplier.manufacture_status || currentSupplier.status)?.toLowerCase() || "draft").color}>
+                  {getStatusConfig((currentSupplier.manufacture_status || currentSupplier.status)?.toLowerCase() || "draft").label}
                 </Badge>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-muted-foreground">Email:</span>
+                  <span className="text-muted-foreground">{c.emailColon}</span>
                   <p className="font-medium">{currentSupplier.email}</p>
                 </div>
               </div>
@@ -502,7 +523,7 @@ export default function AdminSuppliersPage() {
           )}
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowReviewDialog(false)}>
-              Close
+              {c.close}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -512,16 +533,16 @@ export default function AdminSuppliersPage() {
       <Dialog open={showInfoDialog} onOpenChange={setShowInfoDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Request Additional Information</DialogTitle>
+            <DialogTitle>{p.requestInfo}</DialogTitle>
             <DialogDescription>
-              Send a message requesting more information
+              {p.requestInfoDesc}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Message</Label>
+              <Label>{c.message}</Label>
               <Textarea 
-                placeholder="Please provide more details..."
+                placeholder={c.messagePlaceholder}
                 value={infoRequest}
                 onChange={(e) => setInfoRequest(e.target.value)}
                 className="mt-2 min-h-[120px]"
@@ -529,8 +550,8 @@ export default function AdminSuppliersPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInfoDialog(false)}>Cancel</Button>
-            <Button onClick={submitInfoRequest}>Send Request</Button>
+            <Button variant="outline" onClick={() => setShowInfoDialog(false)}>{c.cancel}</Button>
+            <Button onClick={submitInfoRequest}>{p.sendRequest}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -541,17 +562,17 @@ export default function AdminSuppliersPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              Reject Supplier
+              {p.rejectSupplier}
             </DialogTitle>
             <DialogDescription>
-              Provide a reason for rejecting
+              {p.rejectSupplierDesc}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Reason for Rejection</Label>
+              <Label>{p.reasonForRejection}</Label>
               <Textarea 
-                placeholder="The application was rejected because..."
+                placeholder={c.rejectPlaceholder}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 className="mt-2 min-h-[100px]"
@@ -559,15 +580,15 @@ export default function AdminSuppliersPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRejectDialog(false)} disabled={rejecting}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)} disabled={rejecting}>{c.cancel}</Button>
             <Button variant="destructive" onClick={submitRejection} disabled={rejecting}>
               {rejecting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Rejecting...
+                  {c.rejecting}
                 </>
               ) : (
-                "Reject Supplier"
+                p.rejectSupplierButton
               )}
             </Button>
           </DialogFooter>

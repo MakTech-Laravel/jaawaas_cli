@@ -46,8 +46,15 @@ export default function AdminReportsPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.reports
   const c = t.admin.common
+  const rs = t.admin.reportStatus
   const [statusFilter, setStatusFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")
+
+  const priorityLabels: Record<string, string> = {
+    high: c.high,
+    medium: c.medium,
+    low: c.low,
+  }
 
   const filteredReports = reports.filter(report => {
     if (statusFilter !== "all" && report.status !== statusFilter) return false
@@ -56,6 +63,14 @@ export default function AdminReportsPage() {
   })
 
   const openCount = reports.filter(r => r.status === "open" || r.status === "investigating").length
+
+  const getStatusLabel = (status: string) => {
+    if (status === "open") return rs.open
+    if (status === "investigating") return rs.investigating
+    if (status === "resolved") return rs.resolved
+    if (status === "dismissed") return rs.dismissed
+    return status
+  }
 
   return (
     <div className="space-y-6">
@@ -72,34 +87,32 @@ export default function AdminReportsPage() {
         </p>
       </div>
 
-      {/* Filters */}
       <div className="flex gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={c.status} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="investigating">Investigating</SelectItem>
-            <SelectItem value="resolved">Resolved</SelectItem>
-            <SelectItem value="dismissed">Dismissed</SelectItem>
+            <SelectItem value="all">{p.allStatus}</SelectItem>
+            <SelectItem value="open">{rs.open}</SelectItem>
+            <SelectItem value="investigating">{rs.investigating}</SelectItem>
+            <SelectItem value="resolved">{rs.resolved}</SelectItem>
+            <SelectItem value="dismissed">{rs.dismissed}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
           <SelectTrigger className="w-36">
-            <SelectValue placeholder="Priority" />
+            <SelectValue placeholder={c.priority} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Priority</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="all">{p.allPriority}</SelectItem>
+            <SelectItem value="high">{c.high}</SelectItem>
+            <SelectItem value="medium">{c.medium}</SelectItem>
+            <SelectItem value="low">{c.low}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Reports List */}
       <div className="space-y-4">
         {filteredReports.map((report) => (
           <div key={report.id} className="rounded-xl border border-border bg-card p-4">
@@ -112,14 +125,14 @@ export default function AdminReportsPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-foreground">{report.subject}</h3>
                     <Badge className={priorityColors[report.priority]}>
-                      {report.priority} priority
+                      {p.priorityTemplate.replace("{priority}", priorityLabels[report.priority] ?? report.priority)}
                     </Badge>
                     <Badge variant="outline" className="capitalize">
                       {report.type}
                     </Badge>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Target: <span className="font-medium">{report.target}</span>
+                    {c.target} <span className="font-medium">{report.target}</span>
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
@@ -135,21 +148,21 @@ export default function AdminReportsPage() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Badge className={statusColors[report.status]} variant="secondary">
-                  {report.status}
+                  {getStatusLabel(report.status)}
                 </Badge>
                 {(report.status === "open" || report.status === "investigating") && (
                   <>
                     <Button size="sm" variant="outline">
                       <Eye className="mr-1 h-3 w-3" />
-                      Investigate
+                      {c.investigate}
                     </Button>
                     <Button size="sm" variant="outline">
                       <X className="mr-1 h-3 w-3" />
-                      Dismiss
+                      {c.dismiss}
                     </Button>
                     <Button size="sm">
                       <CheckCircle className="mr-1 h-3 w-3" />
-                      Resolve
+                      {c.resolve}
                     </Button>
                   </>
                 )}

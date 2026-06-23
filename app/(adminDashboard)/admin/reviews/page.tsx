@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -67,16 +67,18 @@ import {
   MessageSquare
 } from "lucide-react"
 
-const statusConfig = {
-  published: { label: "Published", color: "bg-green-100 text-green-700", icon: CheckCircle },
-  pending: { label: "Pending", color: "bg-amber-100 text-amber-700", icon: AlertTriangle },
-  hidden: { label: "Hidden", color: "bg-gray-100 text-gray-700", icon: EyeOff },
-  flagged: { label: "Flagged", color: "bg-red-100 text-red-700", icon: Flag }
-}
-
 export default function AdminReviewsPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.reviews
+  const c = t.admin.common
+
+  const statusConfig = useMemo(() => ({
+    published: { label: c.published, color: "bg-green-100 text-green-700", icon: CheckCircle },
+    pending: { label: c.pending, color: "bg-amber-100 text-amber-700", icon: AlertTriangle },
+    hidden: { label: c.hidden, color: "bg-gray-100 text-gray-700", icon: EyeOff },
+    flagged: { label: c.flagged, color: "bg-red-100 text-red-700", icon: Flag },
+  }), [c])
+
   const [reviews, setReviews] = useState<BackendReview[]>([])
   const [loadingReviews, setLoadingReviews] = useState(true)
   const [totalReviews, setTotalReviews] = useState(0)
@@ -125,7 +127,7 @@ export default function AdminReviewsPage() {
         if (active && res.success) {
           const mappedReviews = res.data.map(r => {
             if (r.status === "flagged") {
-              return { ...r, status: "published" as const, status_label: "Published" }
+              return { ...r, status: "published" as const, status_label: c.published }
             }
             return r
           })
@@ -148,7 +150,7 @@ export default function AdminReviewsPage() {
     return () => {
       active = false
     }
-  }, [page, statusFilter, ratingFilter, searchQuery])
+  }, [page, statusFilter, ratingFilter, searchQuery, c.published])
 
   useEffect(() => {
     setPage(1)
@@ -159,7 +161,7 @@ export default function AdminReviewsPage() {
       const res = await updateAdminReviewStatus(reviewId, status)
       if (res.success) {
         setReviews(prev => prev.map(r => 
-          r.id === reviewId ? { ...r, status, status_label: status.charAt(0).toUpperCase() + status.slice(1) } : r
+          r.id === reviewId ? { ...r, status, status_label: statusConfig[status]?.label ?? status } : r
         ))
         loadStats()
       }
@@ -205,7 +207,7 @@ export default function AdminReviewsPage() {
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2">
         <AdminStatCard
-          title="Total Reviews"
+          title={p.totalReviews}
           value={
             loadingStats ? (
               <span className="inline-block h-6 w-12 bg-muted animate-pulse rounded" />
@@ -217,7 +219,7 @@ export default function AdminReviewsPage() {
           layout="spaceBetween"
         />
         <AdminStatCard
-          title="Published"
+          title={p.published}
           value={
             loadingStats ? (
               <span className="inline-block h-6 w-12 bg-muted animate-pulse rounded" />
@@ -238,7 +240,7 @@ export default function AdminReviewsPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search reviews by buyer name, company, or content..."
+            placeholder={c.searchReviewsPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -246,26 +248,26 @@ export default function AdminReviewsPage() {
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={c.status} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="published">Published</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="hidden">Hidden</SelectItem>
+            <SelectItem value="all">{c.allStatus}</SelectItem>
+            <SelectItem value="published">{c.published}</SelectItem>
+            <SelectItem value="pending">{c.pending}</SelectItem>
+            <SelectItem value="hidden">{c.hidden}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={ratingFilter} onValueChange={setRatingFilter}>
           <SelectTrigger className="w-32">
-            <SelectValue placeholder="Rating" />
+            <SelectValue placeholder={c.rating} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Ratings</SelectItem>
-            <SelectItem value="5">5 Stars</SelectItem>
-            <SelectItem value="4">4 Stars</SelectItem>
-            <SelectItem value="3">3 Stars</SelectItem>
-            <SelectItem value="2">2 Stars</SelectItem>
-            <SelectItem value="1">1 Star</SelectItem>
+            <SelectItem value="all">{c.allRatings}</SelectItem>
+            <SelectItem value="5">{c.stars.replace("{count}", "5")}</SelectItem>
+            <SelectItem value="4">{c.stars.replace("{count}", "4")}</SelectItem>
+            <SelectItem value="3">{c.stars.replace("{count}", "3")}</SelectItem>
+            <SelectItem value="2">{c.stars.replace("{count}", "2")}</SelectItem>
+            <SelectItem value="1">{p.oneStar}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -275,12 +277,12 @@ export default function AdminReviewsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Reviewer</TableHead>
-              <TableHead>Supplier</TableHead>
-              <TableHead>Rating</TableHead>
-              <TableHead>Review</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{p.tableReviewer}</TableHead>
+              <TableHead>{p.tableSupplier}</TableHead>
+              <TableHead>{p.tableRating}</TableHead>
+              <TableHead>{p.tableReview}</TableHead>
+              <TableHead>{p.tableDate}</TableHead>
+              <TableHead>{p.tableStatus}</TableHead>
               <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
@@ -290,7 +292,7 @@ export default function AdminReviewsPage() {
                 <TableCell colSpan={7} className="text-center py-12">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground">
                     <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                    <span>Loading reviews...</span>
+                    <span>{p.loading}</span>
                   </div>
                 </TableCell>
               </TableRow>
@@ -298,9 +300,9 @@ export default function AdminReviewsPage() {
               <TableRow>
                 <TableCell colSpan={7} className="py-12 text-center">
                   <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                  <h3 className="mt-4 font-semibold text-foreground">No reviews found</h3>
+                  <h3 className="mt-4 font-semibold text-foreground">{p.noReviews}</h3>
                   <p className="mt-2 text-muted-foreground">
-                    Try adjusting your search or filter criteria
+                    {c.tryAdjustFilters}
                   </p>
                 </TableCell>
               </TableRow>
@@ -356,19 +358,19 @@ export default function AdminReviewsPage() {
                             setShowViewDialog(true)
                           }}>
                             <Eye className="mr-2 h-4 w-4" />
-                            View Details
+                            {c.viewDetails}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           {review.status !== "published" && (
                             <DropdownMenuItem onClick={() => updateReviewStatus(review.id, "published")}>
                               <CheckCircle className="mr-2 h-4 w-4" />
-                              Approve
+                              {c.approve}
                             </DropdownMenuItem>
                           )}
                           {review.status !== "hidden" && (
                             <DropdownMenuItem onClick={() => updateReviewStatus(review.id, "hidden")}>
                               <EyeOff className="mr-2 h-4 w-4" />
-                              Hide
+                              {c.hide}
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
@@ -377,7 +379,7 @@ export default function AdminReviewsPage() {
                             onClick={() => setDeleteReviewId(review.id)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {c.delete}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -394,7 +396,10 @@ export default function AdminReviewsPage() {
           <div className="px-4 py-3 border-t">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Showing {(page - 1) * perPage + 1} - {Math.min(page * perPage, totalReviews)} of {totalReviews}
+                {p.showingReviews
+                  .replace("{from}", String((page - 1) * perPage + 1))
+                  .replace("{to}", String(Math.min(page * perPage, totalReviews)))
+                  .replace("{total}", String(totalReviews))}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -403,16 +408,18 @@ export default function AdminReviewsPage() {
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
                 >
-                  Previous
+                  {c.previous}
                 </Button>
-                <div className="text-sm text-muted-foreground">Page {page} / {lastPage}</div>
+                <div className="text-sm text-muted-foreground">
+                  {c.pageOf.replace("{page}", String(page)).replace("{lastPage}", String(lastPage))}
+                </div>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={page >= lastPage}
                 >
-                  Next
+                  {c.next}
                 </Button>
               </div>
             </div>
@@ -424,27 +431,27 @@ export default function AdminReviewsPage() {
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Review Details</DialogTitle>
+            <DialogTitle>{c.reviewDetails}</DialogTitle>
             <DialogDescription>
-              Review #{selectedReview?.id}
+              {c.reviewNumber.replace("{id}", String(selectedReview?.id ?? ""))}
             </DialogDescription>
           </DialogHeader>
           {selectedReview && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Reviewer</p>
+                  <p className="text-sm text-muted-foreground">{c.reviewer}</p>
                   <p className="font-medium">{selectedReview.reviewer.full_name}</p>
                   <p className="text-sm text-muted-foreground">{selectedReview.reviewer.company_name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Supplier</p>
+                  <p className="text-sm text-muted-foreground">{c.supplier}</p>
                   <p className="font-medium">{selectedReview.supplier.company_name}</p>
                 </div>
               </div>
 
               <div>
-                <p className="text-sm text-muted-foreground">Rating</p>
+                <p className="text-sm text-muted-foreground">{c.rating}</p>
                 <div className="flex items-center gap-1 mt-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
@@ -461,32 +468,32 @@ export default function AdminReviewsPage() {
 
               {selectedReview.title && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Title</p>
+                  <p className="text-sm text-muted-foreground">{c.title}</p>
                   <p className="font-medium">{selectedReview.title}</p>
                 </div>
               )}
 
               <div>
-                <p className="text-sm text-muted-foreground">Review Content</p>
+                <p className="text-sm text-muted-foreground">{p.reviewContent}</p>
                 <p className="mt-1 text-foreground">{selectedReview.comment}</p>
               </div>
 
               {selectedReview.order && (
                 <div className="rounded-lg bg-muted p-4">
-                  <p className="text-sm font-medium text-foreground">Order Information</p>
+                  <p className="text-sm font-medium text-foreground">{c.orderInformation}</p>
                   <div className="mt-2 grid grid-cols-3 gap-4 text-sm">
                     <div>
-                      <p className="text-muted-foreground">Category</p>
-                      <p>{selectedReview.product?.category || "N/A"}</p>
+                      <p className="text-muted-foreground">{p.orderCategory}</p>
+                      <p>{selectedReview.product?.category || c.na}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Order Value</p>
+                      <p className="text-muted-foreground">{c.orderValue}</p>
                       <p>
                         ${Number(selectedReview.order.total_amount).toLocaleString("en-US", { minimumFractionDigits: 2 })} {selectedReview.order.currency_code}
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Order Date</p>
+                      <p className="text-muted-foreground">{c.orderDate}</p>
                       <p>{formatDate(selectedReview.order.created_at)}</p>
                     </div>
                   </div>
@@ -498,14 +505,14 @@ export default function AdminReviewsPage() {
                   {statusConfig[selectedReview.status]?.label || selectedReview.status}
                 </Badge>
                 <span className="text-sm text-muted-foreground">
-                  Submitted: {formatDate(selectedReview.created_at)}
+                  {p.submitted} {formatDate(selectedReview.created_at)}
                 </span>
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowViewDialog(false)}>
-              Close
+              {c.close}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -515,18 +522,18 @@ export default function AdminReviewsPage() {
       <AlertDialog open={!!deleteReviewId} onOpenChange={() => setDeleteReviewId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Review?</AlertDialogTitle>
+            <AlertDialogTitle>{p.deleteReview}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. The review will be permanently removed from the platform.
+              {p.deleteReviewPlatformDesc}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{c.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteReviewId && deleteReview(deleteReviewId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {c.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

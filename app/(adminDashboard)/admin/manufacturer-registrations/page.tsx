@@ -83,6 +83,7 @@ function isPending(row: ManufacturerApplication) {
 export default function ManufacturerRegistrationsPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.mfgRegistrations
+  const c = t.admin.common
   const { toast } = useToast()
   const [currentPage, setCurrentPage] = useState(1)
   const [data, setData] = useState<ManufacturerRegistrationResponse | null>(null)
@@ -119,8 +120,8 @@ export default function ManufacturerRegistrationsPage() {
         setData(response)
       } catch (err) {
         toast({
-          title: "Error",
-          description: "Failed to load manufacturer registrations",
+          title: c.error,
+          description: p.loadFailed,
           variant: "destructive",
         })
       } finally {
@@ -144,8 +145,8 @@ export default function ManufacturerRegistrationsPage() {
   const onApprove = async (row: ManufacturerApplication) => {
     if (!isPending(row)) {
       toast({
-        title: "Already processed",
-        description: "Only pending applications can be approved.",
+        title: c.alreadyProcessed,
+        description: p.alreadyProcessed,
         variant: "destructive",
       })
       return
@@ -156,8 +157,8 @@ export default function ManufacturerRegistrationsPage() {
       await approveManufacturer(row.id)
 
       toast({
-        title: "Success",
-        description: `${displayName(row)} has been approved.`,
+        title: c.success,
+        description: c.approvedDesc.replace("{name}", displayName(row)),
       })
 
       // Refresh data
@@ -170,9 +171,9 @@ export default function ManufacturerRegistrationsPage() {
         setViewTarget(null)
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Failed to approve manufacturer"
+      const errorMsg = error instanceof Error ? error.message : c.failedToApproveManufacturer
       toast({
-        title: "Error",
+        title: c.error,
         description: errorMsg,
         variant: "destructive",
       })
@@ -189,7 +190,7 @@ export default function ManufacturerRegistrationsPage() {
 
   const sendMessage = () => {
     if (!messageTarget) return
-    toast({ title: "Message sent", description: `Message sent to ${messageTarget.email}` })
+    toast({ title: c.messageSent, description: c.messageSentTo.replace("{email}", messageTarget.email) })
     setShowMessageDialog(false)
     setMessageTarget(null)
   }
@@ -202,7 +203,7 @@ export default function ManufacturerRegistrationsPage() {
 
   const submitInfoRequest = () => {
     if (!infoTarget) return
-    toast({ title: "Info requested", description: `Requested more info from ${infoTarget.email}` })
+    toast({ title: c.infoRequested, description: c.infoRequestedFrom.replace("{email}", infoTarget.email) })
     setShowInfoDialog(false)
     setInfoTarget(null)
   }
@@ -218,8 +219,8 @@ export default function ManufacturerRegistrationsPage() {
 
     if (!rejectReason.trim()) {
       toast({
-        title: "Missing reason",
-        description: "Please provide a reason for rejection.",
+        title: c.missingReason,
+        description: c.rejectReasonRequired,
         variant: "destructive",
       })
       return
@@ -230,8 +231,8 @@ export default function ManufacturerRegistrationsPage() {
       await rejectManufacturer(rejectTarget.id, rejectReason)
 
       toast({
-        title: "Success",
-        description: `${displayCompany(rejectTarget)} has been rejected.`,
+        title: c.success,
+        description: c.companyRejected.replace("{company}", displayCompany(rejectTarget)),
       })
 
       setShowRejectDialog(false)
@@ -248,9 +249,9 @@ export default function ManufacturerRegistrationsPage() {
       const response = await fetchManufacturerRegistrations(currentPage, "pending", PER_PAGE)
       setData(response)
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Failed to reject manufacturer"
+      const errorMsg = error instanceof Error ? error.message : c.failedToRejectManufacturer
       toast({
-        title: "Error",
+        title: c.error,
         description: errorMsg,
         variant: "destructive",
       })
@@ -269,8 +270,8 @@ export default function ManufacturerRegistrationsPage() {
       await deleteManufacturer(deleteTarget.id)
       
       toast({
-        title: "Success",
-        description: `${name} has been deleted successfully.`,
+        title: c.success,
+        description: c.deletedSuccessfullyName.replace("{name}", name),
       })
       
       setDeleteTarget(null)
@@ -283,9 +284,9 @@ export default function ManufacturerRegistrationsPage() {
       const response = await fetchManufacturerRegistrations(currentPage, "pending", PER_PAGE)
       setData(response)
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Failed to delete manufacturer"
+      const errorMsg = error instanceof Error ? error.message : c.failedToDeleteManufacturer
       toast({
-        title: "Error",
+        title: c.error,
         description: errorMsg,
         variant: "destructive",
       })
@@ -313,18 +314,18 @@ export default function ManufacturerRegistrationsPage() {
             variant="default"
             className={btnBaseClass}
             disabled={!pending || approvingId === row.id}
-            title={pending ? "Approve application" : "Only pending applications can be approved"}
+            title={pending ? c.approveApplication : c.onlyPendingCanApprove}
             onClick={() => onApprove(row)}
           >
             {approvingId === row.id ? (
               <>
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                <span className="truncate">Approving...</span>
+                <span className="truncate">{c.approving}</span>
               </>
             ) : (
               <>
                 <Check className="h-4 w-4 shrink-0" />
-                <span className="truncate">Approve</span>
+                <span className="truncate">{c.approve}</span>
               </>
             )}
           </Button>
@@ -333,18 +334,18 @@ export default function ManufacturerRegistrationsPage() {
             variant="destructive"
             className={btnBaseClass}
             disabled={deletingId === row.id}
-            title="Remove from list"
+            title={c.removeFromList}
             onClick={() => setDeleteTarget(row)}
           >
             {deletingId === row.id ? (
               <>
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                <span className="truncate">Deleting...</span>
+                <span className="truncate">{c.deleting}</span>
               </>
             ) : (
               <>
                 <Trash2 className="h-4 w-4 shrink-0" />
-                <span className="truncate">Delete</span>
+                <span className="truncate">{c.delete}</span>
               </>
             )}
           </Button>
@@ -352,11 +353,11 @@ export default function ManufacturerRegistrationsPage() {
             size="default"
             variant="outline"
             className={btnBaseClass}
-            title="View full application"
+            title={c.viewFullApplication}
             onClick={() => openView(row)}
           >
             <Eye className="h-4 w-4 shrink-0" />
-            <span className="truncate">View</span>
+            <span className="truncate">{c.view}</span>
           </Button>
         </div>
       )
@@ -373,19 +374,19 @@ export default function ManufacturerRegistrationsPage() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => openView(row)}>
               <Eye className="mr-2 h-4 w-4" />
-              View Details
+              {c.viewDetails}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => openMessage(row)}>
               <MessageSquare className="mr-2 h-4 w-4" />
-              Send Message
+              {p.sendMessage}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => openInfoRequest(row)}>
               <FileQuestion className="mr-2 h-4 w-4" />
-              Request Info
+              {c.requestInfo}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { setReviewTarget(row); setShowReviewDialog(true) }}>
               <ScanEye className="mr-2 h-4 w-4 text-secondary" />
-              <span className="text-secondary font-medium">Request Review</span>
+              <span className="text-secondary font-medium">{p.requestReview}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             {pending && (
@@ -394,7 +395,7 @@ export default function ManufacturerRegistrationsPage() {
                 disabled={approvingId === row.id}
               >
                 <Check className="mr-2 h-4 w-4 text-emerald-600" />
-                {approvingId === row.id ? "Approving..." : "Approve"}
+                {approvingId === row.id ? c.approving : c.approve}
               </DropdownMenuItem>
             )}
             <DropdownMenuItem 
@@ -402,7 +403,7 @@ export default function ManufacturerRegistrationsPage() {
               disabled={rejectingId === row.id}
             >
               <X className="mr-2 h-4 w-4 text-red-600" />
-              {rejectingId === row.id ? "Rejecting..." : "Reject"}
+              {rejectingId === row.id ? c.rejecting : c.reject}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
@@ -411,7 +412,7 @@ export default function ManufacturerRegistrationsPage() {
               disabled={deletingId === row.id}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              {deletingId === row.id ? "Deleting..." : "Delete"}
+              {deletingId === row.id ? c.deleting : c.delete}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -436,16 +437,16 @@ export default function ManufacturerRegistrationsPage() {
         <Card>
           <CardContent className="flex flex-col items-center py-16 text-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="mt-4 font-medium text-foreground">Loading...</p>
+            <p className="mt-4 font-medium text-foreground">{c.loading}</p>
           </CardContent>
         </Card>
       ) : rows.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center py-16 text-center">
             <Factory className="h-12 w-12 text-muted-foreground/40" />
-            <p className="mt-4 font-medium text-foreground">No pending applications</p>
+            <p className="mt-4 font-medium text-foreground">{p.noPending}</p>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              All manufacturer applications have been reviewed.
+              {c.allReviewed}
             </p>
           </CardContent>
         </Card>
@@ -457,11 +458,11 @@ export default function ManufacturerRegistrationsPage() {
               <Table className="min-w-160 w-full table-fixed sm:min-w-180 lg:min-w-0 lg:table-auto">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[22%] min-w-35">Name</TableHead>
-                    <TableHead className="w-[24%] min-w-40">Email</TableHead>
-                    <TableHead className="w-[12%] whitespace-nowrap">Applied</TableHead>
-                    <TableHead className="w-[10%]">Status</TableHead>
-                    <TableHead className="w-[22%] min-w-55 text-right">Actions</TableHead>
+                    <TableHead className="w-[22%] min-w-35">{p.tableName}</TableHead>
+                    <TableHead className="w-[24%] min-w-40">{p.tableEmail}</TableHead>
+                    <TableHead className="w-[12%] whitespace-nowrap">{p.tableApplied}</TableHead>
+                    <TableHead className="w-[10%]">{p.tableStatus}</TableHead>
+                    <TableHead className="w-[22%] min-w-55 text-right">{p.tableActions}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -494,7 +495,7 @@ export default function ManufacturerRegistrationsPage() {
                       </TableCell>
                       <TableCell className="align-top">
                         <Badge variant="secondary" className="capitalize">
-                          {row.manufacture_status_label || row.status || "pending"}
+                          {row.manufacture_status_label || row.status || c.pending}
                         </Badge>
                       </TableCell>
                       <TableCell className="align-top text-right">
@@ -523,12 +524,12 @@ export default function ManufacturerRegistrationsPage() {
                       </p>
                     </div>
                     <Badge variant="secondary" className="shrink-0 capitalize">
-                      {row.manufacture_status_label || row.status || "pending"}
+                      {row.manufacture_status_label || row.status || c.pending}
                     </Badge>
                   </div>
                   {row.created_at && (
                     <p className="text-xs text-muted-foreground">
-                      Applied{" "}
+                      {c.applied}{" "}
                       {(() => {
                         try {
                           return format(new Date(row.created_at), "MMM d, yyyy")
@@ -549,9 +550,10 @@ export default function ManufacturerRegistrationsPage() {
             <div className="text-sm text-muted-foreground">
               {meta && (
                 <>
-                  Showing <span className="font-medium">{meta.from}</span> to{" "}
-                  <span className="font-medium">{meta.to}</span> of{" "}
-                  <span className="font-medium">{meta.total}</span> results
+                  {c.showing
+                    .replace("{from}", String(meta.from))
+                    .replace("{to}", String(meta.to))
+                    .replace("{total}", String(meta.total))}
                 </>
               )}
             </div>
@@ -609,13 +611,13 @@ export default function ManufacturerRegistrationsPage() {
       <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Send Message</DialogTitle>
+            <DialogTitle>{p.sendMessage}</DialogTitle>
             <DialogDescription>
-              Send a message to {messageTarget?.company_name || messageTarget?.email}
+              {c.sendMessageTo.replace("{target}", messageTarget?.company_name || messageTarget?.email || "")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <Label>Message</Label>
+            <Label>{c.message}</Label>
             <Textarea
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
@@ -623,8 +625,8 @@ export default function ManufacturerRegistrationsPage() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowMessageDialog(false)}>Cancel</Button>
-            <Button onClick={sendMessage}>Send</Button>
+            <Button variant="outline" onClick={() => setShowMessageDialog(false)}>{c.cancel}</Button>
+            <Button onClick={sendMessage}>{c.send}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -633,13 +635,13 @@ export default function ManufacturerRegistrationsPage() {
       <Dialog open={showInfoDialog} onOpenChange={setShowInfoDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Request Additional Information</DialogTitle>
+            <DialogTitle>{p.requestInfo}</DialogTitle>
             <DialogDescription>
-              Request more details from {infoTarget?.company_name || infoTarget?.email}
+              {c.requestInfoFrom.replace("{target}", infoTarget?.company_name || infoTarget?.email || "")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <Label>Message</Label>
+            <Label>{c.message}</Label>
             <Textarea
               value={infoRequestText}
               onChange={(e) => setInfoRequestText(e.target.value)}
@@ -647,8 +649,8 @@ export default function ManufacturerRegistrationsPage() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInfoDialog(false)}>Cancel</Button>
-            <Button onClick={submitInfoRequest}>Send Request</Button>
+            <Button variant="outline" onClick={() => setShowInfoDialog(false)}>{c.cancel}</Button>
+            <Button onClick={submitInfoRequest}>{c.sendRequest}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -657,23 +659,23 @@ export default function ManufacturerRegistrationsPage() {
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Application</DialogTitle>
+            <DialogTitle>{p.rejectApplication}</DialogTitle>
             <DialogDescription>
-              Provide a reason for rejecting {rejectTarget ? displayCompany(rejectTarget) : "this application"}
+              {c.rejectApplicationFor.replace("{target}", rejectTarget ? displayCompany(rejectTarget) : c.na)}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <Label>Reason for Rejection *</Label>
+            <Label>{c.reasonForRejectionRequired}</Label>
             <Textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Explain why this application is being rejected..."
+              placeholder={c.rejectExplanationPlaceholder}
               className="mt-2 min-h-25"
               disabled={rejectingId === rejectTarget?.id}
               required
             />
             {!rejectReason.trim() && (
-              <p className="text-xs text-amber-600">Reason is required</p>
+              <p className="text-xs text-amber-600">{p.reasonRequired}</p>
             )}
           </div>
           <DialogFooter>
@@ -682,7 +684,7 @@ export default function ManufacturerRegistrationsPage() {
               onClick={() => setShowRejectDialog(false)}
               disabled={rejectingId === rejectTarget?.id}
             >
-              Cancel
+              {c.cancel}
             </Button>
             <Button 
               variant="destructive" 
@@ -692,10 +694,10 @@ export default function ManufacturerRegistrationsPage() {
               {rejectingId === rejectTarget?.id ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Rejecting...
+                  {c.rejecting}
                 </>
               ) : (
-                "Reject"
+                c.reject
               )}
             </Button>
           </DialogFooter>
@@ -705,16 +707,16 @@ export default function ManufacturerRegistrationsPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete application?</AlertDialogTitle>
+            <AlertDialogTitle>{p.deleteApplication}</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget
-                ? `Are you sure you want to delete ${displayCompany(deleteTarget)}? This action cannot be undone.`
+                ? c.deleteApplicationConfirmText.replace("{name}", displayCompany(deleteTarget))
                 : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
             <AlertDialogCancel className="mt-0" disabled={deletingId !== null}>
-              Cancel
+              {c.cancel}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => confirmDelete()}
@@ -724,10 +726,10 @@ export default function ManufacturerRegistrationsPage() {
               {deletingId === deleteTarget?.id ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
+                  {c.deleting}
                 </>
               ) : (
-                "Delete"
+                c.delete
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

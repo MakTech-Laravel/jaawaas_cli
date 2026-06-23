@@ -27,7 +27,7 @@ export default function AdminMessagesPage() {
       id: msg.id.toString(),
       senderId: msg.sender_id?.toString() || "",
       text: msg.body || msg.content || msg.message || "",
-      timestamp: "Just now",
+      timestamp: c.justNow,
       isRead: false,
     }
   }
@@ -48,7 +48,7 @@ export default function AdminMessagesPage() {
         
         for (const conv of data) {
           const other = conv.participants.find(p => p.id !== currentUserId) || conv.participants[0]
-          const otherName = other?.name || "unknown"
+          const otherName = other?.name || c.unknown.toLowerCase()
           
           if (!seenOtherNames.has(otherName)) {
             seenOtherNames.add(otherName)
@@ -138,10 +138,10 @@ export default function AdminMessagesPage() {
         })
 
         // Update conversation list
-        setConversations(prev => prev.map(c => 
-          c.id === selectedConvId 
-            ? { ...c, lastMessage: newMsg, updatedAt: "Just now" } 
-            : c
+        setConversations(prev => prev.map((conv) => 
+          conv.id === selectedConvId 
+            ? { ...conv, lastMessage: newMsg, updatedAt: c.justNow } 
+            : conv
         ))
       })
 
@@ -178,7 +178,7 @@ export default function AdminMessagesPage() {
 
   const currentUser: ChatParticipant = {
     id: user?.id?.toString() || "admin-1",
-    name: user?.name || "Admin",
+    name: user?.name || p.adminFallback,
     role: "admin",
   }
 
@@ -189,8 +189,8 @@ export default function AdminMessagesPage() {
     if (conv.unreadCount > 0) {
       const success = await markAsRead(conv.id)
       if (success) {
-        setConversations(prev => prev.map(c => 
-          c.id === conv.id ? { ...c, unreadCount: 0 } : c
+        setConversations(prev => prev.map((item) => 
+          item.id === conv.id ? { ...item, unreadCount: 0 } : item
         ))
       }
     }
@@ -204,10 +204,10 @@ export default function AdminMessagesPage() {
       setMessages(prev => [...prev, sentMsg])
       
       // Update last message in conversation list
-      setConversations(prev => prev.map(c => 
-        c.id === selectedConvId 
-          ? { ...c, lastMessage: sentMsg, updatedAt: "Just now" } 
-          : c
+      setConversations(prev => prev.map((item) => 
+        item.id === selectedConvId 
+          ? { ...item, lastMessage: sentMsg, updatedAt: c.justNow } 
+          : item
       ))
       return true
     }
@@ -219,7 +219,7 @@ export default function AdminMessagesPage() {
       <div className="flex h-[calc(100dvh-140px)] items-center justify-center">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-secondary" />
-          <p className="text-sm text-muted-foreground">Loading conversations...</p>
+          <p className="text-sm text-muted-foreground">{p.loadingConversations}</p>
         </div>
       </div>
     )

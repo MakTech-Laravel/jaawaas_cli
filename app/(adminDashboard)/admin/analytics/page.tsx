@@ -44,24 +44,25 @@ const metricIcons: Record<string, React.ComponentType<any>> = {
   messages_sent: MessageSquare,
 }
 
-const chartConfig = {
-  users: {
-    label: "Users",
-    color: "var(--chart-1)",
-  },
-  suppliers: {
-    label: "Suppliers",
-    color: "var(--chart-2)",
-  },
-  rfqs: {
-    label: "RFQs",
-    color: "var(--chart-3)",
-  },
-} satisfies ChartConfig
-
 export default function AdminAnalyticsPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.analytics
+
+  const chartConfig = {
+    users: {
+      label: p.users,
+      color: "var(--chart-1)",
+    },
+    suppliers: {
+      label: p.suppliers,
+      color: "var(--chart-2)",
+    },
+    rfqs: {
+      label: p.rfqs,
+      color: "var(--chart-3)",
+    },
+  } satisfies ChartConfig
+
   const [metrics, setMetrics] = useState<AdminAnalyticsMetricItem[]>([])
   const [growthData, setGrowthData] = useState<GrowthItem[]>([])
   const [countries, setCountries] = useState<CountryDistributionItem[]>([])
@@ -182,7 +183,7 @@ export default function AdminAnalyticsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Platform Growth
+              {p.platformGrowth}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -190,7 +191,7 @@ export default function AdminAnalyticsPage() {
               {isChartLoading ? (
                 <div className="flex flex-col items-center justify-center gap-2">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Loading growth data...</p>
+                  <p className="text-sm text-muted-foreground">{p.loadingGrowth}</p>
                 </div>
               ) : (
                 <ChartContainer config={chartConfig} className="h-full w-full">
@@ -223,7 +224,7 @@ export default function AdminAnalyticsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Globe className="h-5 w-5" />
-              User Distribution by Country
+              {p.userDistributionByCountry}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -237,7 +238,11 @@ export default function AdminAnalyticsPage() {
                   <div key={item.country} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-foreground">{item.country}</span>
-                      <span className="text-sm text-muted-foreground">{item.users} users ({item.percentage}%)</span>
+                      <span className="text-sm text-muted-foreground">
+                        {p.usersCountTemplate
+                          .replace("{count}", String(item.users))
+                          .replace("{percent}", String(item.percentage))}
+                      </span>
                     </div>
                     <div className="h-2 rounded-full bg-muted">
                       <div 
@@ -257,7 +262,7 @@ export default function AdminAnalyticsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Factory className="h-5 w-5" />
-              Top Industries
+              {p.topIndustries}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -275,7 +280,9 @@ export default function AdminAnalyticsPage() {
                     <div className="flex-1">
                       <p className="font-medium text-foreground">{item.industry}</p>
                       <p className="text-sm text-muted-foreground">
-                        {item.suppliers} suppliers • {item.products.toLocaleString()} products
+                        {p.industryStatsTemplate
+                          .replace("{suppliers}", String(item.suppliers))
+                          .replace("{products}", item.products.toLocaleString())}
                       </p>
                     </div>
                   </div>

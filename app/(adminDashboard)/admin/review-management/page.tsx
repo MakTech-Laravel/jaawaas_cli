@@ -40,8 +40,6 @@ import type {
 } from "@/lib/api/admin-reviews"
 import {
   fetchAllReviewRequests,
-  REVIEW_TYPE_LABELS,
-  REVIEW_STATUS_LABELS,
 } from "@/lib/api/admin-reviews"
 import { useTranslation } from "@/lib/i18n"
 import ReviewSubmissionsPanel, {
@@ -53,6 +51,9 @@ const PER_PAGE = 10
 export default function ReviewManagementPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.reviewManagement
+  const c = t.admin.common
+  const rs = t.admin.reviewStatus
+  const rt = t.admin.reviewType
   const { toast } = useToast()
   const [reviews, setReviews] = useState<ReviewRequest[]>([])
   const [loading, setLoading] = useState(true)
@@ -77,8 +78,8 @@ export default function ReviewManagementPage() {
       }
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to load review requests.",
+        title: c.error,
+        description: p.loadFailed,
         variant: "destructive",
       })
     } finally {
@@ -105,13 +106,13 @@ export default function ReviewManagementPage() {
   }
 
   const statusOptions: { value: string; label: string }[] = [
-    { value: "all", label: "All Statuses" },
-    { value: "pending", label: "Pending" },
-    { value: "submitted", label: "Submitted" },
-    { value: "approved", label: "Approved" },
-    { value: "rejected", label: "Rejected" },
-    { value: "re_requested", label: "Re-requested" },
-    { value: "completed", label: "Completed" },
+    { value: "all", label: c.allStatuses },
+    { value: "pending", label: rs.pending },
+    { value: "submitted", label: rs.submitted },
+    { value: "approved", label: rs.approved },
+    { value: "rejected", label: rs.rejected },
+    { value: "re_requested", label: rs.re_requested },
+    { value: "completed", label: rs.completed },
   ]
 
   return (
@@ -132,7 +133,7 @@ export default function ReviewManagementPage() {
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1) }}>
             <SelectTrigger className="w-44">
-              <SelectValue placeholder="Filter by status" />
+              <SelectValue placeholder={p.filterByStatus} />
             </SelectTrigger>
             <SelectContent>
               {statusOptions.map((opt) => (
@@ -149,18 +150,21 @@ export default function ReviewManagementPage() {
         <Card>
           <CardContent className="flex flex-col items-center py-16 text-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="mt-4 font-medium text-foreground">Loading...</p>
+            <p className="mt-4 font-medium text-foreground">{c.loading}</p>
           </CardContent>
         </Card>
       ) : reviews.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center py-16 text-center">
             <ScanEye className="h-12 w-12 text-muted-foreground/40" />
-            <p className="mt-4 font-medium text-foreground">No review requests</p>
+            <p className="mt-4 font-medium text-foreground">{p.noRequests}</p>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
               {statusFilter !== "all"
-                ? `No reviews with status "${REVIEW_STATUS_LABELS[statusFilter as ReviewRequestStatus] || statusFilter}".`
-                : "No review requests have been created yet. Create one from the Manufacturer Registrations page."}
+                ? p.noReviewsWithStatus.replace(
+                    "{status}",
+                    rs[statusFilter as keyof typeof rs] || statusFilter
+                  )
+                : c.noReviewRequestsYet}
             </p>
           </CardContent>
         </Card>
@@ -172,13 +176,13 @@ export default function ReviewManagementPage() {
               <Table className="min-w-[700px] w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[20%]">Manufacturer</TableHead>
-                    <TableHead className="w-[18%]">Review Type</TableHead>
-                    <TableHead className="w-[12%]">Review Code</TableHead>
-                    <TableHead className="w-[10%]">Status</TableHead>
-                    <TableHead className="w-[12%]">Requested</TableHead>
-                    <TableHead className="w-[12%] text-right">Areas</TableHead>
-                    <TableHead className="w-[8%] text-right">Actions</TableHead>
+                    <TableHead className="w-[20%]">{p.tableManufacturer}</TableHead>
+                    <TableHead className="w-[18%]">{p.tableReviewType}</TableHead>
+                    <TableHead className="w-[12%]">{p.tableReviewCode}</TableHead>
+                    <TableHead className="w-[10%]">{p.tableStatus}</TableHead>
+                    <TableHead className="w-[12%]">{p.tableRequested}</TableHead>
+                    <TableHead className="w-[12%] text-right">{p.tableAreas}</TableHead>
+                    <TableHead className="w-[8%] text-right">{p.tableActions}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -202,7 +206,7 @@ export default function ReviewManagementPage() {
                       <TableCell className="align-top">
                         <div className="flex items-center gap-1.5 text-sm">
                           <Camera className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          {REVIEW_TYPE_LABELS[review.review_type]}
+                          {rt[review.review_type as keyof typeof rt] || review.review_type}
                         </div>
                       </TableCell>
                       <TableCell className="align-top">
@@ -221,7 +225,9 @@ export default function ReviewManagementPage() {
                       </TableCell>
                       <TableCell className="align-top text-right">
                         <Badge variant="outline" className="text-xs">
-                          {review.requested_areas.length} area{review.requested_areas.length !== 1 && "s"}
+                          {review.requested_areas.length === 1
+                            ? c.areasCount.replace("{count}", "1")
+                            : c.areasCountPlural.replace("{count}", String(review.requested_areas.length))}
                         </Badge>
                       </TableCell>
                       <TableCell className="align-top text-right">
@@ -252,7 +258,7 @@ export default function ReviewManagementPage() {
                         {review.company_name || review.manufacturer_name || "—"}
                       </p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        {REVIEW_TYPE_LABELS[review.review_type]}
+                        {rt[review.review_type as keyof typeof rt] || review.review_type}
                       </p>
                     </div>
                     <ReviewStatusBadge status={review.status} />
@@ -278,7 +284,7 @@ export default function ReviewManagementPage() {
                     onClick={() => openPanel(review)}
                   >
                     <Eye className="mr-2 h-4 w-4" />
-                    View Details
+                    {c.viewDetails}
                   </Button>
                 </CardContent>
               </Card>
@@ -288,24 +294,26 @@ export default function ReviewManagementPage() {
           {/* Pagination */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
-              {totalItems} review{totalItems !== 1 && "s"} total
+              {totalItems === 1
+                ? c.reviewsTotal.replace("{count}", String(totalItems))
+                : c.reviewsTotalPlural.replace("{count}", String(totalItems))}
             </p>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage((p) => p - 1)}
+                onClick={() => setCurrentPage((page) => page - 1)}
                 disabled={currentPage <= 1}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
+                {c.pageOf.replace("{page}", String(currentPage)).replace("{lastPage}", String(totalPages))}
               </span>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage((p) => p + 1)}
+                onClick={() => setCurrentPage((page) => page + 1)}
                 disabled={currentPage >= totalPages}
               >
                 <ChevronRight className="h-4 w-4" />

@@ -48,6 +48,8 @@ const statusConfig: Record<string, { color: string }> = {
 export default function AdminSubscriptionsPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.subscriptions
+  const c = t.admin.common
+  const ss = t.admin.subscriptionStatus
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   
@@ -100,28 +102,28 @@ export default function AdminSubscriptionsPage() {
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4">
         <AdminStatCard
-          title="Active Subscriptions"
+          title={p.activeSubscriptions}
           value={stats ? stats.overview.total_active_subscriptions : "-"}
           icon={Users}
           iconClassName="text-secondary"
           iconWrapperClassName="bg-secondary/10"
         />
         <AdminStatCard
-          title="Monthly Revenue"
+          title={p.monthlyRevenue}
           value={stats ? `$${stats.this_month.revenue.toLocaleString()}` : "-"}
           icon={DollarSign}
           iconClassName="text-emerald-700"
           iconWrapperClassName="bg-emerald-100"
         />
         <AdminStatCard
-          title="All-Time Revenue"
+          title={p.allTimeRevenue}
           value={stats ? `$${stats.overview.total_revenue_all_time.toLocaleString()}` : "-"}
           icon={TrendingUp}
           iconClassName="text-blue-700"
           iconWrapperClassName="bg-blue-100"
         />
         <AdminStatCard
-          title="New This Month"
+          title={p.newThisMonth}
           value={stats ? stats.this_month.new_subscriptions : "-"}
           icon={CreditCard}
           iconClassName="text-amber-700"
@@ -134,7 +136,7 @@ export default function AdminSubscriptionsPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by company..."
+            placeholder={c.searchByCompany}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -143,15 +145,15 @@ export default function AdminSubscriptionsPage() {
         <div className="flex gap-3">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-36">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={c.status} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="trialing">Trialing</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="canceled">Canceled</SelectItem>
-              <SelectItem value="expired">Expired</SelectItem>
+              <SelectItem value="all">{c.allStatusLabel}</SelectItem>
+              <SelectItem value="active">{ss.active}</SelectItem>
+              <SelectItem value="trialing">{ss.trialing}</SelectItem>
+              <SelectItem value="pending">{ss.pending}</SelectItem>
+              <SelectItem value="canceled">{ss.canceled}</SelectItem>
+              <SelectItem value="expired">{ss.expired}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -162,13 +164,13 @@ export default function AdminSubscriptionsPage() {
         <table className="w-full">
           <thead className="bg-muted/50">
             <tr>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Company</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Plan</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden md:table-cell">Amount</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden lg:table-cell">Billing</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden lg:table-cell">Next Billing</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Status</th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-foreground">Actions</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground">{p.tableCompany}</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground">{p.tablePlan}</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden md:table-cell">{p.tableAmount}</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden lg:table-cell">{p.tableBilling}</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden lg:table-cell">{p.tableNextBilling}</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-foreground">{p.tableStatus}</th>
+              <th className="px-4 py-3 text-right text-sm font-medium text-foreground">{p.tableActions}</th>
             </tr>
           </thead>
           <tbody>
@@ -176,14 +178,14 @@ export default function AdminSubscriptionsPage() {
               <tr>
                 <td colSpan={7} className="px-4 py-12 text-center">
                   <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">Loading subscriptions...</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{p.loading}</p>
                 </td>
               </tr>
             ) : subscriptions.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-12 text-center">
                   <CreditCard className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                  <p className="mt-4 text-muted-foreground">No subscriptions found</p>
+                  <p className="mt-4 text-muted-foreground">{p.noSubscriptions}</p>
                 </td>
               </tr>
             ) : (
@@ -195,16 +197,18 @@ export default function AdminSubscriptionsPage() {
                         <Factory className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div>
-                        <p className="font-medium text-foreground">{sub.manufacturer?.name || "Unknown"}</p>
+                        <p className="font-medium text-foreground">{sub.manufacturer?.name || p.unknownCompany}</p>
                         <p className="text-xs text-muted-foreground">
-                          Since {sub.starts_at ? format(new Date(sub.starts_at), "MMM dd, yyyy") : "N/A"}
+                          {sub.starts_at
+                            ? c.sinceLabel.replace("{date}", format(new Date(sub.starts_at), "MMM dd, yyyy"))
+                            : c.na}
                         </p>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant="outline" className="font-normal">
-                      {sub.plan?.name || "Unknown"}
+                      {sub.plan?.name || c.unknown}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell">
@@ -214,7 +218,7 @@ export default function AdminSubscriptionsPage() {
                         : sub.plan?.monthly_price?.amount}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      /{sub.billing_interval === "year" ? "yr" : "mo"}
+                      {sub.billing_interval === "year" ? c.perYearShort : c.perMonthShort}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground hidden lg:table-cell capitalize">
@@ -228,7 +232,7 @@ export default function AdminSubscriptionsPage() {
                       variant="secondary"
                       className={statusConfig[sub.status]?.color || "bg-secondary text-secondary-foreground"}
                     >
-                      {sub.status_label || sub.status}
+                      {sub.status_label || ss[sub.status as keyof typeof ss] || sub.status}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -236,7 +240,7 @@ export default function AdminSubscriptionsPage() {
                       variant="ghost" 
                       size="icon" 
                       onClick={() => setSelectedSubId(sub.id)}
-                      title="View Details"
+                      title={c.viewDetails}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
