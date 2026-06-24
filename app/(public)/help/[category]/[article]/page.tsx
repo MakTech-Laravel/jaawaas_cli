@@ -35,7 +35,7 @@ export default function HelpArticlePage({ params }: { params: Promise<{ category
   const categoryNames = getCategoryNames(defaultHelpCenterData)
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-x-hidden">
       <Header />
       <main className="flex-1">
         {/* Breadcrumb */}
@@ -56,7 +56,7 @@ export default function HelpArticlePage({ params }: { params: Promise<{ category
         </section>
 
         {/* Article Content */}
-        <section className="py-12 lg:py-16">
+        <section className="py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
             <Link 
               href={`/help/${category}`}
@@ -67,7 +67,7 @@ export default function HelpArticlePage({ params }: { params: Promise<{ category
             </Link>
 
             <article className="prose prose-slate max-w-none">
-              <h1 className="font-serif text-3xl font-medium text-foreground mb-6">
+              <h1 className="mb-4 font-serif text-2xl font-medium text-foreground sm:mb-6 sm:text-3xl lg:text-4xl">
                 {articleData.title}
               </h1>
               

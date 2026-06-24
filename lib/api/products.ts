@@ -321,13 +321,41 @@ function dummyToApiPayload(dummy: any) {
   };
 }
 
+export interface GetProductsParams {
+  page?: number
+  per_page?: number
+  search?: string
+  category?: string
+  category_id?: number
+  category_slug?: string
+  country?: string
+  moq?: string
+  certifications?: string
+  markets?: string
+  sort?: string
+}
+
+export const PRODUCTS_LIST_PER_PAGE = 12
+
+export function mapProductSortParam(sortBy: string): string | undefined {
+  const sortMap: Record<string, string> = {
+    relevance: "relevance",
+    "price-low": "price_asc",
+    "price-high": "price_desc",
+    "moq-low": "moq_asc",
+    newest: "newest",
+    popularity: "popular",
+  }
+  return sortMap[sortBy]
+}
+
 // Fetch all products
 export async function getProducts(
   page = 1,
-  filters?: Record<string, unknown>
+  filters?: GetProductsParams | Record<string, unknown>
 ): Promise<GetProductsResponse> {
   try {
-    const params = { page, ...filters }
+    const params = { page, per_page: PRODUCTS_LIST_PER_PAGE, ...filters }
     const response = await publicApiClient.get<GetProductsResponse>("/products", { params })
     
     if (response.data && Array.isArray(response.data.data)) {

@@ -47,7 +47,7 @@ export default function HelpCategoryPage({ params }: { params: Promise<{ categor
   const articles = getEnabledArticles(categoryData)
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-x-hidden">
       <Header />
       <main className="flex-1">
         {/* Breadcrumb */}
@@ -64,7 +64,7 @@ export default function HelpCategoryPage({ params }: { params: Promise<{ categor
         </section>
 
         {/* Header */}
-        <section className="py-12 lg:py-16">
+        <section className="py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <Link 
               href="/help" 

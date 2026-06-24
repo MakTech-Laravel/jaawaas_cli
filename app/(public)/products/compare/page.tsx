@@ -21,12 +21,12 @@ function ComparisonRow({
   children: ReactNode
 }) {
   return (
-    <div className="grid gap-4 border-t border-border py-4 first:border-t-0" style={{ gridTemplateColumns: "220px 1fr" }}>
+    <div className="space-y-3 border-t border-border py-4 first:border-t-0 md:grid md:grid-cols-[minmax(0,180px)_1fr] md:items-start md:gap-4 md:space-y-0 lg:grid-cols-[minmax(0,220px)_1fr]">
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         {icon}
         <span>{label}</span>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{children}</div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">{children}</div>
     </div>
   )
 }
@@ -89,7 +89,7 @@ export default function ProductComparePage() {
   const hasSelection = selectedProducts.length > 0
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
       <Header />
       <main className="flex-1">
         <div className="border-b border-border bg-muted/40">

@@ -203,10 +203,10 @@ export default function GlobalSupplierMapPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-x-hidden">
       <Header />
       <main className="flex-1">
-        <section className="bg-primary py-16 lg:py-20">
+        <section className="bg-primary py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <Badge className="mb-4 bg-primary-foreground/20 text-primary-foreground">
@@ -285,7 +285,7 @@ export default function GlobalSupplierMapPage() {
         </section>
 
         {isSearching && (
-          <section className="border-b border-border py-12 lg:py-16">
+          <section className="border-b border-border py-8 sm:py-12 lg:py-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <h2 className="font-serif text-2xl font-medium text-foreground">
                 {t?.landing?.suppliersMap?.searchResultsTitle || "Search Results"}
@@ -302,7 +302,7 @@ export default function GlobalSupplierMapPage() {
                       <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                         {t?.landing?.suppliersMap?.searchRegionsTitle || "Matching Regions"}
                       </h3>
-                      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 lg:gap-6">
                         {matchedRegions.map((region) => (
                           <button
                             key={region.name}
@@ -394,7 +394,7 @@ export default function GlobalSupplierMapPage() {
         )}
 
         {!isSearching && (
-          <section className="py-12 lg:py-16">
+          <section className="py-8 sm:py-12 lg:py-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
                 <h2 className="font-serif text-2xl font-medium text-foreground lg:text-3xl">
@@ -406,7 +406,7 @@ export default function GlobalSupplierMapPage() {
                 </p>
               </div>
 
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-6 xl:grid-cols-5">
                 {dynamicRegions.map((region) => (
                   <Card
                     key={region.name}
@@ -523,7 +523,7 @@ export default function GlobalSupplierMapPage() {
         )}
 
         {!isSearching && (
-          <section className="border-t border-border bg-muted/30 py-12 lg:py-16">
+          <section className="border-t border-border bg-muted/30 py-8 sm:py-12 lg:py-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -592,7 +592,7 @@ export default function GlobalSupplierMapPage() {
           </section>
         )}
 
-        <section className="py-12 lg:py-16">
+        <section className="py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <Card className="bg-primary text-primary-foreground">
               <CardContent className="py-12 text-center">

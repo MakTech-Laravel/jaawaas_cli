@@ -31,12 +31,12 @@ export default function BlogPage() {
   })
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
       <Header />
       <main className="flex-1">
 
         {/* ─── Hero ─── */}
-        <section className="relative overflow-hidden bg-primary py-20 lg:py-28">
+        <section className="relative overflow-hidden bg-primary py-8 sm:py-12 lg:py-16">
           {/* Background grid pattern */}
           <div
             className="absolute inset-0 opacity-[0.06]"
@@ -56,7 +56,7 @@ export default function BlogPage() {
                 <Globe className="h-3.5 w-3.5" />
                 SourceNest Knowledge Center
               </div>
-              <h1 className="text-4xl font-bold tracking-tight text-primary-foreground sm:text-5xl lg:text-6xl">
+              <h1 className="font-serif text-3xl font-medium tracking-tight text-primary-foreground min-[400px]:text-4xl sm:text-5xl lg:text-6xl">
                 Insights &amp; Resources
               </h1>
               <p className="mt-5 text-lg text-primary-foreground/75 leading-relaxed max-w-2xl mx-auto">
@@ -102,7 +102,7 @@ export default function BlogPage() {
           <>
             {/* ─── Featured Article ─── */}
             {featuredArticle && (
-              <section className="py-12 lg:py-16">
+              <section className="py-8 sm:py-12 lg:py-16">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                   <div className="mb-6 flex items-center gap-2">
                     <div className="h-px flex-1 bg-border" />
@@ -176,7 +176,7 @@ export default function BlogPage() {
                       </span>
                     </div>
 
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
                       {regularArticles.map((article) => (
                         <Link
                           key={article.id}

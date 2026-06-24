@@ -54,24 +54,23 @@ export function IndustriesSection() {
   }
   
   return (
-    <section className="py-8 sm:py-12 lg:py-24 bg-muted/50">
+    <section className="bg-muted/50 py-8 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex flex-col items-center text-center mb-12 lg:mb-16">
-          <span className="inline-flex items-center gap-2 rounded-full bg-secondary/10 px-4 py-2 text-sm font-medium text-secondary mb-4">
-            <Package className="h-4 w-4" />
+        <div className="flex flex-col items-center text-center mb-8 sm:mb-12 lg:mb-16">
+          <span className="inline-flex items-center gap-2 rounded-full bg-secondary/10 px-3 py-1.5 text-xs font-medium text-secondary mb-3 sm:px-4 sm:py-2 sm:text-sm sm:mb-4">
+            <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             {t.landing.featured.industriesBadge}
           </span>
-          <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl lg:text-5xl">
+          <h2 className="font-serif text-xl font-medium tracking-tight text-foreground sm:text-3xl lg:text-5xl">
             {t.landing.featured.industriesTitle}
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground sm:mt-4 sm:text-lg">
             {t.landing.featured.industriesSubtitle}
           </p>
         </div>
 
-        {/* Industry Cards Grid - Larger cards in 2 rows */}
-        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
           {categories.map((industry) => {
             const industryColor = industry.color || "#f8fafc"
             
@@ -93,61 +92,53 @@ export function IndustriesSection() {
               <Link
                 key={industry.slug || industry.id}
                 href={`/industries/${industry.slug || industry.id}`}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:border-secondary/50 hover:shadow-2xl hover:-translate-y-2"
+                className="group relative overflow-hidden rounded-xl border border-border bg-card transition-all duration-300 hover:border-secondary/50 hover:shadow-lg sm:rounded-2xl sm:hover:shadow-2xl sm:hover:-translate-y-2"
                 style={{ backgroundColor: industryColor }}
               >
-                {/* Content */}
-                <div className="relative p-6 lg:p-8">
-                  {/* Icon */}
+                <div className="relative p-3 sm:p-6 lg:p-8">
                   <div 
-                    className="flex h-16 w-16 lg:h-20 lg:w-20 items-center justify-center rounded-2xl bg-card shadow-md transition-transform duration-300 group-hover:scale-110"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-card shadow-sm transition-transform duration-300 group-hover:scale-110 sm:h-16 sm:w-16 sm:rounded-2xl sm:shadow-md lg:h-20 lg:w-20"
                   >
                     {iconUrl ? (
-                      <img src={iconUrl} alt={industry.name} className="h-8 w-8 lg:h-10 lg:w-10 object-contain" />
+                      <img src={iconUrl} alt={industry.name} className="h-5 w-5 object-contain sm:h-8 sm:w-8 lg:h-10 lg:w-10" />
                     ) : industry.icon && (industry.icon.includes(".") || industry.icon.startsWith("/")) ? (
-                      <img src={industry.icon} alt={industry.name} className="h-8 w-8 lg:h-10 lg:w-10 object-contain" />
+                      <img src={industry.icon} alt={industry.name} className="h-5 w-5 object-contain sm:h-8 sm:w-8 lg:h-10 lg:w-10" />
                     ) : industry.icon ? (
                       <DynamicIcon 
                         name={industry.icon} 
-                        size={32} 
+                        size={20} 
                         color={industry.icon_color || undefined}
                       />
                     ) : (
-                      <div style={{ color: industry.icon_color || "#64748b" }}>
+                      <div className="scale-75 sm:scale-100" style={{ color: industry.icon_color || "#64748b" }}>
                         {industryIcons[industry.slug || ""] || <Package className="h-8 w-8 lg:h-10 lg:w-10" />}
                       </div>
                     )}
                   </div>
 
-                  {/* Industry Name */}
                   <h3 
-                    className="mt-5 text-xl font-semibold transition-colors"
+                    className="mt-2 line-clamp-2 text-sm font-semibold leading-snug sm:mt-5 sm:text-xl"
                     style={{ color: industry.title_color || undefined }}
                   >
                     {industry.name}
                   </h3>
 
-                  {/* Description */}
                   <p 
-                    className="mt-2 text-sm line-clamp-2" 
+                    className="mt-2 hidden text-sm line-clamp-2 sm:block" 
                     title={industry.description}
                     style={{ color: industry.description_color || undefined }}
                   >
                     {industry.description || "Explore suppliers and products in this industry sector."}
                   </p>
 
-                  {/* Stats */}
-                  <div className="mt-5 flex items-center gap-4 text-sm" style={{ color: industry.supplier_count_color || undefined }}>
-                    <div className="flex items-center gap-1">
-                      <Factory className="h-4 w-4" />
-                      <span className="font-semibold">{industry.supplier_count?.toLocaleString() || 0}</span>
-                      <span>{t?.landing?.featured?.suppliersLabel || "suppliers"}</span>
-                    </div>
+                  <div className="mt-2 flex items-center gap-1 text-xs sm:mt-5 sm:gap-4 sm:text-sm" style={{ color: industry.supplier_count_color || undefined }}>
+                    <Factory className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="font-semibold">{industry.supplier_count?.toLocaleString() || 0}</span>
+                    <span className="hidden sm:inline">{t?.landing?.featured?.suppliersLabel || "suppliers"}</span>
                   </div>
 
-                  {/* Arrow */}
                   <div 
-                    className="mt-5 flex items-center text-sm font-medium transition-colors"
+                    className="mt-2 hidden items-center text-sm font-medium transition-colors sm:mt-5 sm:flex"
                     style={{ color: industry.btn_color || undefined }}
                   >
                     <span>{t?.landing?.featured?.exploreButton || "Explore"}</span>

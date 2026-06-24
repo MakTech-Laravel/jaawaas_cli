@@ -96,7 +96,7 @@ export default function IndustryPage() {
     let mounted = true
 
     const loadPublicCategories = async () => {
-      const response = await getPublicCategories()
+      const response = await getPublicCategories({ perPage: 100 })
       if (!mounted) return
       if (response.success) {
         setPublicCategories(response.data)
@@ -173,7 +173,7 @@ export default function IndustryPage() {
 
   if (!industry) {
     return (
-      <div className="flex min-h-screen flex-col bg-background">
+      <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
         <Header />
         <main className="flex flex-1 items-center justify-center">
           <div className="text-center">
@@ -190,7 +190,7 @@ export default function IndustryPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
       <Header />
       <main className="flex-1">
         {/* Breadcrumb */}
@@ -211,7 +211,7 @@ export default function IndustryPage() {
         </div>
 
         {/* Hero Section */}
-        <section className="bg-primary py-16 lg:py-20">
+        <section className="bg-primary py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col items-start gap-8 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-start gap-6">
@@ -227,7 +227,7 @@ export default function IndustryPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
                 <Button variant="secondary" className="gap-2 bg-primary-foreground text-primary hover:bg-primary-foreground/90" asChild>
                   <Link href={`/suppliers?industry=${industry.slug}`}>
                     View All Suppliers
@@ -260,7 +260,7 @@ export default function IndustryPage() {
         </section>
 
         {/* Categories & Quick Filters Section */}
-        <section className="py-16 lg:py-20">
+        <section className="py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid gap-10 lg:grid-cols-4">
               {/* Filters Sidebar */}
@@ -296,7 +296,7 @@ export default function IndustryPage() {
                 </div>
 
                 {industry.categories.length > 0 ? (
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 lg:gap-6">
                     {industry.categories.map((category) => (
                       <Link
                         key={category.id}
@@ -346,7 +346,7 @@ export default function IndustryPage() {
 
 
         {/* CTA Section */}
-        <section className="bg-primary py-16 lg:py-20">
+        <section className="bg-primary py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="font-serif text-2xl font-medium text-primary-foreground sm:text-3xl">
               Ready to Source from {industry.name}?

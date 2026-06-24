@@ -52,17 +52,17 @@ export default function HelpCenterPage() {
   )
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-x-hidden">
       <Header />
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-primary py-16 lg:py-24">
+        <section className="bg-primary py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center">
-              <h1 className="font-serif text-4xl font-medium tracking-tight text-primary-foreground sm:text-5xl">
+              <h1 className="font-serif text-3xl font-medium tracking-tight text-primary-foreground min-[400px]:text-4xl sm:text-5xl lg:text-6xl">
                 {t?.help?.hero?.title}
               </h1>
-              <p className="mt-4 text-lg text-primary-foreground/80">
+              <p className="mt-3 text-sm text-primary-foreground/80 sm:mt-4 sm:text-base lg:text-lg">
                 {t?.help?.hero?.subtitle}
               </p>
 
@@ -85,7 +85,7 @@ export default function HelpCenterPage() {
 
         {/* Search results */}
         {isSearching && (
-          <section className="border-b border-border py-12 lg:py-16">
+          <section className="border-b border-border py-8 sm:py-12 lg:py-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <h2 className="font-serif text-2xl font-medium text-foreground">
                 {t?.help?.searchResultsTitle}
@@ -95,7 +95,7 @@ export default function HelpCenterPage() {
               </p>
 
               {searchResults.length > 0 ? (
-                <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
                   {searchResults.map((result) => (
                     <Link
                       key={`${result.categorySlug}-${result.article.slug}`}
@@ -148,13 +148,13 @@ export default function HelpCenterPage() {
 
         {/* Categories */}
         {!isSearching && (
-          <section className="py-16 lg:py-24">
+          <section className="py-8 sm:py-12 lg:py-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <h2 className="font-serif text-2xl font-medium text-foreground">
                 {t?.help?.browseCategoryTitle}
               </h2>
 
-              <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
                 {categories.map((category) => {
                   const Icon = iconMap[category.icon] || HelpCircle
                   const enabledArticles = getEnabledArticles(category)
@@ -163,7 +163,7 @@ export default function HelpCenterPage() {
                     <Link
                       key={category.id}
                       href={`/help/${category.slug}`}
-                      className="group rounded-2xl border border-border bg-card p-6 transition-all hover:shadow-lg"
+                      className="group rounded-xl border border-border bg-card p-4 transition-all hover:shadow-lg sm:rounded-2xl sm:p-6"
                     >
                       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10">
                         <Icon className="h-6 w-6 text-secondary" />
@@ -193,7 +193,7 @@ export default function HelpCenterPage() {
 
         {/* Popular Articles */}
         {!isSearching && popularArticles.length > 0 && (
-          <section className="bg-muted/50 py-16 lg:py-24">
+          <section className="bg-muted/50 py-8 sm:py-12 lg:py-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <h2 className="font-serif text-2xl font-medium text-foreground">
                 {t?.help?.popularArticlesTitle}
@@ -228,11 +228,11 @@ export default function HelpCenterPage() {
 
         {/* Contact Support */}
         {settings.contactSupport.enabled && (
-          <section className="py-16 lg:py-24">
+          <section className="py-8 sm:py-12 lg:py-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <div className="mx-auto max-w-2xl rounded-2xl bg-primary p-8 text-center text-primary-foreground lg:p-12">
-                <MessageSquare className="mx-auto h-12 w-12" />
-                <h2 className="mt-6 font-serif text-2xl font-medium">
+              <div className="mx-auto max-w-2xl rounded-xl bg-primary p-5 text-center text-primary-foreground sm:rounded-2xl sm:p-8 lg:p-10">
+                <MessageSquare className="mx-auto h-10 w-10 sm:h-12 sm:w-12" />
+                <h2 className="mt-4 font-serif text-xl font-medium sm:mt-6 sm:text-2xl">
                   {t?.help?.contactSupport?.title}
                 </h2>
                 <p className="mt-4 text-primary-foreground/80">

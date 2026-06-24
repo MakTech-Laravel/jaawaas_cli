@@ -397,7 +397,7 @@ function NewMessageForm() {
 
 export default function NewMessagePage() {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
       <Header />
       <main className="flex-1">
         <Suspense fallback={

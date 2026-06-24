@@ -54,6 +54,8 @@ export interface PaginatedApiResult<T> extends ApiResult<T> {
   meta?: CategoriesPaginationMeta
 }
 
+export const CATEGORIES_LIST_PER_PAGE = 12
+
 function parseCategoriesMeta(payload: unknown): CategoriesPaginationMeta | undefined {
   if (!payload || typeof payload !== "object") {
     return undefined
@@ -272,15 +274,19 @@ export async function getAdminCategories(params?: {
   }
 }
 
-export async function getPublicCategories(params?: { perPage?: number; page?: number }): Promise<ApiResult<BackendCategory[]>> {
+export async function getPublicCategories(params?: { perPage?: number; page?: number }): Promise<PaginatedApiResult<BackendCategory[]>> {
   try {
     const response = await publicApiClient.get("/categories", {
       params: {
-        ...(typeof params?.perPage === "number" ? { per_page: params.perPage } : {}),
-        ...(typeof params?.page === "number" ? { page: params.page } : {}),
+        per_page: params?.perPage ?? CATEGORIES_LIST_PER_PAGE,
+        page: params?.page ?? 1,
       },
     })
-    return { success: true, data: normalizeCategories(response.data) }
+    return {
+      success: true,
+      data: normalizeCategories(response.data),
+      meta: parseCategoriesMeta(response.data),
+    }
   } catch (error) {
     return {
       success: false,

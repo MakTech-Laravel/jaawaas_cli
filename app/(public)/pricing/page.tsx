@@ -130,11 +130,11 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-x-hidden">
       <Header />
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-primary py-16 lg:py-24">
+        <section className="bg-primary py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center">
               <h1 className="font-serif text-4xl font-medium tracking-tight text-primary-foreground sm:text-5xl">
@@ -152,7 +152,7 @@ export default function PricingPage() {
 
         {/* Special Launch Plan - Founding Manufacturer */}
         {!promotionLoading && activePromotion && (
-          <section className="py-16 lg:py-20 bg-linear-to-b from-secondary/5 to-background">
+          <section className="py-8 sm:py-12 lg:py-16 bg-linear-to-b from-secondary/5 to-background">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="mx-auto max-w-3xl text-center mb-12">
                 <Badge className="bg-secondary/20 text-secondary border-secondary/30 mb-4">
@@ -336,7 +336,7 @@ export default function PricingPage() {
         )}
 
         {/* Pricing Toggle & Cards */}
-        <section className="py-16 lg:py-24">
+        <section className="py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center mb-12">
               <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground">
@@ -508,7 +508,7 @@ export default function PricingPage() {
         </section>
 
         {/* Feature Comparison */}
-        <section className="bg-muted/50 py-16 lg:py-24">
+        <section className="bg-muted/50 py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center">
               <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground">
@@ -571,7 +571,7 @@ export default function PricingPage() {
         </section>
 
         {/* FAQ */}
-        <section className="py-16 lg:py-24">
+        <section className="py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <HelpCircle className="mx-auto h-10 w-10 text-secondary" />
@@ -629,7 +629,7 @@ export default function PricingPage() {
         </section>
 
         {/* CTA */}
-        <section className="bg-primary py-16 lg:py-20">
+        <section className="bg-primary py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center">
               <h2 className="font-serif text-3xl font-medium tracking-tight text-primary-foreground">
