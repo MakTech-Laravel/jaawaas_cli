@@ -21,8 +21,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import * as Icons from "lucide-react"
 import { getAdminProducts, updateAdminProductApprovalStatus, deleteAdminProduct } from "@/lib/api/admin-products"
-import type { AdminProduct } from "@/lib/api/admin-products"
+import type { AdminProduct, AdminProductMeta } from "@/lib/api/admin-products"
 import { useTranslation } from "@/lib/i18n"
+import { AdminPagination } from "@/components/admin/admin-pagination"
 
 const iconMap: Record<string, React.ReactNode> = {
   Factory: <Icons.Factory className="h-7 w-7" />,
@@ -56,7 +57,7 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<AdminProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [lastPage, setLastPage] = useState(1)
+  const [meta, setMeta] = useState<AdminProductMeta | null>(null)
   const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set())
 
   // Get query parameters
@@ -97,9 +98,9 @@ export default function AdminProductsPage() {
       const response = await getAdminProducts(page, params)
       if (response.success) {
         setProducts(response.data)
-        setLastPage(response.meta?.lastPage ?? 1)
+        setMeta(response.meta ?? null)
       } else {
-        setError(response.message || "Failed to fetch products")
+        setError(response.message || p.fetchFailed)
         setProducts([])
       }
       setLoading(false)
@@ -127,9 +128,9 @@ export default function AdminProductsPage() {
       // Show success alert
       await Swal.fire({
         icon: "success",
-        title: "Success!",
-        text: `Product ${isApproved ? "approved" : "rejected"} successfully`,
-        confirmButtonText: "OK",
+        title: c.success,
+        text: isApproved ? p.productApproved : p.productRejected,
+        confirmButtonText: c.ok,
         confirmButtonColor: "#503322",
         customClass: {
           confirmButton: "rounded-lg px-6 py-2 font-semibold",
@@ -139,9 +140,9 @@ export default function AdminProductsPage() {
       // Show error alert
       await Swal.fire({
         icon: "error",
-        title: "Error",
-        text: response.message || "Failed to update product status",
-        confirmButtonText: "OK",
+        title: c.error,
+        text: response.message || p.updateStatusFailed,
+        confirmButtonText: c.ok,
         confirmButtonColor: "#6366f1",
         customClass: {
           confirmButton: "rounded-lg px-6 py-2 font-semibold",
@@ -160,11 +161,11 @@ export default function AdminProductsPage() {
   const handleDeleteProduct = async (productId: number, productName: string) => {
     const result = await Swal.fire({
       icon: "warning",
-      title: "Delete Product",
-      text: `Are you sure you want to delete "${productName}"? This action cannot be undone.`,
+      title: p.deleteProduct,
+      text: p.deleteConfirmNamed.replace("{name}", productName),
       showCancelButton: true,
-      confirmButtonText: "Delete",
-      cancelButtonText: "Cancel",
+      confirmButtonText: c.delete,
+      cancelButtonText: c.cancel,
       confirmButtonColor: "#dc2626",
       cancelButtonColor: "#6b7280",
       customClass: {
@@ -187,9 +188,9 @@ export default function AdminProductsPage() {
       // Show success alert
       await Swal.fire({
         icon: "success",
-        title: "Deleted!",
-        text: "Product has been deleted successfully",
-        confirmButtonText: "OK",
+        title: c.deleted,
+        text: p.productDeleted,
+        confirmButtonText: c.ok,
         confirmButtonColor: "#503322",
         customClass: {
           confirmButton: "rounded-lg px-6 py-2 font-semibold",
@@ -199,9 +200,9 @@ export default function AdminProductsPage() {
       // Show error alert
       await Swal.fire({
         icon: "error",
-        title: "Error",
-        text: response.message || "Failed to delete product",
-        confirmButtonText: "OK",
+        title: c.error,
+        text: response.message || p.deleteFailed,
+        confirmButtonText: c.ok,
         confirmButtonColor: "#6366f1",
         customClass: {
           confirmButton: "rounded-lg px-6 py-2 font-semibold",
@@ -247,12 +248,12 @@ export default function AdminProductsPage() {
           }
         >
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Approval Status" />
+            <SelectValue placeholder={p.approvalStatus} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="1">Approved</SelectItem>
-            <SelectItem value="0">Pending</SelectItem>
+            <SelectItem value="all">{c.allStatus}</SelectItem>
+            <SelectItem value="1">{c.approved}</SelectItem>
+            <SelectItem value="0">{c.pending}</SelectItem>
           </SelectContent>
         </Select> */}
       </div>
@@ -260,7 +261,7 @@ export default function AdminProductsPage() {
       {/* Loading State */}
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">Loading products...</p>
+          <p className="text-muted-foreground">{p.loading}</p>
         </div>
       )}
 
@@ -274,7 +275,7 @@ export default function AdminProductsPage() {
       {/* Products Grid */}
       {!loading && products.length === 0 && (
         <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">No products found</p>
+          <p className="text-muted-foreground">{p.noProducts}</p>
         </div>
       )}
 
@@ -334,7 +335,7 @@ export default function AdminProductsPage() {
                           className="cursor-pointer text-destructive"
                         >
                           <Icons.Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {c.delete}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -344,34 +345,13 @@ export default function AdminProductsPage() {
             })}
           </div>
 
-          {/* Pagination */}
-          {lastPage > 1 && (
-            <div className="flex items-center justify-center gap-2 py-4">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 1}
-                onClick={() =>
-                  updateQueryParams({ page: Math.max(1, page - 1) })
-                }
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                Page {page} of {lastPage}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === lastPage}
-                onClick={() =>
-                  updateQueryParams({ page: Math.min(lastPage, page + 1) })
-                }
-              >
-                Next
-              </Button>
-            </div>
-          )}
+          <AdminPagination
+            page={page}
+            meta={meta}
+            itemCount={products.length}
+            onPageChange={(nextPage) => updateQueryParams({ page: nextPage })}
+            className="py-4"
+          />
         </>
       )}
     </div>

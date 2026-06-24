@@ -78,31 +78,12 @@ import {
   type PopularArticle
 } from "@/lib/data/help-center"
 
-const iconOptions = [
-  { value: "Linkedin", label: "LinkedIn", icon: Linkedin },
-  { value: "Twitter", label: "X (Twitter)", icon: Twitter },
-  { value: "Facebook", label: "Facebook", icon: Facebook },
-  { value: "Youtube", label: "YouTube", icon: Youtube },
-  { value: "Instagram", label: "Instagram", icon: Instagram },
-  { value: "Music2", label: "TikTok", icon: Music2 },
-]
-
-const categoryIconOptions = [
-  { value: "Users", label: "Users", icon: Users },
-  { value: "Factory", label: "Factory", icon: Factory },
-  { value: "CreditCard", label: "Credit Card", icon: CreditCard },
-  { value: "Shield", label: "Shield", icon: Shield },
-  { value: "Settings", label: "Settings", icon: Settings },
-  { value: "HelpCircle", label: "Help Circle", icon: HelpCircle },
-  { value: "BookOpen", label: "Book", icon: BookOpen },
-]
-
-const getIconComponent = (iconName: string) => {
+const getIconComponent = (iconName: string, iconOptions: { value: string; icon: typeof Linkedin }[]) => {
   const option = iconOptions.find(o => o.value === iconName)
   return option?.icon || Share2
 }
 
-const getCategoryIconComponent = (iconName: string) => {
+const getCategoryIconComponent = (iconName: string, categoryIconOptions: { value: string; icon: typeof Users }[]) => {
   const option = categoryIconOptions.find(o => o.value === iconName)
   return option?.icon || HelpCircle
 }
@@ -110,6 +91,29 @@ const getCategoryIconComponent = (iconName: string) => {
 export default function SiteSettingsPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.siteSettings
+  const c = t.admin.common
+  const hc = t.admin.pages.helpCenter
+  const ic = t.admin.pages.industries
+
+  const iconOptions = [
+    { value: "Linkedin", label: p.iconLinkedIn, icon: Linkedin },
+    { value: "Twitter", label: p.iconTwitter, icon: Twitter },
+    { value: "Facebook", label: p.iconFacebook, icon: Facebook },
+    { value: "Youtube", label: p.iconYouTube, icon: Youtube },
+    { value: "Instagram", label: p.iconInstagram, icon: Instagram },
+    { value: "Music2", label: p.iconTikTok, icon: Music2 },
+  ]
+
+  const categoryIconOptions = [
+    { value: "Users", label: p.iconUsers, icon: Users },
+    { value: "Factory", label: p.iconFactory, icon: Factory },
+    { value: "CreditCard", label: p.iconCreditCard, icon: CreditCard },
+    { value: "Shield", label: p.iconShield, icon: Shield },
+    { value: "Settings", label: p.iconSettings, icon: Settings },
+    { value: "HelpCircle", label: p.iconHelpCircle, icon: HelpCircle },
+    { value: "BookOpen", label: p.iconBook, icon: BookOpen },
+  ]
+
   const [socialLinks, setSocialLinks] = useState<SocialMediaLink[]>(defaultSocialLinks)
   const [legalPages, setLegalPages] = useState<LegalPage[]>(defaultLegalPages)
   const [aboutPage, setAboutPage] = useState<AboutPageData>(defaultAboutPage)
@@ -208,8 +212,8 @@ export default function SiteSettingsPage() {
                 ...page.sections,
                 {
                   id: `section-${Date.now()}`,
-                  title: `${page.sections.length + 1}. New Section`,
-                  content: "Enter section content here...",
+                  title: p.newSectionTitle.replace("{n}", String(page.sections.length + 1)),
+                  content: c.sectionContentPlaceholder,
                   order: page.sections.length + 1
                 }
               ]
@@ -411,7 +415,7 @@ export default function SiteSettingsPage() {
       id: `art-${Date.now()}`,
       slug,
       title: newArticleData.title,
-      content: newArticleData.content || "Enter article content here...",
+      content: newArticleData.content || c.sectionContentPlaceholder,
       steps: [],
       enabled: true,
       order: category.articles.length + 1
@@ -528,7 +532,7 @@ export default function SiteSettingsPage() {
         </div>
         <Button onClick={handleSave} disabled={isSaving} className="gap-2">
           <Save className="h-4 w-4" />
-          {isSaving ? "Saving..." : "Save All Changes"}
+          {isSaving ? c.saving : c.saveAllChanges}
         </Button>
       </div>
 
@@ -536,19 +540,19 @@ export default function SiteSettingsPage() {
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="help" className="gap-2">
             <HelpCircle className="h-4 w-4" />
-            Help Center
+            {p.helpCenter}
           </TabsTrigger>
           <TabsTrigger value="social" className="gap-2">
             <Share2 className="h-4 w-4" />
-            Social Media
+            {p.socialMedia}
           </TabsTrigger>
           <TabsTrigger value="legal" className="gap-2">
             <FileText className="h-4 w-4" />
-            Legal Pages
+            {p.legalPages}
           </TabsTrigger>
           <TabsTrigger value="about" className="gap-2">
             <Info className="h-4 w-4" />
-            About Us
+            {p.aboutUs}
           </TabsTrigger>
         </TabsList>
 
@@ -561,10 +565,10 @@ export default function SiteSettingsPage() {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <HelpCircle className="h-5 w-5" />
-                    Help Center Settings
+                    {c.helpCenterSettings}
                   </CardTitle>
                   <CardDescription>
-                    Configure hero section, search, and contact support settings
+                    {p.helpCenterSettingsDesc}
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-3">
@@ -574,7 +578,7 @@ export default function SiteSettingsPage() {
                     rel="noopener noreferrer"
                     className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
                   >
-                    Preview <ExternalLink className="h-3 w-3" />
+                    {c.previewLabel} <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
               </div>
@@ -582,10 +586,10 @@ export default function SiteSettingsPage() {
             <CardContent className="space-y-6">
               {/* Hero Section */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">Hero Section</h3>
+                <h3 className="font-semibold text-foreground">{p.heroSection}</h3>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div>
-                    <Label>Title</Label>
+                    <Label>{c.title}</Label>
                     <Input
                       value={helpCenter.settings.hero.title}
                       onChange={(e) => updateHelpSettings('hero.title', e.target.value)}
@@ -593,7 +597,7 @@ export default function SiteSettingsPage() {
                     />
                   </div>
                   <div>
-                    <Label>Subtitle</Label>
+                    <Label>{p.subtitle_label}</Label>
                     <Input
                       value={helpCenter.settings.hero.subtitle}
                       onChange={(e) => updateHelpSettings('hero.subtitle', e.target.value)}
@@ -601,7 +605,7 @@ export default function SiteSettingsPage() {
                     />
                   </div>
                   <div>
-                    <Label>Search Placeholder</Label>
+                    <Label>{p.searchPlaceholder}</Label>
                     <Input
                       value={helpCenter.settings.hero.searchPlaceholder}
                       onChange={(e) => updateHelpSettings('hero.searchPlaceholder', e.target.value)}
@@ -614,7 +618,7 @@ export default function SiteSettingsPage() {
               {/* Contact Support Section */}
               <div className="space-y-4 pt-4 border-t">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-foreground">Contact Support Section</h3>
+                  <h3 className="font-semibold text-foreground">{p.contactSupport}</h3>
                   <Switch
                     checked={helpCenter.settings.contactSupport.enabled}
                     onCheckedChange={(checked) => setHelpCenter({
@@ -628,7 +632,7 @@ export default function SiteSettingsPage() {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <Label>Title</Label>
+                    <Label>{c.title}</Label>
                     <Input
                       value={helpCenter.settings.contactSupport.title}
                       onChange={(e) => updateHelpSettings('contactSupport.title', e.target.value)}
@@ -636,7 +640,7 @@ export default function SiteSettingsPage() {
                     />
                   </div>
                   <div>
-                    <Label>Subtitle</Label>
+                    <Label>{p.subtitle_label}</Label>
                     <Input
                       value={helpCenter.settings.contactSupport.subtitle}
                       onChange={(e) => updateHelpSettings('contactSupport.subtitle', e.target.value)}
@@ -644,7 +648,7 @@ export default function SiteSettingsPage() {
                     />
                   </div>
                   <div>
-                    <Label>Contact Button Text</Label>
+                    <Label>{p.contactButton}</Label>
                     <Input
                       value={helpCenter.settings.contactSupport.contactButtonText}
                       onChange={(e) => updateHelpSettings('contactSupport.contactButtonText', e.target.value)}
@@ -652,7 +656,7 @@ export default function SiteSettingsPage() {
                     />
                   </div>
                   <div>
-                    <Label>FAQ Button Text</Label>
+                    <Label>{p.faqButton}</Label>
                     <Input
                       value={helpCenter.settings.contactSupport.faqButtonText}
                       onChange={(e) => updateHelpSettings('contactSupport.faqButtonText', e.target.value)}
@@ -670,42 +674,42 @@ export default function SiteSettingsPage() {
             <Card className="lg:col-span-1">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Categories</CardTitle>
+                  <CardTitle className="text-base">{p.categories}</CardTitle>
                   <Dialog open={newCategoryDialog} onOpenChange={setNewCategoryDialog}>
                     <DialogTrigger asChild>
                       <Button size="sm" variant="outline" className="gap-1">
                         <Plus className="h-3 w-3" />
-                        Add
+                        {c.add}
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Add New Category</DialogTitle>
+                        <DialogTitle>{p.addCategory}</DialogTitle>
                         <DialogDescription>
-                          Create a new help center category
+                          {p.createCategoryDesc}
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div>
-                          <Label>Category Title</Label>
+                          <Label>{p.categoryTitle}</Label>
                           <Input
                             value={newCategoryData.title}
                             onChange={(e) => setNewCategoryData({ ...newCategoryData, title: e.target.value })}
-                            placeholder="e.g., For Buyers"
+                            placeholder={hc.namePlaceholder}
                             className="mt-1"
                           />
                         </div>
                         <div>
-                          <Label>Description</Label>
+                          <Label>{c.description}</Label>
                           <Input
                             value={newCategoryData.description}
                             onChange={(e) => setNewCategoryData({ ...newCategoryData, description: e.target.value })}
-                            placeholder="Short description..."
+                            placeholder={hc.articleDescPlaceholder}
                             className="mt-1"
                           />
                         </div>
                         <div>
-                          <Label>Icon</Label>
+                          <Label>{ic.icon}</Label>
                           <Select value={newCategoryData.icon} onValueChange={(v) => setNewCategoryData({ ...newCategoryData, icon: v })}>
                             <SelectTrigger className="mt-1">
                               <SelectValue />
@@ -724,8 +728,8 @@ export default function SiteSettingsPage() {
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => setNewCategoryDialog(false)}>Cancel</Button>
-                        <Button onClick={addCategory}>Add Category</Button>
+                        <Button variant="outline" onClick={() => setNewCategoryDialog(false)}>{c.cancel}</Button>
+                        <Button onClick={addCategory}>{c.addCategoryBtn}</Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
@@ -734,7 +738,7 @@ export default function SiteSettingsPage() {
               <CardContent className="p-0">
                 <div className="space-y-1 p-2">
                   {helpCenter.categories.sort((a, b) => a.order - b.order).map((category) => {
-                    const IconComp = getCategoryIconComponent(category.icon)
+                    const IconComp = getCategoryIconComponent(category.icon, categoryIconOptions)
                     return (
                       <div
                         key={category.id}
@@ -777,7 +781,7 @@ export default function SiteSettingsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <CardTitle className="text-base">{currentCategory.title}</CardTitle>
-                        <CardDescription>{currentCategory.articles.length} articles</CardDescription>
+                        <CardDescription>{c.articlesCount.replace("{count}", String(currentCategory.articles.length))}</CardDescription>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -815,7 +819,7 @@ export default function SiteSettingsPage() {
                     {/* Category Settings */}
                     <div className="grid gap-4 sm:grid-cols-3 pb-4 border-b">
                       <div>
-                        <Label className="text-xs">Title</Label>
+                        <Label className="text-xs">{c.title}</Label>
                         <Input
                           value={currentCategory.title}
                           onChange={(e) => updateCategory(currentCategory.id, 'title', e.target.value)}
@@ -823,7 +827,7 @@ export default function SiteSettingsPage() {
                         />
                       </div>
                       <div>
-                        <Label className="text-xs">Description</Label>
+                        <Label className="text-xs">{c.description}</Label>
                         <Input
                           value={currentCategory.description}
                           onChange={(e) => updateCategory(currentCategory.id, 'description', e.target.value)}
@@ -831,7 +835,7 @@ export default function SiteSettingsPage() {
                         />
                       </div>
                       <div>
-                        <Label className="text-xs">Icon</Label>
+                        <Label className="text-xs">{ic.icon}</Label>
                         <Select value={currentCategory.icon} onValueChange={(v) => updateCategory(currentCategory.id, 'icon', v)}>
                           <SelectTrigger className="mt-1 h-8 text-sm">
                             <SelectValue />
@@ -853,52 +857,52 @@ export default function SiteSettingsPage() {
                     {/* Articles List */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <Label className="text-sm font-medium">Articles</Label>
+                        <Label className="text-sm font-medium">{t.admin.pages.insights.articles}</Label>
                         <Dialog open={newArticleDialog} onOpenChange={setNewArticleDialog}>
                           <DialogTrigger asChild>
                             <Button size="sm" variant="outline" className="gap-1">
                               <Plus className="h-3 w-3" />
-                              Add Article
+                              {c.addArticleName}
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Add New Article</DialogTitle>
+                              <DialogTitle>{p.addArticle}</DialogTitle>
                               <DialogDescription>
-                                Create a new article in {currentCategory.title}
+                                {p.createArticleIn.replace("{name}", currentCategory.title)}
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                               <div>
-                                <Label>Article Title</Label>
+                                <Label>{p.articleTitle}</Label>
                                 <Input
                                   value={newArticleData.title}
                                   onChange={(e) => setNewArticleData({ ...newArticleData, title: e.target.value })}
-                                  placeholder="e.g., How to search for suppliers"
+                                  placeholder={p.articleTitleExample}
                                   className="mt-1"
                                 />
                               </div>
                               <div>
-                                <Label>Initial Content (optional)</Label>
+                                <Label>{p.initialContentOptional}</Label>
                                 <Textarea
                                   value={newArticleData.content}
                                   onChange={(e) => setNewArticleData({ ...newArticleData, content: e.target.value })}
-                                  placeholder="Article introduction..."
+                                  placeholder={p.articleIntroPlaceholder}
                                   className="mt-1"
                                   rows={3}
                                 />
                               </div>
                             </div>
                             <DialogFooter>
-                              <Button variant="outline" onClick={() => setNewArticleDialog(false)}>Cancel</Button>
-                              <Button onClick={() => addArticle(currentCategory.id)}>Add Article</Button>
+                              <Button variant="outline" onClick={() => setNewArticleDialog(false)}>{c.cancel}</Button>
+                              <Button onClick={() => addArticle(currentCategory.id)}>{c.addArticleName}</Button>
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
                       </div>
 
                       <p className="text-xs text-muted-foreground mb-2">
-                        Click on an article to edit its content, or use the pencil icon.
+                        {p.clickArticleToEdit}
                       </p>
                       <div className="space-y-2 max-h-[300px] overflow-y-auto">
                         {currentCategory.articles.sort((a, b) => a.order - b.order).map((article) => (
@@ -916,7 +920,7 @@ export default function SiteSettingsPage() {
                               <div className="min-w-0">
                                 <p className="text-sm font-medium truncate">{article.title}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {article.steps?.length || 0} steps | {article.content.length > 50 ? article.content.substring(0, 50) + '...' : article.content}
+                                  {p.stepsCount.replace("{count}", String(article.steps?.length || 0))} | {article.content.length > 50 ? article.content.substring(0, 50) + '...' : article.content}
                                 </p>
                               </div>
                             </div>
@@ -929,7 +933,7 @@ export default function SiteSettingsPage() {
                                   e.stopPropagation()
                                   setSelectedArticle({ categoryId: currentCategory.id, articleId: article.id })
                                 }}
-                                title="Edit article content"
+                                title={p.editArticleContent}
                               >
                                 <Pencil className="h-3 w-3" />
                               </Button>
@@ -943,7 +947,7 @@ export default function SiteSettingsPage() {
                                     addToPopularArticles(currentCategory.id, article)
                                   }}
                                 >
-                                  + Popular
+                                  {c.popularBadge}
                                 </Button>
                               )}
                               <Button
@@ -989,7 +993,7 @@ export default function SiteSettingsPage() {
                         ))}
                         {currentCategory.articles.length === 0 && (
                           <p className="text-sm text-muted-foreground text-center py-6">
-                            No articles yet. Add your first article.
+                            {p.noArticlesYet}
                           </p>
                         )}
                       </div>
@@ -998,7 +1002,7 @@ export default function SiteSettingsPage() {
                 </>
               ) : (
                 <CardContent className="flex items-center justify-center h-[400px]">
-                  <p className="text-muted-foreground">Select a category to manage</p>
+                  <p className="text-muted-foreground">{p.selectCategory}</p>
                 </CardContent>
               )}
             </Card>
@@ -1012,7 +1016,7 @@ export default function SiteSettingsPage() {
                   <div>
                     <CardTitle className="text-base flex items-center gap-2">
                       <Pencil className="h-4 w-4" />
-                      Edit Article Content
+                      {c.editArticleContent}
                     </CardTitle>
                     <CardDescription>
                       {helpCenter.categories.find(c => c.id === selectedArticle.categoryId)?.title} / {currentArticle.title}
@@ -1025,7 +1029,7 @@ export default function SiteSettingsPage() {
                       rel="noopener noreferrer"
                       className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
                     >
-                      Preview <ExternalLink className="h-3 w-3" />
+                      {c.previewLabel} <ExternalLink className="h-3 w-3" />
                     </a>
                     <Button
                       variant="ghost"
@@ -1040,47 +1044,47 @@ export default function SiteSettingsPage() {
               <CardContent className="space-y-6 pt-6">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <Label>Article Title</Label>
+                    <Label>{p.articleTitle}</Label>
                     <Input
                       value={currentArticle.title}
                       onChange={(e) => updateArticle(selectedArticle.categoryId, selectedArticle.articleId, 'title', e.target.value)}
                       className="mt-1"
-                      placeholder="e.g., How to create a buyer account"
+                      placeholder={p.articleTitleExample}
                     />
-                    <p className="text-xs text-muted-foreground mt-1">The main heading shown on the article page</p>
+                    <p className="text-xs text-muted-foreground mt-1">{p.articleTitleHint}</p>
                   </div>
                   <div>
-                    <Label>URL Slug</Label>
+                    <Label>{p.urlSlug}</Label>
                     <Input
                       value={currentArticle.slug}
                       onChange={(e) => updateArticle(selectedArticle.categoryId, selectedArticle.articleId, 'slug', e.target.value)}
                       className="mt-1"
-                      placeholder="e.g., create-account"
+                      placeholder={hc.slugPlaceholder}
                     />
-                    <p className="text-xs text-muted-foreground mt-1">Used in the article URL (no spaces)</p>
+                    <p className="text-xs text-muted-foreground mt-1">{p.urlSlugHint}</p>
                   </div>
                 </div>
 
                 <div>
-                  <Label>Article Introduction / Description</Label>
+                  <Label>{p.articleIntro}</Label>
                   <p className="text-xs text-muted-foreground mb-2">
-                    This text appears at the top of the article, before the step-by-step guide.
+                    {p.articleIntroDesc}
                   </p>
                   <Textarea
                     value={currentArticle.content}
                     onChange={(e) => updateArticle(selectedArticle.categoryId, selectedArticle.articleId, 'content', e.target.value)}
                     className="mt-1"
                     rows={5}
-                    placeholder="Write an introduction or overview of this topic. Explain what the user will learn and why it's important..."
+                    placeholder={p.articleIntroPlaceholderLong}
                   />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <Label>Step-by-Step Guide</Label>
+                      <Label>{p.stepGuide}</Label>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Add numbered steps that guide users through the process
+                        {p.stepGuideDesc}
                       </p>
                     </div>
                     <Button
@@ -1090,7 +1094,7 @@ export default function SiteSettingsPage() {
                       onClick={() => addArticleStep(selectedArticle.categoryId, selectedArticle.articleId)}
                     >
                       <Plus className="h-3 w-3" />
-                      Add Step
+                      {c.addStep}
                     </Button>
                   </div>
                   <div className="space-y-2">
@@ -1102,7 +1106,7 @@ export default function SiteSettingsPage() {
                         <Textarea
                           value={step}
                           onChange={(e) => updateArticleStep(selectedArticle.categoryId, selectedArticle.articleId, index, e.target.value)}
-                          placeholder={`Step ${index + 1}: Describe what the user should do...`}
+                          placeholder={p.stepPlaceholder.replace("{n}", String(index + 1))}
                           className="flex-1 min-h-[60px]"
                           rows={2}
                         />
@@ -1119,7 +1123,7 @@ export default function SiteSettingsPage() {
                     {(!currentArticle.steps || currentArticle.steps.length === 0) && (
                       <div className="text-center py-6 border rounded-lg bg-muted/50">
                         <p className="text-sm text-muted-foreground">
-                          No steps added yet. Click "Add Step" to create a step-by-step guide.
+                          {p.noStepsYet}
                         </p>
                         <Button
                           size="sm"
@@ -1128,7 +1132,7 @@ export default function SiteSettingsPage() {
                           onClick={() => addArticleStep(selectedArticle.categoryId, selectedArticle.articleId)}
                         >
                           <Plus className="h-3 w-3" />
-                          Add First Step
+                          {p.addFirstStep}
                         </Button>
                       </div>
                     )}
@@ -1141,10 +1145,10 @@ export default function SiteSettingsPage() {
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Pencil className="h-8 w-8 text-muted-foreground mb-3" />
                 <p className="text-muted-foreground text-center">
-                  Select an article from the list above to edit its content
+                  {p.selectArticleToEdit}
                 </p>
                 <p className="text-xs text-muted-foreground text-center mt-1">
-                  You can edit the title, introduction, and step-by-step instructions
+                  {p.editArticleContentHint}
                 </p>
               </CardContent>
             </Card>
@@ -1153,9 +1157,9 @@ export default function SiteSettingsPage() {
           {/* Popular Articles Management */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Popular Articles</CardTitle>
+              <CardTitle className="text-base">{p.popularArticles}</CardTitle>
               <CardDescription>
-                These articles appear in the "Popular Articles" section on the Help Center page. Reorder them to change their display position.
+                {p.popularArticlesDesc}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1216,7 +1220,7 @@ export default function SiteSettingsPage() {
                           }}
                         >
                           <Pencil className="h-3 w-3" />
-                          Edit
+                          {c.edit}
                         </Button>
                         <a
                           href={`/help/${article.categorySlug}/${article.articleSlug}`}
@@ -1224,7 +1228,7 @@ export default function SiteSettingsPage() {
                           rel="noopener noreferrer"
                           className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                         >
-                          View <ExternalLink className="h-3 w-3" />
+                          {c.view} <ExternalLink className="h-3 w-3" />
                         </a>
                         <Switch
                           checked={article.enabled}
@@ -1244,13 +1248,13 @@ export default function SiteSettingsPage() {
                 })}
                 {helpCenter.popularArticles.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-6">
-                    No popular articles selected. Click "+ Popular" on any article above to add it here.
+                    {p.noPopularArticles}
                   </p>
                 )}
               </div>
               {helpCenter.popularArticles.length > 0 && (
                 <p className="text-xs text-muted-foreground mt-4">
-                  Tip: Use the up/down arrows to reorder articles. The order here matches how they appear on the Help Center page.
+                  {p.popularReorderTip}
                 </p>
               )}
             </CardContent>
@@ -1263,16 +1267,16 @@ export default function SiteSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Share2 className="h-5 w-5" />
-                Social Media Links
+                {c.socialMediaLinks}
               </CardTitle>
               <CardDescription>
-                Manage the social media links that appear in the website footer
+                {p.socialMediaDesc}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-3">
                 {socialLinks.sort((a, b) => a.order - b.order).map((link) => {
-                  const IconComponent = getIconComponent(link.icon)
+                  const IconComponent = getIconComponent(link.icon, iconOptions)
                   return (
                     <div
                       key={link.id}
@@ -1288,9 +1292,9 @@ export default function SiteSettingsPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-foreground">{link.platform}</span>
                           {link.enabled ? (
-                            <Badge variant="secondary" className="text-xs">Active</Badge>
+                            <Badge variant="secondary" className="text-xs">{p.active}</Badge>
                           ) : (
-                            <Badge variant="outline" className="text-xs">Hidden</Badge>
+                            <Badge variant="outline" className="text-xs">{p.hidden}</Badge>
                           )}
                         </div>
                         <Input
@@ -1317,14 +1321,14 @@ export default function SiteSettingsPage() {
               </div>
 
               <div className="rounded-lg border border-dashed p-4">
-                <h4 className="font-medium text-foreground mb-3">Add New Social Platform</h4>
+                <h4 className="font-medium text-foreground mb-3">{p.addSocial}</h4>
                 <div className="grid gap-4 sm:grid-cols-4">
                   <div>
-                    <Label className="text-xs">Platform Name</Label>
-                    <Input value={newSocialPlatform} onChange={(e) => setNewSocialPlatform(e.target.value)} placeholder="e.g., Pinterest" className="mt-1" />
+                    <Label className="text-xs">{p.platformName}</Label>
+                    <Input value={newSocialPlatform} onChange={(e) => setNewSocialPlatform(e.target.value)} placeholder={c.platformPlaceholder} className="mt-1" />
                   </div>
                   <div>
-                    <Label className="text-xs">Icon</Label>
+                    <Label className="text-xs">{ic.icon}</Label>
                     <Select value={newSocialIcon} onValueChange={setNewSocialIcon}>
                       <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -1337,9 +1341,9 @@ export default function SiteSettingsPage() {
                     </Select>
                   </div>
                   <div className="sm:col-span-2">
-                    <Label className="text-xs">URL</Label>
+                    <Label className="text-xs">{c.urlLabel}</Label>
                     <div className="flex gap-2 mt-1">
-                      <Input value={newSocialUrl} onChange={(e) => setNewSocialUrl(e.target.value)} placeholder="https://..." />
+                      <Input value={newSocialUrl} onChange={(e) => setNewSocialUrl(e.target.value)} placeholder={c.urlPlaceholder} />
                       <Button onClick={addSocialLink}><Plus className="h-4 w-4" /></Button>
                     </div>
                   </div>
@@ -1347,10 +1351,10 @@ export default function SiteSettingsPage() {
               </div>
 
               <div className="rounded-lg bg-primary p-6">
-                <p className="text-sm text-primary-foreground/60 mb-3">Footer Preview:</p>
+                <p className="text-sm text-primary-foreground/60 mb-3">{p.footerPreview}</p>
                 <div className="flex gap-4">
                   {socialLinks.filter(l => l.enabled).sort((a, b) => a.order - b.order).map(link => {
-                    const IconComponent = getIconComponent(link.icon)
+                    const IconComponent = getIconComponent(link.icon, iconOptions)
                     return (
                       <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary-foreground/60 hover:text-primary-foreground">
                         <IconComponent className="h-5 w-5" />
@@ -1367,7 +1371,7 @@ export default function SiteSettingsPage() {
         <TabsContent value="legal" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-4">
             <Card className="lg:col-span-1">
-              <CardHeader><CardTitle className="text-base">Legal Pages</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">{p.legalPages}</CardTitle></CardHeader>
               <CardContent className="p-0">
                 <div className="space-y-1 p-2">
                   {legalPages.map(page => (
@@ -1394,14 +1398,14 @@ export default function SiteSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>{currentLegalPage?.title}</CardTitle>
-                    <CardDescription>Edit the content sections of this page</CardDescription>
+                    <CardDescription>{p.editLegalDesc}</CardDescription>
                   </div>
                   <div className="flex items-center gap-3">
                     <a href={`/${currentLegalPage?.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-                      Preview <ExternalLink className="h-3 w-3" />
+                      {c.previewLabel} <ExternalLink className="h-3 w-3" />
                     </a>
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="page-enabled" className="text-sm">Page Enabled</Label>
+                      <Label htmlFor="page-enabled" className="text-sm">{p.pageEnabled}</Label>
                       <Switch id="page-enabled" checked={currentLegalPage?.enabled} onCheckedChange={() => currentLegalPage && toggleLegalPage(currentLegalPage.id)} />
                     </div>
                   </div>
@@ -1410,20 +1414,20 @@ export default function SiteSettingsPage() {
               <CardContent className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <Label>Page Title</Label>
+                    <Label>{p.pageTitle}</Label>
                     <Input value={currentLegalPage?.title || ""} onChange={(e) => currentLegalPage && updateLegalPageMeta(currentLegalPage.id, "title", e.target.value)} className="mt-1" />
                   </div>
                   <div>
-                    <Label>Last Updated</Label>
+                    <Label>{p.lastUpdated}</Label>
                     <Input value={currentLegalPage?.lastUpdated || ""} onChange={(e) => currentLegalPage && updateLegalPageMeta(currentLegalPage.id, "lastUpdated", e.target.value)} className="mt-1" />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <Label className="text-base">Content Sections</Label>
+                    <Label className="text-base">{p.contentSections}</Label>
                     <Button variant="outline" size="sm" onClick={() => currentLegalPage && addLegalSection(currentLegalPage.id)} className="gap-2">
-                      <Plus className="h-4 w-4" />Add Section
+                      <Plus className="h-4 w-4" />{p.addSection}
                     </Button>
                   </div>
                   
@@ -1438,16 +1442,16 @@ export default function SiteSettingsPage() {
                         </AccordionTrigger>
                         <AccordionContent className="space-y-4 pt-4">
                           <div>
-                            <Label>Section Title</Label>
+                            <Label>{p.sectionTitle}</Label>
                             <Input value={section.title} onChange={(e) => currentLegalPage && updateLegalSection(currentLegalPage.id, section.id, "title", e.target.value)} className="mt-1" />
                           </div>
                           <div>
-                            <Label>Content</Label>
+                            <Label>{c.sectionContent}</Label>
                             <Textarea value={section.content} onChange={(e) => currentLegalPage && updateLegalSection(currentLegalPage.id, section.id, "content", e.target.value)} rows={4} className="mt-1" />
                           </div>
                           <div className="flex justify-end">
                             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => currentLegalPage && deleteLegalSection(currentLegalPage.id, section.id)}>
-                              <Trash2 className="h-4 w-4 mr-1" />Delete Section
+                              <Trash2 className="h-4 w-4 mr-1" />{p.deleteSection}
                             </Button>
                           </div>
                         </AccordionContent>
@@ -1466,15 +1470,15 @@ export default function SiteSettingsPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5" />About Us Page</CardTitle>
-                  <CardDescription>Customize the content of your About Us page</CardDescription>
+                  <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5" />{c.aboutUsPage}</CardTitle>
+                  <CardDescription>{p.aboutUsDesc}</CardDescription>
                 </div>
                 <div className="flex items-center gap-3">
                   <a href="/about" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-                    Preview <ExternalLink className="h-3 w-3" />
+                    {c.previewLabel} <ExternalLink className="h-3 w-3" />
                   </a>
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="about-enabled" className="text-sm">Page Enabled</Label>
+                    <Label htmlFor="about-enabled" className="text-sm">{p.pageEnabled}</Label>
                     <Switch id="about-enabled" checked={aboutPage.enabled} onCheckedChange={(checked) => setAboutPage({ ...aboutPage, enabled: checked })} />
                   </div>
                 </div>
@@ -1483,14 +1487,14 @@ export default function SiteSettingsPage() {
             <CardContent className="space-y-8">
               {/* Hero Section */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">Hero Section</h3>
+                <h3 className="font-semibold text-foreground">{p.heroSection}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
-                    <Label>Title</Label>
+                    <Label>{c.title}</Label>
                     <Input value={aboutPage.hero.title} onChange={(e) => setAboutPage({ ...aboutPage, hero: { ...aboutPage.hero, title: e.target.value } })} className="mt-1" />
                   </div>
                   <div className="sm:col-span-2">
-                    <Label>Subtitle</Label>
+                    <Label>{p.subtitle_label}</Label>
                     <Textarea value={aboutPage.hero.subtitle} onChange={(e) => setAboutPage({ ...aboutPage, hero: { ...aboutPage.hero, subtitle: e.target.value } })} className="mt-1" rows={2} />
                   </div>
                 </div>
@@ -1498,35 +1502,35 @@ export default function SiteSettingsPage() {
 
               {/* Story Section */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">Our Story</h3>
+                <h3 className="font-semibold text-foreground">{p.ourStory}</h3>
                 <div>
-                  <Label>Section Title</Label>
+                  <Label>{p.sectionTitleLabel}</Label>
                   <Input value={aboutPage.story.title} onChange={(e) => setAboutPage({ ...aboutPage, story: { ...aboutPage.story, title: e.target.value } })} className="mt-1" />
                 </div>
                 <div>
-                  <Label>Story Paragraphs</Label>
+                  <Label>{p.storyParagraphs}</Label>
                   {aboutPage.story.paragraphs.map((paragraph, index) => (
                     <div key={index} className="mt-2 flex gap-2">
                       <Textarea value={paragraph} onChange={(e) => { const newParagraphs = [...aboutPage.story.paragraphs]; newParagraphs[index] = e.target.value; setAboutPage({ ...aboutPage, story: { ...aboutPage.story, paragraphs: newParagraphs } }) }} rows={3} className="flex-1" />
                       <Button variant="ghost" size="icon" onClick={() => { const newParagraphs = aboutPage.story.paragraphs.filter((_, i) => i !== index); setAboutPage({ ...aboutPage, story: { ...aboutPage.story, paragraphs: newParagraphs } }) }}><X className="h-4 w-4" /></Button>
                     </div>
                   ))}
-                  <Button variant="outline" size="sm" className="mt-2 gap-2" onClick={() => setAboutPage({ ...aboutPage, story: { ...aboutPage.story, paragraphs: [...aboutPage.story.paragraphs, ""] } })}><Plus className="h-4 w-4" />Add Paragraph</Button>
+                  <Button variant="outline" size="sm" className="mt-2 gap-2" onClick={() => setAboutPage({ ...aboutPage, story: { ...aboutPage.story, paragraphs: [...aboutPage.story.paragraphs, ""] } })}><Plus className="h-4 w-4" />{p.addParagraph}</Button>
                 </div>
               </div>
 
               {/* Stats */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">Statistics</h3>
+                <h3 className="font-semibold text-foreground">{p.statistics}</h3>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   {aboutPage.stats.map((stat, index) => (
                     <div key={index} className="rounded-lg border p-4 space-y-3">
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs">Stat #{index + 1}</Label>
+                        <Label className="text-xs">{c.statNumber.replace("{n}", String(index + 1))}</Label>
                         <Switch checked={stat.enabled} onCheckedChange={(checked) => { const newStats = [...aboutPage.stats]; newStats[index] = { ...stat, enabled: checked }; setAboutPage({ ...aboutPage, stats: newStats }) }} />
                       </div>
-                      <Input value={stat.value} onChange={(e) => { const newStats = [...aboutPage.stats]; newStats[index] = { ...stat, value: e.target.value }; setAboutPage({ ...aboutPage, stats: newStats }) }} placeholder="Value (e.g., 50+)" />
-                      <Input value={stat.label} onChange={(e) => { const newStats = [...aboutPage.stats]; newStats[index] = { ...stat, label: e.target.value }; setAboutPage({ ...aboutPage, stats: newStats }) }} placeholder="Label (e.g., Countries)" />
+                      <Input value={stat.value} onChange={(e) => { const newStats = [...aboutPage.stats]; newStats[index] = { ...stat, value: e.target.value }; setAboutPage({ ...aboutPage, stats: newStats }) }} placeholder={c.valuePlaceholder} />
+                      <Input value={stat.label} onChange={(e) => { const newStats = [...aboutPage.stats]; newStats[index] = { ...stat, label: e.target.value }; setAboutPage({ ...aboutPage, stats: newStats }) }} placeholder={c.labelPlaceholder} />
                     </div>
                   ))}
                 </div>
@@ -1535,20 +1539,20 @@ export default function SiteSettingsPage() {
               {/* Mission & Vision */}
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-foreground">Mission</h3>
-                  <div><Label>Title</Label><Input value={aboutPage.mission.title} onChange={(e) => setAboutPage({ ...aboutPage, mission: { ...aboutPage.mission, title: e.target.value } })} className="mt-1" /></div>
-                  <div><Label>Description</Label><Textarea value={aboutPage.mission.description} onChange={(e) => setAboutPage({ ...aboutPage, mission: { ...aboutPage.mission, description: e.target.value } })} className="mt-1" rows={3} /></div>
+                  <h3 className="font-semibold text-foreground">{p.mission}</h3>
+                  <div><Label>{c.title}</Label><Input value={aboutPage.mission.title} onChange={(e) => setAboutPage({ ...aboutPage, mission: { ...aboutPage.mission, title: e.target.value } })} className="mt-1" /></div>
+                  <div><Label>{c.description}</Label><Textarea value={aboutPage.mission.description} onChange={(e) => setAboutPage({ ...aboutPage, mission: { ...aboutPage.mission, description: e.target.value } })} className="mt-1" rows={3} /></div>
                 </div>
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-foreground">Vision</h3>
-                  <div><Label>Title</Label><Input value={aboutPage.vision.title} onChange={(e) => setAboutPage({ ...aboutPage, vision: { ...aboutPage.vision, title: e.target.value } })} className="mt-1" /></div>
-                  <div><Label>Description</Label><Textarea value={aboutPage.vision.description} onChange={(e) => setAboutPage({ ...aboutPage, vision: { ...aboutPage.vision, description: e.target.value } })} className="mt-1" rows={3} /></div>
+                  <h3 className="font-semibold text-foreground">{p.vision}</h3>
+                  <div><Label>{c.title}</Label><Input value={aboutPage.vision.title} onChange={(e) => setAboutPage({ ...aboutPage, vision: { ...aboutPage.vision, title: e.target.value } })} className="mt-1" /></div>
+                  <div><Label>{c.description}</Label><Textarea value={aboutPage.vision.description} onChange={(e) => setAboutPage({ ...aboutPage, vision: { ...aboutPage.vision, description: e.target.value } })} className="mt-1" rows={3} /></div>
                 </div>
               </div>
 
               {/* Values */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">Company Values</h3>
+                <h3 className="font-semibold text-foreground">{p.companyValues}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {aboutPage.values.map((value, index) => (
                     <div key={value.id} className="rounded-lg border p-4 space-y-3">
@@ -1556,8 +1560,8 @@ export default function SiteSettingsPage() {
                         <Label className="text-sm font-medium">{value.title}</Label>
                         <Switch checked={value.enabled} onCheckedChange={(checked) => { const newValues = [...aboutPage.values]; newValues[index] = { ...value, enabled: checked }; setAboutPage({ ...aboutPage, values: newValues }) }} />
                       </div>
-                      <Input value={value.title} onChange={(e) => { const newValues = [...aboutPage.values]; newValues[index] = { ...value, title: e.target.value }; setAboutPage({ ...aboutPage, values: newValues }) }} placeholder="Value Title" />
-                      <Textarea value={value.description} onChange={(e) => { const newValues = [...aboutPage.values]; newValues[index] = { ...value, description: e.target.value }; setAboutPage({ ...aboutPage, values: newValues }) }} placeholder="Description" rows={2} />
+                      <Input value={value.title} onChange={(e) => { const newValues = [...aboutPage.values]; newValues[index] = { ...value, title: e.target.value }; setAboutPage({ ...aboutPage, values: newValues }) }} placeholder={p.valueTitlePlaceholder} />
+                      <Textarea value={value.description} onChange={(e) => { const newValues = [...aboutPage.values]; newValues[index] = { ...value, description: e.target.value }; setAboutPage({ ...aboutPage, values: newValues }) }} placeholder={p.descriptionPlaceholder} rows={2} />
                     </div>
                   ))}
                 </div>
@@ -1565,12 +1569,12 @@ export default function SiteSettingsPage() {
 
               {/* CTA */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">Call to Action</h3>
+                <h3 className="font-semibold text-foreground">{p.callToAction}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="sm:col-span-2"><Label>Title</Label><Input value={aboutPage.cta.title} onChange={(e) => setAboutPage({ ...aboutPage, cta: { ...aboutPage.cta, title: e.target.value } })} className="mt-1" /></div>
-                  <div className="sm:col-span-2"><Label>Subtitle</Label><Input value={aboutPage.cta.subtitle} onChange={(e) => setAboutPage({ ...aboutPage, cta: { ...aboutPage.cta, subtitle: e.target.value } })} className="mt-1" /></div>
-                  <div><Label>Buyer Button Text</Label><Input value={aboutPage.cta.buyerButtonText} onChange={(e) => setAboutPage({ ...aboutPage, cta: { ...aboutPage.cta, buyerButtonText: e.target.value } })} className="mt-1" /></div>
-                  <div><Label>Manufacturer Button Text</Label><Input value={aboutPage.cta.manufacturerButtonText} onChange={(e) => setAboutPage({ ...aboutPage, cta: { ...aboutPage.cta, manufacturerButtonText: e.target.value } })} className="mt-1" /></div>
+                  <div className="sm:col-span-2"><Label>{c.title}</Label><Input value={aboutPage.cta.title} onChange={(e) => setAboutPage({ ...aboutPage, cta: { ...aboutPage.cta, title: e.target.value } })} className="mt-1" /></div>
+                  <div className="sm:col-span-2"><Label>{p.subtitle_label}</Label><Input value={aboutPage.cta.subtitle} onChange={(e) => setAboutPage({ ...aboutPage, cta: { ...aboutPage.cta, subtitle: e.target.value } })} className="mt-1" /></div>
+                  <div><Label>{p.buyerButton}</Label><Input value={aboutPage.cta.buyerButtonText} onChange={(e) => setAboutPage({ ...aboutPage, cta: { ...aboutPage.cta, buyerButtonText: e.target.value } })} className="mt-1" /></div>
+                  <div><Label>{p.manufacturerButton}</Label><Input value={aboutPage.cta.manufacturerButtonText} onChange={(e) => setAboutPage({ ...aboutPage, cta: { ...aboutPage.cta, manufacturerButtonText: e.target.value } })} className="mt-1" /></div>
                 </div>
               </div>
             </CardContent>

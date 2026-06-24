@@ -210,17 +210,24 @@ export async function rejectManufacturer(
 
 export async function fetchSuppliers(
   page: number = 1,
-  perPage: number = 10
+  perPage: number = 10,
+  filters?: { status?: string; search?: string }
 ): Promise<ManufacturerRegistrationResponse> {
   try {
+    const params: Record<string, string | number> = {
+      page,
+      per_page: perPage,
+    }
+    if (filters?.status) {
+      params.status = filters.status
+    }
+    if (filters?.search) {
+      params.search = filters.search
+    }
+
     const response = await apiClient.get<ManufacturerRegistrationResponse>(
       "/admin/manufacturer",
-      {
-        params: {
-          page,
-          per_page: perPage,
-        },
-      }
+      { params }
     )
     return response.data
   } catch (error) {

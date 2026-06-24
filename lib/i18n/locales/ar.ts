@@ -1,4 +1,6 @@
 import type { TranslationKeys } from "./en";
+import adminAr from "./admin/ar";
+import buyerAr from "./buyer/ar";
 
 // Keep translations as a constant and cast on export to avoid strict
 // literal-type mismatches with `en` while preserving runtime values.
@@ -643,6 +645,17 @@ const ar = {
       inquiriesLabel: "استفسارات",
       noProductsFound: "لم يتم العثور على منتجات",
       errorLoadingProducts: "خطأ في تحميل المنتجات",
+      filters: "عوامل التصفية",
+      clearAll: "مسح الكل",
+      sortBy: "ترتيب حسب",
+      relevance: "الصلة",
+      country: "الدولة",
+      allCountries: "جميع الدول",
+      minimumOrder: "الحد الأدنى للطلب",
+      anyMoq: "أي كمية",
+      certifications: "الشهادات",
+      exportMarkets: "أسواق التصدير",
+      pieces: "قطع",
     },
     suppliersMap: {
       globalNetwork: "الشبكة العالمية",
@@ -1642,7 +1655,7 @@ const ar = {
         subtitle: "إعداد طلب جديد لعميل والبدء في تتبع تقدمه.",
         selectBuyer: "اختر المشتري",
         orderItems: "عناصر الطلب",
-        addItem: "إضافة عنصر",
+        addItem: "إضافة منتج",
         subtotal: "المجموع الفرعي",
         tax: "الضريبة",
         totalAmount: "المبلغ الإجمالي",
@@ -1650,7 +1663,43 @@ const ar = {
         commercialTerms: "الشروط التجارية",
         documentsNotes: "المستندات والملاحظات",
         attachDocuments: "إرفاق مستندات",
-        requiredFieldsError: "يرجى ملء جميع الحقول المطلوبة المميزة بـ *."
+        requiredFieldsError: "يرجى ملء جميع الحقول المطلوبة المميزة بـ *.",
+        engagement: "التعاقد",
+        engagementTitle: "عنوان التعاقد",
+        engagementTitlePlaceholder: "مثال: هوية العلامة التجارية وتصميم التغليف",
+        orderTitle: "عنوان الطلب",
+        orderTitlePlaceholder: "مثال: أكواب سيراميك فاخرة — 320 مل",
+        scopePlaceholder: "مثال: شعار، 3 SKUs تغليف، دليل العلامة",
+        products: "المنتجات",
+        productsHelp:
+          "أضف كل منتج مدرج في هذا الطلب. يُسعَّر كل سطر على حدة ويُجمع في إجمالي الطلب.",
+        productLine: "منتج {n}",
+        removeProduct: "إزالة المنتج",
+        selectProduct: "اختر منتجًا",
+        loadingProducts: "جاري تحميل المنتجات...",
+        noProducts: "لا توجد منتجات متاحة",
+        unit: "الوحدة",
+        unitPrice: "سعر الوحدة",
+        lineTotal: "إجمالي السطر",
+        notesPackaging: "ملاحظات / تفاصيل التغليف",
+        notesPackagingPlaceholder: "مثال: طباعة شعار بلون واحد، 24 وحدة في كرتون",
+        selectProductFirst: "اختر منتجًا أولاً",
+        loadingBuyers: "جاري تحميل المشترين...",
+        chooseBuyer: "اختر مشتريًا عملت معه",
+        noBuyers: "لا يوجد مشترون متاحون",
+        buyerHelp:
+          "يمكن اختيار المشترين المتصلين فقط عبر طلبات عروض الأسعار أو العروض أو الرسائل.",
+        deliveryDate: "تاريخ التسليم",
+        timeline: "الجدول الزمني",
+        timelinePlaceholder: "مثال: 3 أسابيع",
+        productionTimePlaceholder: "مثال: 30 يومًا",
+        paymentTermsPlaceholder: "مثال: 50% مقدمًا، 50% عند التسليم",
+        shippingTermsPlaceholder: "مثال: FOB Shanghai",
+        destinationPlaceholder: "مثال: لوس أنجلوس، الولايات المتحدة",
+        notesPlaceholder: "أي سياق إضافي حول هذا الطلب...",
+        productOrderError:
+          "يرجى اختيار مشترٍ وإضافة عنوان الطلب وتاريخ التسليم، والتأكد من أن كل سطر منتج يحتوي على منتج وكمية وسعر وحدة.",
+        submitFailed: "فشل إنشاء الطلب",
       },
       products: {
         title: "المنتجات",
@@ -1951,40 +2000,8 @@ const ar = {
         timestamp: "الطابع الزمني"
       }
     },
-  admin: {
-    layout: { panelTitle: "لوحة الإدارة", superAdmin: "المشرف العام", loading: "جاري التحميل...", searchPlaceholder: "البحث عن مستخدمين، موردين، منتجات..." },
-    common: { success: "نجاح", error: "خطأ", notice: "ملاحظة", approved: "تمت الموافقة", deleted: "تم الحذف!", updating: "جاري التحديث...", resetting: "جاري إعادة التعيين...", buyers: "المشترون", manufacturers: "المصنعون", openCount: "{count} مفتوح", ticketNumber: "تذكرة #{id}", stepOf: "الخطوة {current} من {total}", stepSubtitle: "إضافة مصنع جديد إلى المنصة", moderationActive: "الإشراف نشط", flagged: "مُبلّغ عنها", searchUsers: "البحث عن مستخدمين...", searchSuppliers: "البحث عن موردين...", searchProducts: "البحث عن منتجات...", searchOrders: "البحث عن طلبات...", all: "الكل", previous: "السابق", next: "التالي", actions: "إجراءات", status: "الحالة", view: "عرض", edit: "تعديل", delete: "حذف", cancel: "إلغاء", save: "حفظ", loading: "جاري التحميل...", noResults: "لم يتم العثور على نتائج", approveFailed: "فشلت الموافقة على الطلب.", rejectReasonRequired: "يرجى تقديم سبب الرفض.", approvedDesc: "تمت الموافقة على {name}.", approvalNotWired: "الموافقة على نوع {type} غير مفعّلة بعد. تمت إزالته من القائمة." },
-    pages: {
-      dashboard: { title: "لوحة تحكم الإدارة", subtitle: "نظرة عامة على نشاط المنصة والمهام المعلقة", recentActivity: "النشاط الأخير", pendingApprovals: "الموافقات المعلقة", viewAll: "عرض الكل", noPendingApprovals: "لا توجد موافقات معلقة", quickLinks: "روابط سريعة" },
-      users: { title: "المستخدمون", subtitle: "إدارة جميع مستخدمي المنصة", searchPlaceholder: "البحث عن مستخدمين..." },
-      createManufacturer: { title: "إنشاء حساب مصنع", subtitle: "الخطوة {step} من {total} - إضافة مصنع جديد إلى المنصة" },
-      mfgRegistrations: { title: "تسجيلات المصانع", subtitle: "مراجعة الطلبات المعلقة والموافقة عليها أو إزالتها" },
-      reviewManagement: { title: "إدارة المراجعات", subtitle: "إدارة طلبات المراجعة الرسمية وتقديمات التحقق من المصنع" },
-      suppliers: { title: "الموردون", subtitle: "إدارة حسابات الموردين والتقييمات", searchPlaceholder: "البحث عن موردين..." },
-      products: { title: "المنتجات", subtitle: "مراجعة وإدارة قوائم المنتجات", searchPlaceholder: "البحث عن منتجات..." },
-      industries: { title: "الصناعات والفئات", subtitle: "تتحكم هذه الصفحة في الفئات الرئيسية والفرعية." },
-      filters: { title: "المرشحات السريعة", subtitle: "إدارة خيارات التصفية المعروضة في صفحات الموردين والصناعات" },
-      reviews: { title: "إدارة التقييمات", subtitle: "إشراف وإدارة تقييمات الموردين" },
-      rfqs: { title: "طلبات العروض", subtitle: "مراقبة جميع طلبات المشترين وعروض المصنعين" },
-      orders: { title: "الطلبات", subtitle: "مراقبة جميع طلبات المنتجات عبر المنصة", searchPlaceholder: "البحث عن طلبات...", totalOrders: "إجمالي الطلبات" },
-      messages: { title: "مركز الرسائل", subtitle: "مراقبة وإشراف المحادثات بين المشترين والمصنعين" },
-      supportTickets: { title: "تذاكر الدعم", subtitle: "إدارة طلبات دعم العملاء عبر المنصة" },
-      pricing: { title: "إدارة التسعير", subtitle: "إدارة خطط الاشتراك ومستويات الأسعار" },
-      promotions: { title: "العروض الترويجية", subtitle: "إنشاء وإدارة الحملات الترويجية", detailsTitle: "تفاصيل العرض" },
-      subscriptions: { title: "الاشتراكات", subtitle: "مراقبة وإدارة اشتراكات المصنعين", activeSubscriptions: "الاشتراكات النشطة", monthlyRevenue: "الإيرادات الشهرية" },
-      insights: { title: "إدارة الرؤى", subtitle: "إدارة المقالات ورؤى الصناعة", articles: "المقالات" },
-      certificatetype: { title: "إدارة الشهادات", subtitle: "مراجعة شهادات المصنعين وإدارة أنواع الشهادات" },
-      analytics: { title: "التحليلات", subtitle: "أداء المنصة والرؤى", performanceOverview: "نظرة عامة على الأداء", userGrowth: "نمو المستخدمين", revenueTrends: "اتجاهات الإيرادات" },
-      contact: { title: "رسائل التواصل", subtitle: "عرض وإدارة الاستفسارات الواردة من صفحة التواصل.", deleteTitle: "حذف الرسالة؟", emailCopied: "تم نسخ البريد الإلكتروني!" },
-      faq: { title: "إدارة الأسئلة الشائعة", subtitle: "إدارة الأسئلة المتكررة والفئات" },
-      helpCenter: { title: "إدارة مركز المساعدة", subtitle: "إدارة مقالات المساعدة والتوثيق" },
-      siteSettings: { title: "إعدادات الموقع", subtitle: "تكوين إعدادات المنصة العامة" },
-      reports: { title: "التقارير", subtitle: "مراجعة وحل المحتوى المُبلّغ عنه" },
-      settings: { title: "الإعدادات", subtitle: "إعدادات وتفضيلات المنصة" },
-    },
-    support: { active: "نشط", open: "مفتوح", waiting: "في الانتظار", resolved: "تم الحل", all: "الكل", buyer: "مشتري", supplier: "مورد", serviceProvider: "مزود خدمة", user: "مستخدم", searchTickets: "البحث في التذاكر...", selectTicket: "اختر تذكرة لعرض التفاصيل", typeReply: "اكتب ردك...", sendReply: "إرسال الرد", markResolved: "تحديد كمحلول", reopen: "إعادة فتح", priority: "الأولوية", status: "الحالة", customer: "العميل", created: "تاريخ الإنشاء", lastUpdated: "آخر تحديث", cannedReply1: "شكراً لتواصلك — أنا أبحث في الأمر الآن.", cannedReply2: "هل يمكنك مشاركة المزيد من التفاصيل لمساعدتي بشكل أسرع؟", cannedReply3: "لقد قمت بتصعيد الأمر إلى الفريق المعني وسأحدثك قريباً.", cannedReply4: "يسعدني أن الأمر تم حله! أخبرني إذا كان هناك أي شيء آخر." },
-    rfqs: { searchPlaceholder: "البحث في طلبات العروض...", allStatus: "جميع الحالات", noRfqs: "لم يتم العثور على طلبات عروض" },
-  },
+  admin: adminAr,
+  buyer: buyerAr,
 } as const;
 
 export default ar as unknown as TranslationKeys;

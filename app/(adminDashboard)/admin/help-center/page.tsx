@@ -38,22 +38,22 @@ import {
 } from "@/lib/api/admin-help-center"
 import { useTranslation } from "@/lib/i18n"
 
-function showSuccessAlert(message: string) {
+function showSuccessAlert(c: { success: string; ok: string }, message: string) {
   void Swal.fire({
     icon: "success",
-    title: "Success",
+    title: c.success,
     text: message,
-    confirmButtonText: "OK",
+    confirmButtonText: c.ok,
     confirmButtonColor: "#3d2e1f",
   })
 }
 
-function showErrorAlert(message: string) {
+function showErrorAlert(c: { ok: string }, title: string, message: string) {
   void Swal.fire({
     icon: "error",
-    title: "Oops...",
+    title,
     text: message,
-    confirmButtonText: "OK",
+    confirmButtonText: c.ok,
     confirmButtonColor: "#3d2e1f",
   })
 }
@@ -61,6 +61,7 @@ function showErrorAlert(message: string) {
 export default function AdminHelpCenterPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.helpCenter
+  const c = t.admin.common
   const [categories, setCategories] = useState<HelpCenterCategory[]>([])
   const [articlesData, setArticlesData] = useState<Record<number, HelpCenterArticle[]>>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -90,10 +91,10 @@ export default function AdminHelpCenterPage() {
     if (res.success) {
       setCategories(res.data || [])
     } else {
-      if (!silent) showErrorAlert(res.message || "Failed to load categories")
+      if (!silent) showErrorAlert(c, c.error, res.message || p.failedLoadCategories)
     }
     if (!silent) setIsLoading(false)
-  }, [])
+  }, [c, p])
 
   useEffect(() => {
     void loadCategories()
@@ -137,7 +138,7 @@ export default function AdminHelpCenterPage() {
 
   const saveCategory = async () => {
     if (!catName || !catSlug) {
-      showErrorAlert("Name and Slug are required")
+      showErrorAlert(c, c.error, c.nameSlugRequired)
       return
     }
     setIsSaving(true)
@@ -151,32 +152,33 @@ export default function AdminHelpCenterPage() {
     }
 
     if (res.success) {
-      showSuccessAlert(res.message || "Category saved successfully")
+      showSuccessAlert(c, res.message || p.categorySaved)
       setCategoryDialogOpen(false)
       await loadCategories(true)
     } else {
-      showErrorAlert(res.message || "Failed to save category")
+      showErrorAlert(c, c.error, res.message || p.failedSaveCategory)
     }
     setIsSaving(false)
   }
 
   const deleteCategory = async (id: number) => {
     const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
+      title: c.areYouSure,
+      text: c.deleteHelpDesc,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!'
+      confirmButtonText: c.yesDeleteIt,
+      cancelButtonText: c.cancel,
     })
     
     if (result.isConfirmed) {
       setIsSaving(true)
       const res = await deleteAdminHelpCategory(id)
       if (res.success) {
-        showSuccessAlert(res.message || "Category deleted")
+        showSuccessAlert(c, res.message || p.categoryDeleted)
         await loadCategories(true)
       } else {
-        showErrorAlert(res.message || "Failed to delete category")
+        showErrorAlert(c, c.error, res.message || p.failedDeleteCategory)
       }
       setIsSaving(false)
     }
@@ -213,7 +215,7 @@ export default function AdminHelpCenterPage() {
 
   const saveArticle = async () => {
     if (!artTitle || !selectedCategoryId) {
-      showErrorAlert("Title is required")
+      showErrorAlert(c, c.error, c.titleRequired)
       return
     }
     const cleanSteps = artSteps.filter(s => s.content.trim() !== "")
@@ -234,35 +236,36 @@ export default function AdminHelpCenterPage() {
     }
 
     if (res.success) {
-      showSuccessAlert(res.message || "Article saved successfully")
+      showSuccessAlert(c, res.message || p.articleSaved)
       setArticleDialogOpen(false)
       await fetchArticlesForCategory(selectedCategoryId)
       if (!expandedCategories.includes(selectedCategoryId)) {
         setExpandedCategories([...expandedCategories, selectedCategoryId])
       }
     } else {
-      showErrorAlert(res.message || "Failed to save article")
+      showErrorAlert(c, c.error, res.message || p.failedSaveArticle)
     }
     setIsSaving(false)
   }
 
   const deleteArticle = async (categoryId: number, articleId: number) => {
     const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
+      title: c.areYouSure,
+      text: c.deleteHelpDesc,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!'
+      confirmButtonText: c.yesDeleteIt,
+      cancelButtonText: c.cancel,
     })
     
     if (result.isConfirmed) {
       setIsSaving(true)
       const res = await deleteAdminHelpArticle(articleId)
       if (res.success) {
-        showSuccessAlert(res.message || "Article deleted")
+        showSuccessAlert(c, res.message || p.articleDeleted)
         await fetchArticlesForCategory(categoryId)
       } else {
-        showErrorAlert(res.message || "Failed to delete article")
+        showErrorAlert(c, c.error, res.message || p.failedDeleteArticle)
       }
       setIsSaving(false)
     }
@@ -274,7 +277,7 @@ export default function AdminHelpCenterPage() {
       <div className="flex h-[400px] items-center justify-center">
         <div className="text-center">
           <HelpCircle className="mx-auto h-12 w-12 text-muted-foreground/50 animate-pulse" />
-          <p className="mt-4 text-muted-foreground">Loading Help Center...</p>
+          <p className="mt-4 text-muted-foreground">{p.loading}</p>
         </div>
       </div>
     )
@@ -291,14 +294,14 @@ export default function AdminHelpCenterPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => window.open('/help', '_blank')}>
-            View Public Page
+            {c.viewPublicPage}
           </Button>
         </div>
       </div>
 
       <Tabs defaultValue="content" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="content" className="gap-2"><FolderPlus className="h-4 w-4"/> Categories & Articles</TabsTrigger>
+          <TabsTrigger value="content" className="gap-2"><FolderPlus className="h-4 w-4"/> {p.categoriesArticlesTab}</TabsTrigger>
         </TabsList>
 
         {/* Content Management Tab */}
@@ -306,16 +309,16 @@ export default function AdminHelpCenterPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Categories</CardTitle>
-                <CardDescription>Manage help categories and their articles</CardDescription>
+                <CardTitle>{p.categories}</CardTitle>
+                <CardDescription>{p.categoriesDesc}</CardDescription>
               </div>
               <Button size="sm" onClick={() => openCategoryDialog()} disabled={isSaving}>
-                <Plus className="mr-2 h-4 w-4" /> Add Category
+                <Plus className="mr-2 h-4 w-4" /> {c.addCategoryBtn}
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {categories.length === 0 ? (
-                <div className="py-8 text-center text-muted-foreground">No categories found.</div>
+                <div className="py-8 text-center text-muted-foreground">{p.noCategories}</div>
               ) : (
                 categories.map(category => {
                   const isExpanded = expandedCategories.includes(category.id);
@@ -329,7 +332,7 @@ export default function AdminHelpCenterPage() {
                           <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                           <span className="font-medium">{category.name}</span>
                           <span className="text-xs text-muted-foreground hidden sm:inline-block">({category.slug})</span>
-                          {!category.status && <Badge variant="secondary">Disabled</Badge>}
+                          {!category.status && <Badge variant="secondary">{c.disabled}</Badge>}
                         </button>
                         <div className="flex items-center gap-1">
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openCategoryDialog(category)} disabled={isSaving}>
@@ -349,7 +352,7 @@ export default function AdminHelpCenterPage() {
                             </div>
                           ) : articles.length === 0 ? (
                             <div className="py-4 text-center">
-                              <p className="text-sm text-muted-foreground">No articles in this category</p>
+                              <p className="text-sm text-muted-foreground">{p.noArticles}</p>
                             </div>
                           ) : (
                             <div className="space-y-3">
@@ -361,7 +364,7 @@ export default function AdminHelpCenterPage() {
                                       <span className="text-sm font-medium">{article.title}</span>
                                       <span className="text-xs text-muted-foreground line-clamp-1">{article.description}</span>
                                     </div>
-                                    {!article.status && <Badge variant="secondary" className="text-xs">Disabled</Badge>}
+                                    {!article.status && <Badge variant="secondary" className="text-xs">{c.disabled}</Badge>}
                                   </div>
                                   <div className="flex gap-1">
                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openArticleDialog(category.id, article)} disabled={isSaving}>
@@ -377,7 +380,7 @@ export default function AdminHelpCenterPage() {
                           )}
                           <div className="mt-4 pt-4 border-t border-border">
                             <Button variant="outline" size="sm" onClick={() => openArticleDialog(category.id)} disabled={isSaving}>
-                              <Plus className="mr-2 h-4 w-4" /> Add Article to {category.name}
+                              <Plus className="mr-2 h-4 w-4" /> {p.addArticleTo.replace("{name}", category.name)}
                             </Button>
                           </div>
                         </div>
@@ -395,33 +398,33 @@ export default function AdminHelpCenterPage() {
       <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingCategory ? "Edit Category" : "Add Category"}</DialogTitle>
-            <DialogDescription>Create or modify a help center category.</DialogDescription>
+            <DialogTitle>{editingCategory ? c.editCategoryName : c.addCategoryName}</DialogTitle>
+            <DialogDescription>{p.categoryDialogDesc}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label>{c.nameLabel}</Label>
               <Input value={catName} onChange={e => {
                 setCatName(e.target.value)
                 if (!editingCategory) {
                   setCatSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''))
                 }
-              }} placeholder="e.g. For Buyers" />
+              }} placeholder={p.namePlaceholder} />
             </div>
             <div className="space-y-2">
-              <Label>Slug</Label>
-              <Input value={catSlug} onChange={e => setCatSlug(e.target.value)} placeholder="e.g. for-buyers" />
+              <Label>{c.slugLabel}</Label>
+              <Input value={catSlug} onChange={e => setCatSlug(e.target.value)} placeholder={p.slugPlaceholder} />
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea value={catDescription} onChange={e => setCatDescription(e.target.value)} placeholder="Category description..." />
+              <Label>{c.description}</Label>
+              <Textarea value={catDescription} onChange={e => setCatDescription(e.target.value)} placeholder={p.categoryDescPlaceholder} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setCategoryDialogOpen(false)}>{c.cancel}</Button>
             <Button onClick={saveCategory} disabled={isSaving}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Category
+              {c.saveCategory}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -431,24 +434,24 @@ export default function AdminHelpCenterPage() {
       <Dialog open={articleDialogOpen} onOpenChange={setArticleDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingArticle ? "Edit Article" : "Add Article"}</DialogTitle>
-            <DialogDescription>Create or modify a help center article.</DialogDescription>
+            <DialogTitle>{editingArticle ? c.editArticleName : c.addArticleName}</DialogTitle>
+            <DialogDescription>{p.articleDialogDesc}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Title</Label>
-              <Input value={artTitle} onChange={e => setArtTitle(e.target.value)} placeholder="Article title" />
+              <Label>{c.title}</Label>
+              <Input value={artTitle} onChange={e => setArtTitle(e.target.value)} placeholder={p.articleTitlePlaceholder} />
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea value={artDescription} onChange={e => setArtDescription(e.target.value)} placeholder="Short description..." />
+              <Label>{c.description}</Label>
+              <Textarea value={artDescription} onChange={e => setArtDescription(e.target.value)} placeholder={p.articleDescPlaceholder} />
             </div>
             
             <div className="space-y-3 pt-4 border-t">
               <div className="flex items-center justify-between">
-                <Label>Article Steps / Content</Label>
+                <Label>{p.articleSteps}</Label>
                 <Button type="button" variant="outline" size="sm" onClick={handleAddStep}>
-                  <Plus className="h-4 w-4 mr-1" /> Add Step
+                  <Plus className="h-4 w-4 mr-1" /> {c.addStep}
                 </Button>
               </div>
               {artSteps.map((step, idx) => (
@@ -458,7 +461,7 @@ export default function AdminHelpCenterPage() {
                     className="flex-1 min-h-[80px]" 
                     value={step.content} 
                     onChange={e => handleStepChange(idx, e.target.value)} 
-                    placeholder="Step content..." 
+                    placeholder={p.stepContentPlaceholder} 
                   />
                   <Button type="button" variant="ghost" size="icon" className="text-destructive mt-1" onClick={() => handleRemoveStep(idx)}>
                     <Trash2 className="h-4 w-4" />
@@ -468,10 +471,10 @@ export default function AdminHelpCenterPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setArticleDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setArticleDialogOpen(false)}>{c.cancel}</Button>
             <Button onClick={saveArticle} disabled={isSaving}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Article
+              {c.saveArticle}
             </Button>
           </DialogFooter>
         </DialogContent>

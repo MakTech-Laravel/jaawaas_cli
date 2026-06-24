@@ -146,6 +146,9 @@ export interface Product {
   supplierId?: string
   supplierSlug?: string
   supplierName?: string
+  supplierCountry?: string
+  supplierCertifications?: string[]
+  supplierExportMarkets?: string[]
   categoryId?: number | string
   subCategoryId?: number | string
   category: Category
@@ -417,6 +420,16 @@ function normalizeProduct(payload: unknown): Product {
       product.supplier_name ?? product.supplierName ?? supplier.name,
       ""
     ) || undefined,
+    supplierCountry: toString(
+      toRecord(supplier.location).country ?? supplier.country,
+      ""
+    ) || undefined,
+    supplierCertifications: Array.isArray(supplier.certifications)
+      ? (supplier.certifications as string[])
+      : [],
+    supplierExportMarkets: Array.isArray(supplier.export_markets)
+      ? (supplier.export_markets as string[])
+      : [],
     categoryId: (product.category_id ?? product.categoryId ?? toRecord(product.category).id) as string | number | undefined,
     subCategoryId: (product.sub_category_id ?? product.subCategoryId ?? toRecord(product.sub_category).id) as string | number | undefined,
     category: normalizeCategory(product.category),

@@ -11,6 +11,7 @@ import {
   type OrderStatus,
 } from "@/lib/orders-context"
 import { getBuyerOrders, getBuyerOrderStats, type ApiOrder, type OrderStats } from "@/lib/api/orders"
+import { useTranslation } from "@/lib/i18n"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
@@ -73,7 +74,7 @@ function OrderProgress({ status }: { status: string }) {
   )
 }
 
-function OrderCard({ order }: { order: ApiOrder }) {
+function OrderCard({ order, t }: { order: ApiOrder; t: any }) {
   const style = statusStyles[order.status] || { color: "bg-gray-100 text-gray-700", icon: Clock }
   const StatusIcon = style.icon
 
@@ -88,7 +89,7 @@ function OrderCard({ order }: { order: ApiOrder }) {
             <span className="text-xs font-medium text-muted-foreground">{order.orderNumber}</span>
             <Badge className={cn("gap-1 text-xs", style.color)}>
               <StatusIcon className="h-3 w-3" />
-              {getStatusLabel(order.status)}
+              {t.common.orderStatus?.[order.status === "in-production" ? "inProduction" : order.status === "ready" ? "readyForShipment" : order.status] || getStatusLabel(order.status)}
             </Badge>
           </div>
           <h3 className="mt-1.5 truncate font-medium text-foreground">{order.title}</h3>
@@ -126,11 +127,11 @@ function OrderCard({ order }: { order: ApiOrder }) {
       <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <FileText className="h-3.5 w-3.5" />
-          {order.attachments.length} document{order.attachments.length === 1 ? "" : "s"}
-          {order.statusUpdates.length > 0 && ` · ${order.statusUpdates.length} update${order.statusUpdates.length === 1 ? "" : "s"}`}
+          {order.attachments.length} {t.buyer.orders.details.documents}
+          {order.statusUpdates.length > 0 && ` · ${order.statusUpdates.length} ${t.buyer.orders.details.statusUpdates}`}
         </span>
         <span className="flex items-center gap-1 font-medium text-secondary opacity-0 transition-opacity group-hover:opacity-100">
-          View details
+          {t.buyer.orders.details.orderDetails}
           <ChevronRight className="h-3.5 w-3.5" />
         </span>
       </div>
@@ -139,6 +140,7 @@ function OrderCard({ order }: { order: ApiOrder }) {
 }
 
 export default function BuyerOrdersPage() {
+  const { t } = useTranslation()
   const [orders, setOrders] = useState<ApiOrder[]>([])
   const [stats, setStats] = useState<OrderStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -205,9 +207,9 @@ export default function BuyerOrdersPage() {
     <div className="w-full">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="font-serif text-2xl font-medium text-foreground">Orders</h1>
+        <h1 className="font-serif text-2xl font-medium text-foreground">{t.buyer.orders.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Track production, shipping, documents, and progress updates for your confirmed orders.
+          {t.buyer.orders.subtitle}
         </p>
       </div>
 
@@ -236,7 +238,7 @@ export default function BuyerOrdersPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by order, product, or manufacturer..."
+            placeholder={t.buyer.orders.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -244,13 +246,13 @@ export default function BuyerOrdersPage() {
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full sm:w-52">
-            <SelectValue placeholder="All statuses" />
+            <SelectValue placeholder={t.buyer.orders.allStatus} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="all">{t.buyer.orders.allStatus}</SelectItem>
             {ORDER_STATUS_FLOW.map((s) => (
               <SelectItem key={s} value={s}>
-                {ORDER_STATUS_LABELS[s]}
+                {t.common.orderStatus?.[s === "in-production" ? "inProduction" : s === "ready" ? "readyForShipment" : s] || ORDER_STATUS_LABELS[s]}
               </SelectItem>
             ))}
             <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -266,7 +268,7 @@ export default function BuyerOrdersPage() {
       ) : orders.length > 0 ? (
         <div className="space-y-3">
           {orders.map((order) => (
-            <OrderCard key={order.id} order={order} />
+            <OrderCard key={order.id} order={order} t={t} />
           ))}
           
           {hasMore && (
@@ -277,19 +279,16 @@ export default function BuyerOrdersPage() {
             </div>
           )}
         </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-16 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <Package className="h-6 w-6 text-muted-foreground" />
+      ) : null}
+      {orders.length === 0 && (
+          <div className="py-12 text-center">
+            <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
+            <h3 className="mt-4 font-semibold text-foreground">{t.buyer.orders.empty.title}</h3>
+            <p className="mt-2 text-muted-foreground">
+              {searchQuery || statusFilter !== "all" ? t.buyer.orders.empty.desc : ""}
+            </p>
           </div>
-          <h3 className="mt-4 font-medium text-foreground">
-            No orders match your filters
-          </h3>
-          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            Try adjusting your search or status filter.
-          </p>
-        </div>
-      )}
+        )}
     </div>
   )
 }

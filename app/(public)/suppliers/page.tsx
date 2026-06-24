@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
@@ -95,16 +96,36 @@ function mapApiSupplierToMockSupplier(apiSupplier: ApiSupplier): Supplier {
   }
 }
 
-export default function SuppliersPage() {
+function SuppliersPageContent() {
   const { t } = useTranslation()
+  const searchParams = useSearchParams()
+  const countryParam = searchParams.get("country")
+
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedIndustry, setSelectedIndustry] = useState<string>("all")
-  const [selectedCountry, setSelectedCountry] = useState<string>("all")
   const [selectedCertification, setSelectedCertification] = useState<string>("all")
   const [selectedMoq, setSelectedMoq] = useState<string>("all")
-  const [selectedExportMarket, setSelectedExportMarket] = useState<string>("all")
-  const [reviewedOnly, setReviewedOnly] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+
+  const [dynamicIndustries, setDynamicIndustries] = useState<{slug: string, name: string}[]>([])
+  const [dynamicCertifications, setDynamicCertifications] = useState<{value: string, label: string}[]>([])
+
+  useEffect(() => {
+    const fetchGlobalFilters = async () => {
+      const response = await getPublicSuppliers()
+      if (response && response.data) {
+        const indMap = new Map<string, string>()
+        const certSet = new Set<string>()
+        response.data.forEach(s => {
+          if (s.industry && s.industry_slug) indMap.set(s.industry_slug, s.industry)
+          if (s.certifications) s.certifications.forEach(c => certSet.add(c))
+        })
+        setDynamicIndustries(Array.from(indMap.entries()).map(([slug, name]) => ({ slug, name })).sort((a,b) => a.name.localeCompare(b.name)))
+        setDynamicCertifications(Array.from(certSet).sort().map(c => ({ value: c, label: c })))
+      }
+    }
+    fetchGlobalFilters()
+  }, [])
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -115,15 +136,14 @@ export default function SuppliersPage() {
   useEffect(() => {
     const fetchSuppliers = async () => {
       setIsLoading(true)
+      const mappedCountry = countryParam ? allCountries.find(c => c.code === countryParam)?.name : undefined
       const res = await getPublicSuppliers({
         page: currentPage,
         search: searchQuery || undefined,
         industry: selectedIndustry !== "all" ? selectedIndustry : undefined,
-        country: selectedCountry !== "all" ? selectedCountry : undefined,
+        country: mappedCountry || undefined,
         certification: selectedCertification !== "all" ? selectedCertification : undefined,
         moq: selectedMoq !== "all" ? selectedMoq : undefined,
-        export_market: selectedExportMarket !== "all" ? selectedExportMarket : undefined,
-        reviewed: reviewedOnly ? true : undefined,
       })
 
       if (res && res.data) {
@@ -142,21 +162,17 @@ export default function SuppliersPage() {
     }, 400)
 
     return () => clearTimeout(timerId)
-  }, [searchQuery, selectedIndustry, selectedCountry, selectedCertification, selectedMoq, selectedExportMarket, reviewedOnly, currentPage])
+  }, [searchQuery, selectedIndustry, selectedCertification, selectedMoq, currentPage, countryParam])
 
   const clearFilters = () => {
     setSearchQuery("")
     setSelectedIndustry("all")
-    setSelectedCountry("all")
     setSelectedCertification("all")
     setSelectedMoq("all")
-    setSelectedExportMarket("all")
-    setReviewedOnly(false)
     setCurrentPage(1)
   }
 
-  const hasActiveFilters = searchQuery || selectedIndustry !== "all" || selectedCountry !== "all" || 
-    selectedCertification !== "all" || selectedMoq !== "all" || selectedExportMarket !== "all" || reviewedOnly
+  const hasActiveFilters = searchQuery || selectedIndustry !== "all" || selectedCertification !== "all" || selectedMoq !== "all"
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -232,34 +248,9 @@ export default function SuppliersPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">{t?.landing?.suppliers?.allIndustries || "All Industries"}</SelectItem>
-                          {industries.map((industry) => (
+                          {dynamicIndustries.map((industry) => (
                             <SelectItem key={industry.slug} value={industry.slug}>
                               {industry.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Country Filter */}
-                    <div>
-                      <label className="text-sm font-medium text-foreground">{t?.landing?.suppliers?.countryLabel || "Country"}</label>
-                      <Select value={selectedCountry} onValueChange={(val) => { setSelectedCountry(val); setCurrentPage(1); }}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder={t?.landing?.suppliers?.allCountries || "All Countries"} />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-72">
-                          <SelectItem value="all">{t?.landing?.suppliers?.allCountries || "All Countries"}</SelectItem>
-                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t?.landing?.suppliers?.popular || "Popular"}</div>
-                          {popularCountries.map((country) => (
-                            <SelectItem key={country.code} value={country.code}>
-                              {country.name}
-                            </SelectItem>
-                          ))}
-                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t?.landing?.suppliers?.allCountries || "All Countries"}</div>
-                          {allCountries.filter(c => !popularManufacturingCountries.includes(c.code)).map((country) => (
-                            <SelectItem key={country.code} value={country.code}>
-                              {country.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -275,7 +266,7 @@ export default function SuppliersPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">{t?.landing?.suppliers?.anyCertification || "Any Certification"}</SelectItem>
-                          {certifications.map((cert) => (
+                          {dynamicCertifications.map((cert) => (
                             <SelectItem key={cert.value} value={cert.value}>
                               {cert.label}
                             </SelectItem>
@@ -300,36 +291,6 @@ export default function SuppliersPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
-
-                    {/* Export Market Filter */}
-                    <div>
-                      <label className="text-sm font-medium text-foreground">{t?.landing?.suppliers?.exportMarketLabel || "Export Market"}</label>
-                      <Select value={selectedExportMarket} onValueChange={(val) => { setSelectedExportMarket(val); setCurrentPage(1); }}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder={t?.landing?.suppliers?.anyRegion || "Any Region"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">{t?.landing?.suppliers?.anyRegion || "Any Region"}</SelectItem>
-                          {exportMarketRegions.map((region) => (
-                            <SelectItem key={region} value={region.toLowerCase().replace(" ", "-")}>
-                              {region}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Reviewed Only */}
-                    <div className="flex items-center gap-2">
-                      <Checkbox 
-                        id="reviewed" 
-                        checked={reviewedOnly}
-                        onCheckedChange={(checked) => { setReviewedOnly(checked as boolean); setCurrentPage(1); }}
-                      />
-                      <label htmlFor="reviewed" className="text-sm text-foreground cursor-pointer">
-                        {t?.landing?.suppliers?.reviewedSuppliersOnly || "Reviewed suppliers only"}
-                      </label>
                     </div>
                   </div>
                 </div>
@@ -369,24 +330,8 @@ export default function SuppliersPage() {
                     )}
                     {selectedIndustry !== "all" && (
                       <Badge variant="secondary" className="gap-1">
-                        {industries.find(i => i.slug === selectedIndustry)?.name}
+                        {dynamicIndustries.find(i => i.slug === selectedIndustry)?.name || selectedIndustry}
                         <button onClick={() => { setSelectedIndustry("all"); setCurrentPage(1); }}>
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    )}
-                    {selectedCountry !== "all" && (
-                      <Badge variant="secondary" className="gap-1">
-                        {allCountries.find(c => c.code === selectedCountry)?.name}
-                        <button onClick={() => { setSelectedCountry("all"); setCurrentPage(1); }}>
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    )}
-                    {reviewedOnly && (
-                      <Badge variant="secondary" className="gap-1">
-                        {t?.landing?.suppliers?.reviewedOnly || "Reviewed Only"}
-                        <button onClick={() => { setReviewedOnly(false); setCurrentPage(1); }}>
                           <X className="h-3 w-3" />
                         </button>
                       </Badge>
@@ -535,5 +480,17 @@ export default function SuppliersPage() {
       <Footer />
       <CompareBar />
     </div>
+  )
+}
+
+export default function SuppliersPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <SuppliersPageContent />
+    </Suspense>
   )
 }

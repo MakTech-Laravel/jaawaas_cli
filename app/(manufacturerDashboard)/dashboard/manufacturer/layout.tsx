@@ -25,7 +25,7 @@ import {
   Factory,
   Star,
   Award,
-  // Globe,
+  Globe,
   CreditCard,
   FileBox,
   Clock,
@@ -45,7 +45,7 @@ const navigation = [
   { name: "Products", key: "products", href: "/dashboard/manufacturer/products", icon: Package },
   { name: "Catalogs", key: "catalogs", href: "/dashboard/manufacturer/catalogs", icon: FileBox },
   { name: "Certifications", key: "certifications", href: "/dashboard/manufacturer/certifications", icon: Award },
-  // { name: "Export Markets", key: "exportMarkets", href: "/dashboard/manufacturer/markets", icon: Globe },
+  { name: "Export Markets", key: "exportMarkets", href: "/dashboard/manufacturer/markets", icon: Globe },
   { name: "Analytics", key: "analytics", href: "/dashboard/manufacturer/analytics", icon: BarChart3 },
   { name: "Company Profile", key: "companyProfile", href: "/dashboard/manufacturer/profile", icon: Factory },
   { name: "Subscription", key: "subscription", href: "/dashboard/manufacturer/subscription", icon: CreditCard },
@@ -105,8 +105,8 @@ export default function ManufacturerDashboardLayout({
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-dvh w-64 shrink-0 flex-col bg-sidebar shadow-lg transition-transform duration-200 ease-in-out lg:z-30 lg:shadow-none",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          "fixed inset-y-0 start-0 z-50 flex h-dvh w-64 shrink-0 flex-col bg-sidebar shadow-lg transition-transform duration-200 ease-in-out lg:z-30 lg:shadow-none",
+          sidebarOpen ? "translate-x-0" : "ltr:-translate-x-full rtl:translate-x-full lg:translate-x-0 lg:rtl:translate-x-0 lg:ltr:translate-x-0"
         )}
       >
         <div className="flex h-full min-h-0 flex-col">
@@ -207,7 +207,7 @@ export default function ManufacturerDashboardLayout({
         </div>
       </aside>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:pl-64">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:ps-64">
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
           <div className="flex items-center gap-4">
             <button 

@@ -2,14 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
   formatCurrency,
   formatOrderDate,
-  getStatusLabel,
   ORDER_STATUS_FLOW,
-  type OrderStatus,
 } from "@/lib/orders-context"
 import { getAdminOrders, getAdminOrderStats, type ApiOrder, type OrderStats } from "@/lib/api/orders"
 import { useTranslation } from "@/lib/i18n"
@@ -27,6 +24,8 @@ import {
   Loader2,
 } from "lucide-react"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
+import { AdminPagination } from "@/components/admin/admin-pagination"
+import type { OrderMeta } from "@/lib/api/orders"
 
 const statusColors: Record<string, string> = {
   created: "bg-blue-100 text-blue-700",
@@ -41,13 +40,21 @@ export default function AdminOrdersPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.orders
   const c = t.admin.common
+  const orderStatus = t.admin.orderStatus
+
+  const getOrderStatusLabel = (status: string) => {
+    const key = status.replace(/-/g, "_") as keyof typeof orderStatus
+    return orderStatus[key] ?? status
+  }
+
   const [orders, setOrders] = useState<ApiOrder[]>([])
   const [stats, setStats] = useState<OrderStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(false)
+  const [meta, setMeta] = useState<OrderMeta | null>(null)
+  const perPage = 20
   
   // Debounce search
   const [debouncedSearch, setDebouncedSearch] = useState("")
@@ -55,6 +62,10 @@ export default function AdminOrdersPage() {
     const timer = setTimeout(() => setDebouncedSearch(search), 500)
     return () => clearTimeout(timer)
   }, [search])
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch, statusFilter])
 
   useEffect(() => {
     async function fetchStats() {
@@ -70,38 +81,21 @@ export default function AdminOrdersPage() {
     async function fetchOrders() {
       setIsLoading(true)
       const res = await getAdminOrders({
-        page: 1,
-        per_page: 20,
+        page,
+        per_page: perPage,
         search: debouncedSearch || undefined,
         status: statusFilter === "all" ? undefined : statusFilter,
       })
       
       if (res.success) {
         setOrders(res.data)
-        setHasMore(res.meta ? res.meta.currentPage < res.meta.lastPage : false)
-        setPage(1)
+        setMeta(res.meta ?? null)
       }
       setIsLoading(false)
     }
     
     fetchOrders()
-  }, [debouncedSearch, statusFilter])
-
-  const loadMore = async () => {
-    const nextPage = page + 1
-    const res = await getAdminOrders({
-      page: nextPage,
-      per_page: 20,
-      search: debouncedSearch || undefined,
-      status: statusFilter === "all" ? undefined : statusFilter,
-    })
-    
-    if (res.success) {
-      setOrders(prev => [...prev, ...res.data])
-      setHasMore(res.meta ? res.meta.currentPage < res.meta.lastPage : false)
-      setPage(nextPage)
-    }
-  }
+  }, [debouncedSearch, statusFilter, page])
 
   return (
     <div className="space-y-6">
@@ -117,28 +111,28 @@ export default function AdminOrdersPage() {
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <AdminStatCard 
             icon={Layers} 
-            title="Total Orders" 
+            title={p.totalOrders} 
             value={stats.total} 
             layout="vertical"
             contentClassName="pt-6 pb-6 px-6"
           />
           <AdminStatCard 
             icon={Clock} 
-            title="Active Orders" 
+            title={p.activeOrders} 
             value={stats.active} 
             layout="vertical"
             contentClassName="pt-6 pb-6 px-6"
           />
           <AdminStatCard 
             icon={CheckCircle2} 
-            title="Completed Orders" 
+            title={p.completedOrders} 
             value={stats.completed} 
             layout="vertical"
             contentClassName="pt-6 pb-6 px-6"
           />
           <AdminStatCard 
             icon={DollarSign} 
-            title="Total Value" 
+            title={p.totalValue} 
             value={formatCurrency(stats.totalValue, "USD")} 
             layout="vertical"
             contentClassName="pt-6 pb-6 px-6"
@@ -164,13 +158,13 @@ export default function AdminOrdersPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            <option value="all">All statuses</option>
+            <option value="all">{orderStatus.all}</option>
             {ORDER_STATUS_FLOW.map((s) => (
               <option key={s} value={s}>
-                {getStatusLabel(s)}
+                {getOrderStatusLabel(s)}
               </option>
             ))}
-            <option value="cancelled">Cancelled</option>
+            <option value="cancelled">{orderStatus.cancelled}</option>
           </select>
         </div>
       </div>
@@ -181,17 +175,17 @@ export default function AdminOrdersPage() {
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-foreground">ID</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Title</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden md:table-cell">Buyer</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden lg:table-cell">Seller</th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-foreground hidden sm:table-cell">Value</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-foreground">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden xl:table-cell">Created</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-foreground">{p.tableId}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-foreground">{p.tableTitle}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden md:table-cell">{p.tableBuyer}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden lg:table-cell">{p.tableSeller}</th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-foreground hidden sm:table-cell">{p.tableValue}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-foreground">{p.tableStatus}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-foreground hidden xl:table-cell">{p.tableCreated}</th>
               </tr>
             </thead>
             <tbody>
-              {isLoading && page === 1 ? (
+              {isLoading ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center">
                     <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
@@ -202,7 +196,7 @@ export default function AdminOrdersPage() {
                   <td colSpan={7} className="px-4 py-8 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <PackageCheck className="h-8 w-8 text-muted-foreground/50" />
-                      <p className="mt-2 text-sm text-muted-foreground">No matching orders found</p>
+                      <p className="mt-2 text-sm text-muted-foreground">{p.noMatching}</p>
                     </div>
                   </td>
                 </tr>
@@ -225,7 +219,7 @@ export default function AdminOrdersPage() {
                           </span>
                           <div className="min-w-0">
                             <p className="truncate font-medium text-foreground">{o.title}</p>
-                            <p className="text-xs text-muted-foreground">Product order</p>
+                            <p className="text-xs text-muted-foreground">{c.productOrder}</p>
                           </div>
                         </div>
                       </td>
@@ -246,7 +240,7 @@ export default function AdminOrdersPage() {
                       </td>
                       <td className="px-4 py-3">
                         <Badge className={statusColors[o.status] || statusColors.created} variant="secondary">
-                          {getStatusLabel(o.status)}
+                          {getOrderStatusLabel(o.status)}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground hidden xl:table-cell">
@@ -258,14 +252,15 @@ export default function AdminOrdersPage() {
               )}
             </tbody>
           </table>
-          
-          {hasMore && !isLoading && (
-            <div className="border-t border-border p-4 text-center">
-              <Button variant="outline" size="sm" onClick={loadMore}>
-                Load More Orders
-              </Button>
-            </div>
-          )}
+
+          <div className="border-t border-border px-4 py-3">
+            <AdminPagination
+              page={page}
+              meta={meta}
+              itemCount={orders.length}
+              onPageChange={setPage}
+            />
+          </div>
         </div>
       </div>
     </div>

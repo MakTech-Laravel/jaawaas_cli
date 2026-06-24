@@ -40,8 +40,10 @@ import {
   updateAdminSubcategory,
   type BackendCategory,
   type BackendSubcategory,
+  type CategoriesPaginationMeta,
 } from "@/lib/api/categories"
 import { useTranslation } from "@/lib/i18n"
+import { AdminPagination } from "@/components/admin/admin-pagination"
 import { 
   Search,
   Plus,
@@ -96,14 +98,21 @@ interface Industry {
   categories: Category[]
 }
 
+const PER_PAGE = 10
+
 export default function AdminIndustriesPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.industries
+  const c = t.admin.common
   const [industries, setIndustries] = useState<Industry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [meta, setMeta] = useState<CategoriesPaginationMeta | null>(null)
+  const [totalSubcategories, setTotalSubcategories] = useState(0)
   
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
   const [expandedIndustries, setExpandedIndustries] = useState<Set<string>>(new Set())
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   
@@ -158,6 +167,15 @@ export default function AdminIndustriesPage() {
   })
   const [newSubcategory, setNewSubcategory] = useState({ name: "" })
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch])
+
   const slugify = (value: string) => value.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
 
   const mapServerData = (categories: BackendCategory[], subcategories: BackendSubcategory[]): Industry[] => {
@@ -183,7 +201,7 @@ export default function AdminIndustriesPage() {
 
       return {
         id: categoryId,
-        name: category.name || "Unnamed Industry",
+        name: category.name || c.unnamedIndustry,
         slug: category.slug || slugify(category.name || ""),
         description: category.description || "",
         icon: category.icon,
@@ -209,18 +227,19 @@ export default function AdminIndustriesPage() {
     })
   }
 
-  const loadFromBackend = async () => {
+  const loadFromBackend = async (targetPage = page) => {
     setIsLoading(true)
     setErrorMessage(null)
 
     const [categoriesResult, subcategoriesResult] = await Promise.all([
-      getAdminCategories({ perPage: 50 }),
+      getAdminCategories({ perPage: PER_PAGE, page: targetPage, search: debouncedSearch || undefined }),
       getAdminSubcategories(),
     ])
 
     if (!categoriesResult.success) {
       setIndustries([])
-      setErrorMessage(categoriesResult.message || "Failed to load categories.")
+      setMeta(null)
+      setErrorMessage(categoriesResult.message || c.failedToLoadCategories)
       setIsLoading(false)
       return
     }
@@ -230,22 +249,23 @@ export default function AdminIndustriesPage() {
       subcategoriesResult.success ? subcategoriesResult.data : []
     )
     setIndustries(mapped)
+    setMeta(categoriesResult.meta ?? null)
+    setTotalSubcategories(
+      subcategoriesResult.success ? subcategoriesResult.data.length : 0,
+    )
 
     if (!subcategoriesResult.success) {
-      setErrorMessage(subcategoriesResult.message || "Subcategories failed to load.")
+      setErrorMessage(subcategoriesResult.message || c.subcategoriesFailed)
     }
 
     setIsLoading(false)
   }
 
   useEffect(() => {
-    void loadFromBackend()
-  }, [])
+    void loadFromBackend(page)
+  }, [page, debouncedSearch])
 
-  // Filter industries
-  const filteredIndustries = industries.filter(ind => 
-    (ind.name || "").toLowerCase().includes((searchQuery || "").toLowerCase())
-  )
+  const filteredIndustries = industries
 
   // Toggle expand
   const toggleIndustry = (id: string) => {
@@ -293,7 +313,7 @@ export default function AdminIndustriesPage() {
       })
 
       if (!result.success) {
-        setErrorMessage(result.message || "Failed to create category.")
+        setErrorMessage(result.message || c.failedToCreateCategory)
         return
       }
 
@@ -329,8 +349,7 @@ export default function AdminIndustriesPage() {
             setShowAddIndustryDialog(false)
             await loadFromBackend()
             setErrorMessage(
-              tgl.message ||
-                "Industry was created but could not be set as a main/homepage category (for example, the limit of 8 may already be reached)."
+              tgl.message || p.industryCreatedFeaturedFailed
             )
             return
           }
@@ -350,9 +369,7 @@ export default function AdminIndustriesPage() {
           })
           setShowAddIndustryDialog(false)
           await loadFromBackend()
-          setErrorMessage(
-            'Industry was created. Use the row menu "Add to Main Categories" if you still want it on the homepage.'
-          )
+          setErrorMessage(c.industryCreatedHint)
           return
         }
       }
@@ -392,7 +409,7 @@ export default function AdminIndustriesPage() {
       })
 
       if (!result.success) {
-        setErrorMessage(result.message || "Failed to update category.")
+        setErrorMessage(result.message || c.failedToUpdateCategory)
         return
       }
 
@@ -401,8 +418,7 @@ export default function AdminIndustriesPage() {
         const tgl = await toggleAdminCategoryFeatured(String(currentIndustry.id))
         if (!tgl.success) {
           setErrorMessage(
-            tgl.message ||
-              "Industry was saved, but homepage/main category status could not be updated (e.g. max 8 featured)."
+            tgl.message || p.industrySavedFeaturedFailed
           )
           setShowEditIndustryDialog(false)
           setEditIndustryFeaturedAtOpen(null)
@@ -421,7 +437,7 @@ export default function AdminIndustriesPage() {
     void (async () => {
       const result = await deleteAdminCategory(String(id))
       if (!result.success) {
-        setErrorMessage(result.message || "Failed to delete category.")
+        setErrorMessage(result.message || c.failedToDeleteCategory)
         return
       }
       await loadFromBackend()
@@ -433,10 +449,10 @@ export default function AdminIndustriesPage() {
       const result = await toggleAdminCategoryFeatured(String(id))
       if (!result.success) {
         await Swal.fire({
-          title: "Error",
-          text: result.message || "Failed to toggle main category state.",
+          title: c.error,
+          text: result.message || c.failedToToggleMainCategory,
           icon: "error",
-          confirmButtonText: "OK",
+          confirmButtonText: c.ok,
         })
         return
       }
@@ -470,7 +486,7 @@ export default function AdminIndustriesPage() {
       })
 
       if (!result.success) {
-        setErrorMessage(result.message || "Failed to create subcategory.")
+        setErrorMessage(result.message || c.failedToCreateSubcategory)
         return
       }
 
@@ -505,7 +521,7 @@ export default function AdminIndustriesPage() {
       })
 
       if (!result.success) {
-        setErrorMessage(result.message || "Failed to update subcategory.")
+        setErrorMessage(result.message || c.failedToUpdateSubcategory)
         return
       }
 
@@ -518,7 +534,7 @@ export default function AdminIndustriesPage() {
     void (async () => {
       const result = await deleteAdminSubcategory(String(categoryId))
       if (!result.success) {
-        setErrorMessage(result.message || "Failed to delete subcategory.")
+        setErrorMessage(result.message || c.failedToDeleteSubcategory)
         return
       }
       await loadFromBackend()
@@ -534,7 +550,7 @@ export default function AdminIndustriesPage() {
 
       const result = await moveAdminSubcategoryPosition(String(categoryId), idx, idx - 1)
       if (!result.success) {
-        setErrorMessage(result.message || "Failed to move subcategory.")
+        setErrorMessage(result.message || p.failedToMoveSubcategory)
         return
       }
 
@@ -551,7 +567,7 @@ export default function AdminIndustriesPage() {
 
       const result = await moveAdminSubcategoryPosition(String(categoryId), idx, idx + 1)
       if (!result.success) {
-        setErrorMessage(result.message || "Failed to move subcategory.")
+        setErrorMessage(result.message || p.failedToMoveSubcategory)
         return
       }
 
@@ -563,36 +579,36 @@ export default function AdminIndustriesPage() {
   const openAddSubcategory = (industry: Industry, category: Category) => {
     setCurrentIndustry(industry)
     setCurrentCategory(category)
-    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
+    setErrorMessage(c.nestedSubcategoriesUnsupported)
   }
 
   const handleAddSubcategory = () => {
     setShowAddSubcategoryDialog(false)
-    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
+    setErrorMessage(c.nestedSubcategoriesUnsupported)
   }
 
   const openEditSubcategory = (industry: Industry, category: Category, subcategory: Subcategory) => {
     setCurrentIndustry(industry)
     setCurrentCategory(category)
     setCurrentSubcategory({ ...subcategory })
-    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
+    setErrorMessage(c.nestedSubcategoriesUnsupported)
   }
 
   const handleEditSubcategory = () => {
     setShowEditSubcategoryDialog(false)
-    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
+    setErrorMessage(c.nestedSubcategoriesUnsupported)
   }
 
   const deleteSubcategory = (industryId: string, categoryId: string, subcategoryId: string) => {
-    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
+    setErrorMessage(c.nestedSubcategoriesUnsupported)
   }
 
   const moveSubcategoryUp = (industryId: string, categoryId: string, subcategoryId: string) => {
-    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
+    setErrorMessage(c.nestedSubcategoriesUnsupported)
   }
 
   const moveSubcategoryDown = (industryId: string, categoryId: string, subcategoryId: string) => {
-    setErrorMessage("Nested subcategories are not supported by current backend endpoints.")
+    setErrorMessage(c.nestedSubcategoriesUnsupported)
   }
 
   // Open manage categories dialog
@@ -603,8 +619,7 @@ export default function AdminIndustriesPage() {
 
   // Stats
   const featuredCount = industries.filter(ind => ind.featured).length
-  const totalCategories = industries.length
-  const totalSubcategories = industries.reduce((sum, ind) => sum + ind.categories.length, 0)
+  const totalCategories = meta?.total ?? industries.length
   const hasCorrectMainCategoryCount = featuredCount === 8
 
   return (
@@ -618,16 +633,16 @@ export default function AdminIndustriesPage() {
         </div>
         <Button onClick={() => setShowAddIndustryDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Industry
+          {c.addIndustry}
         </Button>
       </div>
 
       <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          Homepage and category pages should use exactly 8 main categories.
+          {c.mainCategoriesLimit}
         </p>
         <Badge className={hasCorrectMainCategoryCount ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}>
-          Main Categories: {featuredCount}/8
+          {c.mainCategoriesCount.replace("{count}", String(featuredCount))}
         </Badge>
       </div>
 
@@ -639,35 +654,35 @@ export default function AdminIndustriesPage() {
 
       {isLoading && (
         <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-          Loading categories from backend...
+          {c.loadingCategoriesFromBackend}
         </div>
       )}
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4">
         <AdminStatCard
-          title="Main Categories"
-          value={industries.length}
+          title={p.mainCategories}
+          value={totalCategories}
           icon={Layers}
           iconClassName="text-secondary"
           iconWrapperClassName="bg-secondary/10"
         />
         <AdminStatCard
-          title="Category Records"
+          title={p.categoryRecords}
           value={totalCategories}
           icon={FolderOpen}
           iconClassName="text-blue-700"
           iconWrapperClassName="bg-blue-100"
         />
         <AdminStatCard
-          title="Subcategories"
+          title={p.subcategories}
           value={totalSubcategories}
           icon={Tag}
           iconClassName="text-emerald-700"
           iconWrapperClassName="bg-emerald-100"
         />
         <AdminStatCard
-          title="Featured category"
+          title={p.featuredCategory}
           value={featuredCount}
           icon={Layers}
           iconClassName="text-amber-700"
@@ -679,7 +694,7 @@ export default function AdminIndustriesPage() {
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Search industries..."
+          placeholder={c.searchIndustriesPlaceholder}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-9"
@@ -690,10 +705,10 @@ export default function AdminIndustriesPage() {
       <div className="rounded-xl border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
           <div className="grid grid-cols-12 text-sm font-medium text-muted-foreground">
-            <div className="col-span-5">Name</div>
-            <div className="col-span-2">Categories</div>
-            <div className="col-span-2">Suppliers</div>
-            <div className="col-span-2">Homepage</div>
+            <div className="col-span-5">{p.tableName}</div>
+            <div className="col-span-2">{p.tableCategories}</div>
+            <div className="col-span-2">{p.tableSuppliers}</div>
+            <div className="col-span-2">{p.tableHomepage}</div>
             <div className="col-span-1"></div>
           </div>
         </div>
@@ -723,18 +738,18 @@ export default function AdminIndustriesPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium text-foreground truncate">{industry.name}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{industry.description || "No description"}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1">{industry.description || c.noDescription}</p>
                   </div>
                 </div>
                 <div className="col-span-2 text-sm text-muted-foreground">
-                  {industry.categories.length} categories
+                  {c.categoriesCount.replace("{count}", String(industry.categories.length))}
                 </div>
                 <div className="col-span-2 text-sm text-muted-foreground">
-                  {industry.supplierCount.toLocaleString()} suppliers
+                  {c.suppliersCount.replace("{count}", industry.supplierCount.toLocaleString())}
                 </div>
                 <div className="col-span-2">
                   {industry.featured && (
-                    <Badge className="bg-amber-100 text-amber-700">Main Category</Badge>
+                    <Badge className="bg-amber-100 text-amber-700">{p.mainCategory}</Badge>
                   )}
                 </div>
                 <div className="col-span-1 flex justify-end">
@@ -751,7 +766,7 @@ export default function AdminIndustriesPage() {
                       </DropdownMenuItem> */}
                       <DropdownMenuItem onClick={() => openAddCategory(industry)}>
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Category
+                        {p.addCategory}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => {
                         setCurrentIndustry(industry)
@@ -759,17 +774,17 @@ export default function AdminIndustriesPage() {
                         setShowEditIndustryDialog(true)
                       }}>
                         <Edit className="mr-2 h-4 w-4" />
-                        Edit Industry
+                        {p.editIndustry}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => toggleFeatured(industry.id)}>
-                        {industry.featured ? "Remove from Main Categories" : "Add to Main Categories"}
+                        {industry.featured ? c.removeFromMainCategories : c.addToMainCategories}
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         className="text-destructive"
                         onClick={() => deleteIndustry(industry.id)}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Industry
+                        {c.deleteIndustry}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -800,7 +815,7 @@ export default function AdminIndustriesPage() {
                           <span className="text-sm font-medium text-foreground">{category.name}</span>
                         </div>
                         <div className="col-span-2 text-xs text-muted-foreground">
-                          {category.subcategories.length} subcategories
+                          {c.subcategoriesCount.replace("{count}", String(category.subcategories.length))}
                         </div>
                         <div className="col-span-2"></div>
                         <div className="col-span-2 flex items-center gap-1">
@@ -833,14 +848,14 @@ export default function AdminIndustriesPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => openEditCategory(industry, category)}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit Subcategory
+                                {c.editSubcategory}
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 className="text-destructive"
                                 onClick={() => deleteCategory(industry.id, category.id)}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Subcategory
+                                {c.deleteSubcategory}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -893,14 +908,14 @@ export default function AdminIndustriesPage() {
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuItem onClick={() => openEditSubcategory(industry, category, subcategory)}>
                                       <Edit className="mr-2 h-4 w-4" />
-                                      Edit Subcategory
+                                      {c.editSubcategory}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem 
                                       className="text-destructive"
                                       onClick={() => deleteSubcategory(industry.id, category.id, subcategory.id)}
                                     >
                                       <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete Subcategory
+                                      {c.deleteSubcategory}
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
@@ -921,7 +936,7 @@ export default function AdminIndustriesPage() {
                       onClick={() => openAddCategory(industry)}
                     >
                       <Plus className="mr-2 h-3 w-3" />
-                      Add Category
+                      {p.addCategory}
                     </Button>
                   </div>
                 </div>
@@ -930,20 +945,28 @@ export default function AdminIndustriesPage() {
               {/* Empty state for categories */}
               {expandedIndustries.has(industry.id) && industry.categories.length === 0 && (
                 <div className="bg-muted/20 px-4 py-4 pl-12">
-                  <p className="text-sm text-muted-foreground mb-2">No categories yet</p>
+                  <p className="text-sm text-muted-foreground mb-2">{p.noCategories}</p>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => openAddCategory(industry)}
                   >
                     <Plus className="mr-2 h-3 w-3" />
-                    Add First Category
+                    {c.addFirstCategory}
                   </Button>
                 </div>
               )}
             </div>
           ))}
         </div>
+
+        <AdminPagination
+          page={page}
+          meta={meta}
+          itemCount={filteredIndustries.length}
+          onPageChange={setPage}
+          className="border-t border-border px-4 py-3"
+        />
       </div>
 
       {/* Add Industry Dialog */}
@@ -970,9 +993,9 @@ export default function AdminIndustriesPage() {
       >
         <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl">
           <DialogHeader className="p-6 pb-0">
-            <DialogTitle>Add New Industry</DialogTitle>
+            <DialogTitle>{c.addNewIndustry}</DialogTitle>
             <DialogDescription>
-              Create a new industry category for the platform
+              {c.createIndustryDesc}
             </DialogDescription>
           </DialogHeader>
           
@@ -980,9 +1003,9 @@ export default function AdminIndustriesPage() {
             <div className="space-y-6 pb-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Industry Name</Label>
+                  <Label>{p.industryName}</Label>
                   <Input 
-                    placeholder="e.g., Mining"
+                    placeholder={p.miningPlaceholder}
                     value={newIndustry.name}
                     onChange={(e) => {
                       const name = e.target.value
@@ -996,9 +1019,9 @@ export default function AdminIndustriesPage() {
                   />
                 </div>
                 <div>
-                  <Label>Slug</Label>
+                  <Label>{p.slug}</Label>
                   <Input 
-                    placeholder="e.g., mining"
+                    placeholder={p.miningSlugPlaceholder}
                     value={newIndustry.slug}
                     onChange={(e) => setNewIndustry({ ...newIndustry, slug: e.target.value })}
                     className="mt-2"
@@ -1008,7 +1031,7 @@ export default function AdminIndustriesPage() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Theme Color (Background)</Label>
+                  <Label>{p.themeColor}</Label>
                   <div className="mt-2 flex items-center gap-2">
                     <Input 
                       type="color"
@@ -1024,14 +1047,14 @@ export default function AdminIndustriesPage() {
                   </div>
                 </div>
                 <div>
-                  <Label>Icon</Label>
+                  <Label>{p.icon}</Label>
                   <IconPicker
                     selectedIcon={newIndustry.icon}
                     onSelect={(name) => setNewIndustry({ ...newIndustry, icon: name })}
                   />
                 </div>
                 <div>
-                  <Label>Icon Color</Label>
+                  <Label>{c.iconColor}</Label>
                   <div className="mt-2 flex items-center gap-2">
                     <Input 
                       type="color"
@@ -1050,7 +1073,7 @@ export default function AdminIndustriesPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <Label className="text-xs">Title Color</Label>
+                  <Label className="text-xs">{p.titleColor}</Label>
                   <div className="mt-1 flex items-center gap-2">
                     <Input 
                       type="color"
@@ -1066,7 +1089,7 @@ export default function AdminIndustriesPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs">Desc. Color</Label>
+                  <Label className="text-xs">{p.descColor}</Label>
                   <div className="mt-1 flex items-center gap-2">
                     <Input 
                       type="color"
@@ -1082,7 +1105,7 @@ export default function AdminIndustriesPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs">Btn Color</Label>
+                  <Label className="text-xs">{p.btnColor}</Label>
                   <div className="mt-1 flex items-center gap-2">
                     <Input 
                       type="color"
@@ -1098,7 +1121,7 @@ export default function AdminIndustriesPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs">Supplier Color</Label>
+                  <Label className="text-xs">{p.supplierColor}</Label>
                   <div className="mt-1 flex items-center gap-2">
                     <Input 
                       type="color"
@@ -1116,9 +1139,9 @@ export default function AdminIndustriesPage() {
               </div>
 
               <div>
-                <Label>Description</Label>
+                <Label>{c.description}</Label>
                 <Textarea 
-                  placeholder="Describe what this industry covers..."
+                  placeholder={p.describeIndustryPlaceholder}
                   value={newIndustry.description}
                   onChange={(e) => setNewIndustry({ ...newIndustry, description: e.target.value })}
                   className="mt-2 h-20"
@@ -1127,10 +1150,10 @@ export default function AdminIndustriesPage() {
 
               <div className="flex items-center justify-between rounded-lg border border-border p-3">
                 <div>
-                  <Label className="text-base">Featured</Label>
-                  <p className="text-xs text-muted-foreground">Show this industry on the homepage</p>
+                  <Label className="text-base">{p.featured}</Label>
+                  <p className="text-xs text-muted-foreground">{p.showOnHomepage}</p>
                   {featuredCount >= 8 && (
-                    <p className="text-xs text-amber-700 mt-1">There are already 8 main categories. Turn off an existing one before adding another.</p>
+                    <p className="text-xs text-amber-700 mt-1">{p.featuredHomepageLimit}</p>
                   )}
                 </div>
                 <Switch
@@ -1142,7 +1165,7 @@ export default function AdminIndustriesPage() {
 
               {/* Preview Section */}
               <div className="rounded-xl bg-muted/30 p-4 border border-border">
-                <Label className="mb-3 block text-xs uppercase tracking-wider text-muted-foreground font-semibold">Card Preview</Label>
+                <Label className="mb-3 block text-xs uppercase tracking-wider text-muted-foreground font-semibold">{p.cardPreview}</Label>
                 <div className="flex justify-center">
                   <div 
                     className="group relative overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 w-full max-w-[320px]"
@@ -1165,7 +1188,7 @@ export default function AdminIndustriesPage() {
                         className="mt-5 text-xl font-semibold transition-colors truncate"
                         style={{ color: newIndustry.title_color }}
                       >
-                        {newIndustry.name || "Industry Name"}
+                        {newIndustry.name || p.industryNamePlaceholder}
                       </h3>
 
                       {/* Description */}
@@ -1173,7 +1196,7 @@ export default function AdminIndustriesPage() {
                         className="mt-2 text-sm line-clamp-2"
                         style={{ color: newIndustry.description_color }}
                       >
-                        {newIndustry.description || "Explore suppliers and products in this industry sector."}
+                        {newIndustry.description || p.exploreSectorDefault}
                       </p>
 
                       {/* Stats */}
@@ -1181,7 +1204,7 @@ export default function AdminIndustriesPage() {
                         <div className="flex items-center gap-1">
                           <Factory className="h-4 w-4" />
                           <span className="font-semibold">0</span>
-                          <span>suppliers</span>
+                          <span>{p.suppliers}</span>
                         </div>
                       </div>
 
@@ -1190,7 +1213,7 @@ export default function AdminIndustriesPage() {
                         className="mt-5 flex items-center text-sm font-medium"
                         style={{ color: newIndustry.btn_color }}
                       >
-                        <span>Explore</span>
+                        <span>{p.explore}</span>
                         <ChevronRight className="ml-2 h-4 w-4" />
                       </div>
                     </div>
@@ -1201,8 +1224,8 @@ export default function AdminIndustriesPage() {
           </div>
 
           <DialogFooter className="p-6 pt-2 border-t border-border bg-muted/10">
-            <Button variant="outline" onClick={() => setShowAddIndustryDialog(false)}>Cancel</Button>
-            <Button onClick={handleAddIndustry} disabled={!newIndustry.name}>Add Industry</Button>
+            <Button variant="outline" onClick={() => setShowAddIndustryDialog(false)}>{c.cancel}</Button>
+            <Button onClick={handleAddIndustry} disabled={!newIndustry.name}>{c.addIndustry}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1217,9 +1240,9 @@ export default function AdminIndustriesPage() {
       >
         <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl">
           <DialogHeader className="p-6 pb-0">
-            <DialogTitle>Edit Industry</DialogTitle>
+            <DialogTitle>{p.editIndustry}</DialogTitle>
             <DialogDescription>
-              Update industry details
+              {c.updateIndustryDesc}
             </DialogDescription>
           </DialogHeader>
           
@@ -1228,7 +1251,7 @@ export default function AdminIndustriesPage() {
               <div className="space-y-6 pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label>Industry Name</Label>
+                    <Label>{p.industryName}</Label>
                     <Input 
                       value={currentIndustry.name}
                       onChange={(e) => setCurrentIndustry({ ...currentIndustry, name: e.target.value })}
@@ -1236,7 +1259,7 @@ export default function AdminIndustriesPage() {
                     />
                   </div>
                   <div>
-                    <Label>Slug</Label>
+                    <Label>{p.slug}</Label>
                     <Input 
                       value={currentIndustry.slug}
                       onChange={(e) => setCurrentIndustry({ ...currentIndustry, slug: e.target.value })}
@@ -1247,7 +1270,7 @@ export default function AdminIndustriesPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label>Theme Color (Background)</Label>
+                    <Label>{p.themeColor}</Label>
                     <div className="mt-2 flex items-center gap-2">
                       <Input 
                         type="color"
@@ -1263,14 +1286,14 @@ export default function AdminIndustriesPage() {
                     </div>
                   </div>
                   <div>
-                    <Label>Icon</Label>
+                    <Label>{p.icon}</Label>
                     <IconPicker
                       selectedIcon={currentIndustry.icon}
                       onSelect={(name) => setCurrentIndustry({ ...currentIndustry, icon: name })}
                     />
                   </div>
                   <div>
-                    <Label>Icon Color</Label>
+                    <Label>{c.iconColor}</Label>
                     <div className="mt-2 flex items-center gap-2">
                       <Input 
                         type="color"
@@ -1289,7 +1312,7 @@ export default function AdminIndustriesPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <Label className="text-xs">Title Color</Label>
+                    <Label className="text-xs">{p.titleColor}</Label>
                     <div className="mt-1 flex items-center gap-2">
                       <Input 
                         type="color"
@@ -1305,7 +1328,7 @@ export default function AdminIndustriesPage() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-xs">Desc. Color</Label>
+                    <Label className="text-xs">{p.descColor}</Label>
                     <div className="mt-1 flex items-center gap-2">
                       <Input 
                         type="color"
@@ -1321,7 +1344,7 @@ export default function AdminIndustriesPage() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-xs">Btn Color</Label>
+                    <Label className="text-xs">{p.btnColor}</Label>
                     <div className="mt-1 flex items-center gap-2">
                       <Input 
                         type="color"
@@ -1337,7 +1360,7 @@ export default function AdminIndustriesPage() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-xs">Supplier Color</Label>
+                    <Label className="text-xs">{p.supplierColor}</Label>
                     <div className="mt-1 flex items-center gap-2">
                       <Input 
                         type="color"
@@ -1355,7 +1378,7 @@ export default function AdminIndustriesPage() {
                 </div>
 
                 <div>
-                  <Label>Description</Label>
+                  <Label>{c.description}</Label>
                   <Textarea 
                     value={currentIndustry.description}
                     onChange={(e) => setCurrentIndustry({ ...currentIndustry, description: e.target.value })}
@@ -1365,8 +1388,8 @@ export default function AdminIndustriesPage() {
                 
                 <div className="flex items-center justify-between rounded-lg border border-border p-3">
                   <div>
-                    <Label className="text-base">Featured</Label>
-                    <p className="text-xs text-muted-foreground">Show this industry on the homepage</p>
+                    <Label className="text-base">{p.featured}</Label>
+                    <p className="text-xs text-muted-foreground">{p.showOnHomepage}</p>
                   </div>
                   <Switch 
                     checked={currentIndustry.featured}
@@ -1376,7 +1399,7 @@ export default function AdminIndustriesPage() {
 
                 {/* Preview Section */}
                 <div className="rounded-xl bg-muted/30 p-4 border border-border">
-                  <Label className="mb-3 block text-xs uppercase tracking-wider text-muted-foreground font-semibold">Card Preview</Label>
+                  <Label className="mb-3 block text-xs uppercase tracking-wider text-muted-foreground font-semibold">{p.cardPreview}</Label>
                   <div className="flex justify-center">
                     <div 
                       className="group relative overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 w-full max-w-[320px]"
@@ -1407,7 +1430,7 @@ export default function AdminIndustriesPage() {
                           className="mt-2 text-sm line-clamp-2"
                           style={{ color: currentIndustry.description_color || "#64748b" }}
                         >
-                          {currentIndustry.description || "Explore suppliers and products in this industry sector."}
+                          {currentIndustry.description || p.exploreSectorDefault}
                         </p>
 
                         {/* Stats */}
@@ -1415,7 +1438,7 @@ export default function AdminIndustriesPage() {
                           <div className="flex items-center gap-1">
                             <Factory className="h-4 w-4" />
                             <span className="font-semibold">{currentIndustry.supplierCount.toLocaleString()}</span>
-                            <span>suppliers</span>
+                            <span>{p.suppliers}</span>
                           </div>
                         </div>
 
@@ -1424,7 +1447,7 @@ export default function AdminIndustriesPage() {
                           className="mt-5 flex items-center text-sm font-medium"
                           style={{ color: currentIndustry.btn_color || "#3b82f6" }}
                         >
-                          <span>Explore</span>
+                          <span>{p.explore}</span>
                           <ChevronRight className="ml-2 h-4 w-4" />
                         </div>
                       </div>
@@ -1436,8 +1459,8 @@ export default function AdminIndustriesPage() {
           )}
 
           <DialogFooter className="p-6 pt-2 border-t border-border bg-muted/10">
-            <Button variant="outline" onClick={() => setShowEditIndustryDialog(false)}>Cancel</Button>
-            <Button onClick={handleEditIndustry}>Save Changes</Button>
+            <Button variant="outline" onClick={() => setShowEditIndustryDialog(false)}>{c.cancel}</Button>
+            <Button onClick={handleEditIndustry}>{c.saveChanges}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1446,17 +1469,17 @@ export default function AdminIndustriesPage() {
       <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Category</DialogTitle>
+            <DialogTitle>{p.addCategory}</DialogTitle>
             <DialogDescription>
-              Add a new category to {currentIndustry?.name}
+              {c.addCategoryTo.replace("{name}", currentIndustry?.name ?? "")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <Label>Category Name</Label>
+                <Label>{c.categoryName}</Label>
                 <Input
-                  placeholder="e.g., Consumer Electronics"
+                  placeholder={p.categoryNamePlaceholder}
                   value={newCategory.name}
                   onChange={(e) => {
                     const name = e.target.value
@@ -1470,9 +1493,9 @@ export default function AdminIndustriesPage() {
                 />
               </div>
               <div>
-                <Label>Slug</Label>
+                <Label>{p.slug}</Label>
                 <Input
-                  placeholder="e.g., consumer-electronics"
+                  placeholder={p.categorySlugPlaceholder}
                   value={newCategory.slug}
                   onChange={(e) => setNewCategory({ ...newCategory, slug: e.target.value })}
                   className="mt-2"
@@ -1491,19 +1514,19 @@ export default function AdminIndustriesPage() {
                 Optional text value for the API `icon` field (same as Postman form-data).
               </p>
             </div> */}
-            <div>
-              <Label>Description</Label>
-              <Textarea
-                placeholder="Describe this category..."
-                value={newCategory.description}
+              <div>
+                <Label>{c.description}</Label>
+                <Textarea
+                  placeholder={p.describeCategoryPlaceholder}
+                  value={newCategory.description}
                 onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
                 className="mt-2 h-20"
               />
             </div>
             <div>
-              <Label>Tags</Label>
+              <Label>{p.tags}</Label>
               <Input
-                placeholder="e.g., tags,dsdf,fgf"
+                placeholder={p.tagsPlaceholder}
                 value={newCategory.tags}
                 onChange={(e) => setNewCategory({ ...newCategory, tags: e.target.value })}
                 className="mt-2"
@@ -1512,8 +1535,8 @@ export default function AdminIndustriesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddCategoryDialog(false)}>Cancel</Button>
-            <Button onClick={handleAddCategory} disabled={!newCategory.name.trim()}>Add Category</Button>
+            <Button variant="outline" onClick={() => setShowAddCategoryDialog(false)}>{c.cancel}</Button>
+            <Button onClick={handleAddCategory} disabled={!newCategory.name.trim()}>{p.addCategory}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1522,16 +1545,16 @@ export default function AdminIndustriesPage() {
       <Dialog open={showEditCategoryDialog} onOpenChange={setShowEditCategoryDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Category</DialogTitle>
+            <DialogTitle>{c.editCategoryIndustry}</DialogTitle>
             <DialogDescription>
-              Update category details
+              {c.updateCategoryDesc}
             </DialogDescription>
           </DialogHeader>
           {currentCategory && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label>Category Name</Label>
+                  <Label>{c.categoryName}</Label>
                   <Input
                     value={currentCategory.name}
                     onChange={(e) => setCurrentCategory({ ...currentCategory, name: e.target.value })}
@@ -1539,7 +1562,7 @@ export default function AdminIndustriesPage() {
                   />
                 </div>
                 <div>
-                  <Label>Slug</Label>
+                  <Label>{p.slug}</Label>
                   <Input
                     value={currentCategory.slug}
                     onChange={(e) => setCurrentCategory({ ...currentCategory, slug: e.target.value })}
@@ -1557,29 +1580,29 @@ export default function AdminIndustriesPage() {
                 />
               </div> */}
               <div>
-                <Label>Description</Label>
+                <Label>{c.description}</Label>
                 <Textarea
-                  placeholder="Describe this category..."
+                  placeholder={p.describeCategoryPlaceholder}
                   value={currentCategory.description || ""}
                   onChange={(e) => setCurrentCategory({ ...currentCategory, description: e.target.value })}
                   className="mt-2 h-20"
                 />
               </div>
               <div>
-                <Label>Tags</Label>
+                <Label>{p.tags}</Label>
                 <Input
-                  placeholder="e.g., tags,dsdf,fgf"
+                  placeholder={p.tagsPlaceholder}
                   value={currentCategory.tags || ""}
                   onChange={(e) => setCurrentCategory({ ...currentCategory, tags: e.target.value })}
                   className="mt-2"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Comma-separated for the API `tags` field.</p>
+                <p className="text-xs text-muted-foreground mt-1">{c.tagsCommaSeparated}</p>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditCategoryDialog(false)}>Cancel</Button>
-            <Button onClick={handleEditCategory}>Save Changes</Button>
+            <Button variant="outline" onClick={() => setShowEditCategoryDialog(false)}>{c.cancel}</Button>
+            <Button onClick={handleEditCategory}>{c.saveChanges}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1588,16 +1611,16 @@ export default function AdminIndustriesPage() {
       <Dialog open={showAddSubcategoryDialog} onOpenChange={setShowAddSubcategoryDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Subcategory</DialogTitle>
+            <DialogTitle>{c.addSubcategory}</DialogTitle>
             <DialogDescription>
-              Add a new subcategory to {currentCategory?.name}
+              {p.addSubcategoryTo.replace("{name}", currentCategory?.name ?? "")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Subcategory Name</Label>
+              <Label>{p.subcategoryName}</Label>
               <Input 
-                placeholder="e.g., Smartphones"
+                placeholder={p.subcategoryNamePlaceholder}
                 value={newSubcategory.name}
                 onChange={(e) => setNewSubcategory({ name: e.target.value })}
                 className="mt-2"
@@ -1605,8 +1628,8 @@ export default function AdminIndustriesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddSubcategoryDialog(false)}>Cancel</Button>
-            <Button onClick={handleAddSubcategory} disabled={!newSubcategory.name}>Add Subcategory</Button>
+            <Button variant="outline" onClick={() => setShowAddSubcategoryDialog(false)}>{c.cancel}</Button>
+            <Button onClick={handleAddSubcategory} disabled={!newSubcategory.name}>{c.addSubcategory}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1615,15 +1638,15 @@ export default function AdminIndustriesPage() {
       <Dialog open={showEditSubcategoryDialog} onOpenChange={setShowEditSubcategoryDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Subcategory</DialogTitle>
+            <DialogTitle>{c.editSubcategoryTitle}</DialogTitle>
             <DialogDescription>
-              Update subcategory details
+              {p.updateSubcategoryDesc}
             </DialogDescription>
           </DialogHeader>
           {currentSubcategory && (
             <div className="space-y-4">
               <div>
-                <Label>Subcategory Name</Label>
+                <Label>{p.subcategoryName}</Label>
                 <Input 
                   value={currentSubcategory.name}
                   onChange={(e) => setCurrentSubcategory({ ...currentSubcategory, name: e.target.value })}
@@ -1633,8 +1656,8 @@ export default function AdminIndustriesPage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditSubcategoryDialog(false)}>Cancel</Button>
-            <Button onClick={handleEditSubcategory}>Save Changes</Button>
+            <Button variant="outline" onClick={() => setShowEditSubcategoryDialog(false)}>{c.cancel}</Button>
+            <Button onClick={handleEditSubcategory}>{c.saveChanges}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1645,10 +1668,10 @@ export default function AdminIndustriesPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Layers className="h-5 w-5" />
-              Manage Categories: {currentIndustry?.name}
+              {c.manageCategoriesTitle.replace("{name}", currentIndustry?.name ?? "")}
             </DialogTitle>
             <DialogDescription>
-              Add, edit, reorder, and delete categories and subcategories
+              {c.manageCategoriesDesc}
             </DialogDescription>
           </DialogHeader>
           
@@ -1660,7 +1683,7 @@ export default function AdminIndustriesPage() {
                   openAddCategory(currentIndustry)
                 }}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Category
+                  {p.addCategory}
                 </Button>
               </div>
               
@@ -1668,7 +1691,7 @@ export default function AdminIndustriesPage() {
                 {industries.find(i => i.id === currentIndustry.id)?.categories.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <FolderOpen className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground mb-4">No categories yet</p>
+                    <p className="text-muted-foreground mb-4">{p.noCategories}</p>
                     <Button 
                       variant="outline"
                       onClick={() => {
@@ -1677,7 +1700,7 @@ export default function AdminIndustriesPage() {
                       }}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Add First Category
+                      {c.addFirstCategory}
                     </Button>
                   </div>
                 ) : (
@@ -1692,7 +1715,7 @@ export default function AdminIndustriesPage() {
                             </div>
                             <div>
                               <p className="font-medium text-foreground">{category.name}</p>
-                              <p className="text-xs text-muted-foreground">{category.subcategories.length} subcategories</p>
+                              <p className="text-xs text-muted-foreground">{c.subcategoriesCount.replace("{count}", String(category.subcategories.length))}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -1798,7 +1821,7 @@ export default function AdminIndustriesPage() {
                             }}
                           >
                             <Plus className="mr-2 h-3 w-3" />
-                            Add Subcategory
+                            {c.addSubcategory}
                           </Button>
                         </div>
                       </div>
@@ -1810,7 +1833,7 @@ export default function AdminIndustriesPage() {
           )}
           
           <DialogFooter>
-            <Button onClick={() => setShowManageCategoriesDialog(false)}>Done</Button>
+            <Button onClick={() => setShowManageCategoriesDialog(false)}>{p.done}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -152,6 +152,12 @@ const initialArticles: InsightArticle[] = [
 export default function AdminInsightsPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.insights
+  const c = t.admin.common
+  const statusLabels: Record<InsightArticle["status"], string> = {
+    draft: t.admin.supplierStatus.draft,
+    published: c.published,
+    archived: c.archived,
+  }
   const [articles, setArticles] = useState<InsightArticle[]>([]) // Start empty, fetch from server on mount
   const [articlesLoading, setArticlesLoading] = useState(false)
   const [articlesError, setArticlesError] = useState<string | null>(null)
@@ -181,11 +187,11 @@ export default function AdminInsightsPage() {
 
   function handleFeaturedFile(file: File) {
     if (!file.type.startsWith('image/')) {
-      setFeaturedImageError('Please upload a valid image file.')
+      setFeaturedImageError(c.invalidImageFile)
       return
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      setFeaturedImageError(`Image is too large. Max ${formatBytes(MAX_IMAGE_BYTES)}.`)
+      setFeaturedImageError(c.imageTooLarge.replace("{size}", formatBytes(MAX_IMAGE_BYTES)))
       return
     }
 
@@ -249,7 +255,7 @@ export default function AdminInsightsPage() {
       content: "",
       category: "",
       tags: "",
-      author: "Editorial Team",
+      author: c.editorialTeam,
       status: "published",
       featured: false,
       featuredImage: null,
@@ -313,7 +319,7 @@ export default function AdminInsightsPage() {
         try {
           const res = await apiClient.put(`/admin/articles/${editingArticle.id}`, form)
           const updated = res.data?.data ?? null
-          toast({ title: 'Article updated', description: res.data?.message || 'Article saved successfully.' })
+          toast({ title: p.articleUpdated, description: res.data?.message || p.articleSaved })
 
           // Update in-memory list with returned data
           setArticles(prev => prev.map(a => 
@@ -342,7 +348,7 @@ export default function AdminInsightsPage() {
           setFeaturedFile(null)
           setFeaturedImageError(null)
         } catch (err: unknown) {
-          toast({ title: 'Failed to save', description: getApiErrorMessage(err, 'Failed to save article.') })
+          toast({ title: p.saveFailed, description: getApiErrorMessage(err, p.saveFailed) })
         } finally {
           setIsSubmittingArticle(false)
         }
@@ -376,7 +382,7 @@ export default function AdminInsightsPage() {
         try {
           const res = await apiClient.post('/admin/articles/create', form)
           const created = res.data?.data ?? null
-          toast({ title: 'Article created', description: res.data?.message || 'Article created successfully.' })
+          toast({ title: p.articleCreated, description: res.data?.message || p.articleSaved })
 
           // Add to in-memory list using returned data when available
           const newArticle: InsightArticle = {
@@ -400,7 +406,7 @@ export default function AdminInsightsPage() {
           setArticles(prev => [newArticle, ...prev])
           setShowEditDialog(false)
         } catch (err: unknown) {
-          toast({ title: 'Failed to create', description: getApiErrorMessage(err, 'Failed to create article.' ) })
+          toast({ title: p.failedToCreate, description: getApiErrorMessage(err, p.articleCreateFailed) })
         } finally {
           setIsSubmittingArticle(false)
         }
@@ -418,7 +424,7 @@ export default function AdminInsightsPage() {
       setRawCategories(list)
       setCategories(list.map((c: any) => String(c.name)))
     } catch (err: unknown) {
-      setCategoriesError(getApiErrorMessage(err, "Failed to load categories."))
+      setCategoriesError(getApiErrorMessage(err, p.failedLoadCategories))
     } finally {
       setCategoriesLoading(false)
     }
@@ -453,7 +459,7 @@ export default function AdminInsightsPage() {
       
       setArticles(normalized)
     } catch (err: unknown) {
-      setArticlesError(getApiErrorMessage(err, "Failed to load articles."))
+      setArticlesError(getApiErrorMessage(err, p.failedLoadArticles))
     } finally {
       setArticlesLoading(false)
     }
@@ -487,7 +493,7 @@ export default function AdminInsightsPage() {
       setPreviewArticle(normalized)
       setShowPreviewDialog(true)
     } catch (err: unknown) {
-      toast({ variant: "destructive", title: "Error", description: getApiErrorMessage(err, "Failed to load article preview.") })
+      toast({ variant: "destructive", title: c.error, description: getApiErrorMessage(err, p.previewFailed) })
     } finally {
       setPreviewLoading(false)
     }
@@ -501,7 +507,7 @@ export default function AdminInsightsPage() {
       await apiClient.post("/admin/article/categories", { name: trimmed, slug })
       await fetchCategories()
     } catch (err: unknown) {
-      setCategoriesError(getApiErrorMessage(err, "Failed to add category."))
+      setCategoriesError(getApiErrorMessage(err, p.failedAddCategory))
     }
   }
 
@@ -510,7 +516,7 @@ export default function AdminInsightsPage() {
     if (!trimmed) return
     const entry = rawCategories[index]
     if (!entry || !entry.id) {
-      setCategoriesError("Category not found for update.")
+      setCategoriesError(p.categoryNotFoundUpdate)
       return
     }
     try {
@@ -518,21 +524,21 @@ export default function AdminInsightsPage() {
       await apiClient.put(`/admin/article/categories/${entry.id}`, { name: trimmed, slug })
       await fetchCategories()
     } catch (err: unknown) {
-      setCategoriesError(getApiErrorMessage(err, "Failed to update category."))
+      setCategoriesError(getApiErrorMessage(err, p.failedUpdateCategory))
     }
   }
 
   async function removeCategory(index: number) {
     const entry = rawCategories[index]
     if (!entry || !entry.id) {
-      setCategoriesError("Category not found for delete.")
+      setCategoriesError(p.categoryNotFoundDelete)
       return
     }
     try {
       await apiClient.delete(`/admin/article/categories/${entry.id}`)
       await fetchCategories()
     } catch (err: unknown) {
-      setCategoriesError(getApiErrorMessage(err, "Failed to delete category."))
+      setCategoriesError(getApiErrorMessage(err, p.failedDeleteCategory))
     }
   }
 
@@ -621,27 +627,27 @@ export default function AdminInsightsPage() {
         </div>
         <Button onClick={openNewArticle}>
           <Plus className="mr-2 h-4 w-4" />
-          New Article
+          {p.newArticle}
         </Button>
       </div>
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4">
         <AdminStatCard
-          title="Total Articles"
+          title={p.totalArticles}
           value={articles.length}
           layout="vertical"
           contentClassName="pt-6 pb-6 px-6"
         />
         <AdminStatCard
-          title="Published"
+          title={p.published}
           value={articles.filter(a => a.status === "published").length}
           valueClassName="text-emerald-600"
           layout="vertical"
           contentClassName="pt-6 pb-6 px-6"
         />
         <AdminStatCard
-          title="Total Views"
+          title={p.totalViews}
           value={articles.reduce((acc, a) => acc + a.views, 0).toLocaleString()}
           layout="vertical"
           contentClassName="pt-6 pb-6 px-6"
@@ -655,7 +661,7 @@ export default function AdminInsightsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input 
-                placeholder="Search articles..."
+                placeholder={p.searchArticles}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -663,27 +669,27 @@ export default function AdminInsightsPage() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-37.5">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={c.status} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value="all">{c.allStatus}</SelectItem>
+                <SelectItem value="published">{c.published}</SelectItem>
+                <SelectItem value="archived">{c.archived}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-45">
-                <SelectValue placeholder="Category" />
+                <SelectValue placeholder={c.category} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="all">{p.allCategories}</SelectItem>
                 {categories.map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm" onClick={() => openCategoriesDialog()}>
-              Manage Categories
+              {c.manageCategories}
             </Button>
           </div>
         </CardContent>
@@ -692,9 +698,9 @@ export default function AdminInsightsPage() {
       {/* Articles List */}
       <Card>
         <CardHeader>
-          <CardTitle>Articles</CardTitle>
+          <CardTitle>{p.articles}</CardTitle>
           <CardDescription>
-            {filteredArticles.length} article{filteredArticles.length !== 1 ? "s" : ""} found
+            {p.articlesFound.replace("{count}", String(filteredArticles.length))}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -710,11 +716,11 @@ export default function AdminInsightsPage() {
                       {article.title}
                     </h3>
                     <Badge className={statusColors[article.status]}>
-                      {article.status}
+                      {statusLabels[article.status]}
                     </Badge>
                     {article.featured && (
                       <Badge variant="outline" className="border-primary text-primary">
-                        Featured
+                        {c.featured}
                       </Badge>
                     )}
                   </div>
@@ -736,7 +742,7 @@ export default function AdminInsightsPage() {
                     </span>
                     <span className="flex items-center gap-1">
                       <Eye className="h-3 w-3" />
-                      {article.views.toLocaleString()} views
+                      {p.viewsLabel.replace("{count}", article.views.toLocaleString())}
                     </span>
                   </div>
                 </div>
@@ -757,11 +763,11 @@ export default function AdminInsightsPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => openEditArticle(article)}>
                         <Edit className="mr-2 h-4 w-4" />
-                        Edit
+                        {c.edit}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => fetchAndPreviewArticle(article.id)}>
                         <ExternalLink className="mr-2 h-4 w-4" />
-                        Preview
+                        {c.preview}
                       </DropdownMenuItem>
                       
                       <DropdownMenuItem 
@@ -772,7 +778,7 @@ export default function AdminInsightsPage() {
                         }}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
+                        {c.delete}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -783,11 +789,11 @@ export default function AdminInsightsPage() {
             {filteredArticles.length === 0 && (
               <div className="py-12 text-center">
                 <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                <h3 className="mt-4 font-semibold text-foreground">No articles found</h3>
+                <h3 className="mt-4 font-semibold text-foreground">{p.noArticlesFound}</h3>
                 <p className="mt-2 text-muted-foreground">
                   {searchQuery || statusFilter !== "all" || categoryFilter !== "all"
-                    ? "Try adjusting your filters"
-                    : "Create your first article to get started"
+                    ? p.tryAdjustFilters
+                    : p.createFirstArticle
                   }
                 </p>
               </div>
@@ -801,25 +807,25 @@ export default function AdminInsightsPage() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingArticle ? "Edit Article" : "Create New Article"}
+              {editingArticle ? p.editArticle : p.createNewArticle}
             </DialogTitle>
             <DialogDescription>
-              {editingArticle ? "Update article content and settings" : "Create a new insight article"}
+              {editingArticle ? p.editArticleDesc : p.createArticleDesc}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <Label>Title</Label>
+                <Label>{c.title}</Label>
                 <Input 
                   value={editForm.title}
                   onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
                   className="mt-2"
-                  placeholder="Article title"
+                  placeholder={p.articleTitle}
                 />
               </div>
               <div>
-                <Label>URL Slug</Label>
+                <Label>{p.urlSlug}</Label>
                 <Input 
                   value={editForm.slug}
                   onChange={(e) => {
@@ -827,17 +833,17 @@ export default function AdminInsightsPage() {
                     setEditForm({ ...editForm, slug: e.target.value })
                   }}
                   className="mt-2"
-                  placeholder="article-url-slug"
+                  placeholder={p.slugPlaceholder}
                 />
               </div>
               <div>
-                <Label>Category</Label>
+                <Label>{c.category}</Label>
                 <Select 
                   value={editForm.category}
                   onValueChange={(value) => setEditForm({ ...editForm, category: value })}
                 >
                   <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder={p.selectCategory} />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map(cat => (
@@ -849,7 +855,7 @@ export default function AdminInsightsPage() {
             </div>
 
             <div>
-              <Label>Excerpt</Label>
+              <Label>{c.description}</Label>
               <Textarea 
                 value={editForm.excerpt}
                   onChange={(e) => {
@@ -858,23 +864,23 @@ export default function AdminInsightsPage() {
                   }}
                 className="mt-2"
                 rows={2}
-                placeholder="Brief summary of the article"
+                placeholder={p.briefSummary}
               />
             </div>
 
             <div>
-              <Label>Content</Label>
+              <Label>{c.content}</Label>
               <Textarea 
                 value={editForm.content}
                 onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
                 className="mt-2"
                 rows={10}
-                placeholder="Full article content (supports Markdown)"
+                placeholder={p.fullContent}
               />
             </div>
 
             <div>
-              <Label>Featured Image</Label>
+              <Label>{p.featuredImage}</Label>
               <div className="mt-2">
                 <div
                   className="group relative flex items-center gap-4 rounded border border-dashed border-border p-3 hover:border-primary transition-colors"
@@ -902,15 +908,15 @@ export default function AdminInsightsPage() {
                   ) : (
                     <div className="flex items-center gap-3">
                       <Image className="h-8 w-8 text-muted-foreground" />
-                      <div className="text-sm text-muted-foreground">Drop an image here, or</div>
+                      <div className="text-sm text-muted-foreground">{c.dropImageHere}</div>
                     </div>
                   )}
 
                   <div className="ml-auto flex items-center gap-2">
-                    <Button size="sm" onClick={() => fileInputRef.current?.click()}>Choose file</Button>
+                    <Button size="sm" onClick={() => fileInputRef.current?.click()}>{c.chooseFile}</Button>
                     {editForm.featuredImage && (
                       <Button size="sm" variant="outline" onClick={() => removeFeaturedImage()}>
-                        Remove
+                        {c.remove}
                       </Button>
                     )}
                   </div>
@@ -919,35 +925,35 @@ export default function AdminInsightsPage() {
                   <div className="mt-2 text-sm text-destructive">{featuredImageError}</div>
                 )}
                 {editForm.featuredImage && (
-                  <div className="mt-2 text-xs text-muted-foreground">{editForm.featuredImageName ?? "Uploaded image"}</div>
+                  <div className="mt-2 text-xs text-muted-foreground">{editForm.featuredImageName ?? c.uploadedImage}</div>
                 )}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Tags (comma separated)</Label>
+                <Label>{p.tagsCommaSeparated}</Label>
                 <Input 
                   value={editForm.tags}
                   onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
                   className="mt-2"
-                  placeholder="tag1, tag2, tag3"
+                  placeholder={p.tagsPlaceholder}
                 />
               </div>
               <div>
-                <Label>Author</Label>
+                <Label>{c.author}</Label>
                 <Input 
                   value={editForm.author}
                   onChange={(e) => setEditForm({ ...editForm, author: e.target.value })}
                   className="mt-2"
-                  placeholder="Author name"
+                  placeholder={p.authorName}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Status</Label>
+                <Label>{c.status}</Label>
                 <Select 
                   value={editForm.status}
                   onValueChange={(value: "draft" | "published" | "archived") => 
@@ -958,8 +964,8 @@ export default function AdminInsightsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
+                    <SelectItem value="published">{c.published}</SelectItem>
+                    <SelectItem value="archived">{c.archived}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -969,18 +975,18 @@ export default function AdminInsightsPage() {
                     checked={editForm.featured}
                     onCheckedChange={(checked) => setEditForm({ ...editForm, featured: checked })}
                   />
-                  <Label>Featured Article</Label>
+                  <Label>{c.featuredArticle}</Label>
                 </div>
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              Cancel
+              {c.cancel}
             </Button>
             <Button onClick={saveArticle} disabled={isSubmittingArticle}>
               <Save className="mr-2 h-4 w-4" />
-              {isSubmittingArticle ? (editingArticle ? "Saving..." : "Creating...") : (editingArticle ? "Save Changes" : "Create Article")}
+              {isSubmittingArticle ? (editingArticle ? c.saving : c.creating) : (editingArticle ? c.saveChanges : c.createArticle)}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -990,17 +996,17 @@ export default function AdminInsightsPage() {
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Article?</DialogTitle>
+            <DialogTitle>{c.deleteArticle}</DialogTitle>
             <DialogDescription>
-              This action cannot be undone. This will permanently delete the article.
+              {p.deleteArticleDesc}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
-              Cancel
+              {c.cancel}
             </Button>
             <Button variant="destructive" onClick={deleteArticle}>
-              Delete
+              {c.delete}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1010,14 +1016,14 @@ export default function AdminInsightsPage() {
       <Dialog open={showCategoriesDialog} onOpenChange={setShowCategoriesDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Manage Article Categories</DialogTitle>
-            <DialogDescription>Add, edit, or remove categories used for insights.</DialogDescription>
+            <DialogTitle>{c.manageArticleCategories}</DialogTitle>
+            <DialogDescription>{p.manageCategoriesDesc}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="flex gap-2">
               <Input
-                placeholder="New category name"
+                placeholder={p.newCategory}
                 value={categoryForm.name}
                 onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
               />
@@ -1033,7 +1039,7 @@ export default function AdminInsightsPage() {
                   setCategoryForm({ name: "", index: -1 })
                 }}
               >
-                {categoryForm.index >= 0 ? "Save" : "Add"}
+                {categoryForm.index >= 0 ? c.save : c.add}
               </Button>
             </div>
 
@@ -1041,12 +1047,12 @@ export default function AdminInsightsPage() {
               {categoriesLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gray-300 animate-spin" />
-                  <div className="ml-3 text-sm text-muted-foreground">Loading categories...</div>
+                  <div className="ml-3 text-sm text-muted-foreground">{c.loadingCategories}</div>
                 </div>
               ) : categoriesError ? (
                 <div className="py-6 text-sm text-destructive">{categoriesError}</div>
               ) : categories.length === 0 ? (
-                <div className="py-6 text-sm text-muted-foreground">No categories found.</div>
+                <div className="py-6 text-sm text-muted-foreground">{c.noCategoriesFound}</div>
               ) : (
                 categories.map((cat, i) => (
                   <div key={cat} className="flex items-center justify-between gap-2">
@@ -1060,14 +1066,14 @@ export default function AdminInsightsPage() {
                         size="sm"
                         onClick={() => setCategoryForm({ name: cat, index: i })}
                       >
-                        Edit
+                        {c.edit}
                       </Button>
                       <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => removeCategory(i)}
                       >
-                        Delete
+                        {c.delete}
                       </Button>
                     </div>
                   </div>
@@ -1077,7 +1083,7 @@ export default function AdminInsightsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCategoriesDialog(false)}>Close</Button>
+            <Button variant="outline" onClick={() => setShowCategoriesDialog(false)}>{c.close}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1086,13 +1092,13 @@ export default function AdminInsightsPage() {
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Article Preview</DialogTitle>
+            <DialogTitle>{c.articlePreview}</DialogTitle>
           </DialogHeader>
           
           {previewLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gray-300 animate-spin" />
-              <div className="ml-3 text-sm text-muted-foreground">Loading article...</div>
+              <div className="ml-3 text-sm text-muted-foreground">{c.loadingArticle}</div>
             </div>
           ) : previewArticle ? (
             <div className="space-y-6">
@@ -1116,34 +1122,34 @@ export default function AdminInsightsPage() {
               {/* Meta Information */}
               <div className="grid grid-cols-2 gap-4 py-4 border-y">
                 <div>
-                  <p className="text-xs text-muted-foreground">Author</p>
+                  <p className="text-xs text-muted-foreground">{c.author}</p>
                   <p className="text-sm font-medium">{previewArticle.author}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Category</p>
+                  <p className="text-xs text-muted-foreground">{c.category}</p>
                   <p className="text-sm font-medium">{previewArticle.category}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Status</p>
-                  <Badge variant="outline" className="capitalize">{previewArticle.status}</Badge>
+                  <p className="text-xs text-muted-foreground">{c.status}</p>
+                  <Badge variant="outline" className="capitalize">{statusLabels[previewArticle.status]}</Badge>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Views</p>
+                  <p className="text-xs text-muted-foreground">{p.totalViews}</p>
                   <p className="text-sm font-medium">{previewArticle.views.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Published</p>
-                  <p className="text-sm font-medium">{previewArticle.publishedAt || "Not published"}</p>
+                  <p className="text-xs text-muted-foreground">{c.published}</p>
+                  <p className="text-sm font-medium">{previewArticle.publishedAt || c.notPublished}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Tags</p>
+                  <p className="text-xs text-muted-foreground">{c.tags}</p>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {previewArticle.tags.length > 0 ? (
                       previewArticle.tags.map(tag => (
                         <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
                       ))
                     ) : (
-                      <span className="text-sm text-muted-foreground">No tags</span>
+                      <span className="text-sm text-muted-foreground">{c.noTags}</span>
                     )}
                   </div>
                 </div>
@@ -1151,7 +1157,7 @@ export default function AdminInsightsPage() {
 
               {/* Content */}
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Content</h3>
+                <h3 className="text-lg font-semibold">{c.content}</h3>
                 <div className="bg-muted p-4 rounded-lg text-sm leading-relaxed whitespace-pre-wrap">
                   {previewArticle.content}
                 </div>
@@ -1160,21 +1166,21 @@ export default function AdminInsightsPage() {
               {/* Featured Badge */}
               {previewArticle.featured && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <p className="text-sm text-amber-800 font-medium">⭐ This is a featured article</p>
+                  <p className="text-sm text-amber-800 font-medium">{c.featuredArticleNote}</p>
                 </div>
               )}
             </div>
           ) : null}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>Close</Button>
+            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>{c.close}</Button>
             {previewArticle && (
               <Button onClick={() => {
                 openEditArticle(previewArticle)
                 setShowPreviewDialog(false)
               }}>
                 <Edit className="mr-2 h-4 w-4" />
-                Edit
+                {c.edit}
               </Button>
             )}
           </DialogFooter>
