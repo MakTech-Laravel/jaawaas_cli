@@ -32,9 +32,10 @@ import {
   Building2,
   ChevronDown,
   PanelRight,
-  CornerDownLeft,
-  Loader2
+  Loader2,
 } from "lucide-react"
+import { SupportComposerAttachments, SupportMessageAttachments, SUPPORT_ATTACHMENT_ACCEPT } from "@/components/support/support-message-attachments"
+import { SupportErrorDialog } from "@/components/support/support-error-dialog"
 import { useToast } from "@/hooks/use-toast"
 import {
   getAdminCustomerSupportTickets,
@@ -228,6 +229,16 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
   const [isReplying, setIsReplying] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [errorDialog, setErrorDialog] = useState<{ title: string; message: string } | null>(null)
+
+  const showError = (title: string, message?: string) => {
+    setErrorDialog({
+      title,
+      message: message?.trim() || "Something went wrong. Please try again.",
+    })
+  }
 
   const fetchConversations = async () => {
     const res = await getAdminCustomerSupportTickets(1, 100)
@@ -323,19 +334,34 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
   }
 
   const sendReply = async () => {
-    if (!active || !reply.trim()) return
+    if (!active || (!reply.trim() && selectedFiles.length === 0)) return
     setIsReplying(true)
-    const res = await replyAdminCustomerSupportTicket(active.id, { message: reply.trim() })
+    const res = await replyAdminCustomerSupportTicket(active.id, {
+      message: reply.trim() || " ",
+      attachments: selectedFiles.length > 0 ? selectedFiles : undefined,
+    })
     setIsReplying(false)
     if (res.success && res.data) {
       setActive(res.data)
       setReply("")
+      setSelectedFiles([])
+      if (fileInputRef.current) fileInputRef.current.value = ""
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
       }, 100)
     } else {
-      toast({ title: s.sendReplyFailed, variant: "destructive" })
+      showError(s.sendReplyFailed, res.message)
     }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setSelectedFiles((prev) => [...prev, ...Array.from(e.target.files!)])
+    }
+  }
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
   const updateStatus = async (id: number, status: CustomerSupportTicketStatus) => {
@@ -617,6 +643,10 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
                             )}
                           >
                             <div className="whitespace-pre-wrap">{m.message}</div>
+                            <SupportMessageAttachments
+                              attachments={m.attachments}
+                              linkClassName={isAgent ? "text-primary-foreground/90" : "text-secondary"}
+                            />
                           </div>
                           <div
                             className={cn(
@@ -667,6 +697,7 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
                         </button>
                       ))}
                     </div>
+                    <SupportComposerAttachments files={selectedFiles} onRemove={removeFile} />
                     <Textarea
                       placeholder={s.replyTo.replace("{name}", active.user?.fullName || s.customer)}
                       value={reply}
@@ -681,17 +712,35 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
                       rows={2}
                     />
                     <div className="flex items-center justify-between gap-2 px-2 pb-2">
-                      <div className="w-8"></div>
-                      <div className="flex items-center gap-2">
-                        <span className="hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex">
-                          <CornerDownLeft className="h-3 w-3" />
-                          {s.sendShortcut}
-                        </span>
-                        <Button onClick={sendReply} disabled={!reply.trim() || isReplying} size="sm" className="gap-1.5">
-                          {isReplying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                          {s.sendReply}
+                      <div className="flex items-center gap-1">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          multiple
+                          accept={SUPPORT_ATTACHMENT_ACCEPT}
+                          className="hidden"
+                          onChange={handleFileChange}
+                        />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          onClick={() => fileInputRef.current?.click()}
+                          aria-label={s.attachFile || "Attach file"}
+                        >
+                          <Paperclip className="h-4 w-4" />
                         </Button>
                       </div>
+                      <Button
+                        onClick={sendReply}
+                        disabled={(!reply.trim() && selectedFiles.length === 0) || isReplying}
+                        size="sm"
+                        className="gap-1.5"
+                      >
+                        {isReplying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        {s.sendReply}
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -766,6 +815,14 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
           </div>
         )}
       </div>
+
+      <SupportErrorDialog
+        open={!!errorDialog}
+        title={errorDialog?.title ?? ""}
+        message={errorDialog?.message ?? ""}
+        onClose={() => setErrorDialog(null)}
+        closeLabel={common.ok}
+      />
     </div>
   )
 }

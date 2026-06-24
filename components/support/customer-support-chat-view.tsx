@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -23,13 +23,15 @@ import {
   ArrowLeft,
   MessageSquare,
   CheckCircle2,
-  CornerDownLeft,
   Headset,
   ShieldCheck,
   Clock,
   Sparkles,
-  Loader2
+  Loader2,
+  Paperclip,
 } from "lucide-react"
+import { SupportComposerAttachments, SupportMessageAttachments, SUPPORT_ATTACHMENT_ACCEPT } from "@/components/support/support-message-attachments"
+import { SupportErrorDialog } from "@/components/support/support-error-dialog"
 
 const TOPICS = [
   "Orders & delivery",
@@ -171,12 +173,24 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
 
   const [reply, setReply] = useState("")
   const [isReplying, setIsReplying] = useState(false)
+  const [replyFiles, setReplyFiles] = useState<File[]>([])
+  const replyFileInputRef = useRef<HTMLInputElement>(null)
 
   // New conversation form
   const [topic, setTopic] = useState(TOPICS[0])
   const [subject, setSubject] = useState("")
   const [body, setBody] = useState("")
+  const [createFiles, setCreateFiles] = useState<File[]>([])
+  const createFileInputRef = useRef<HTMLInputElement>(null)
   const [isCreating, setIsCreating] = useState(false)
+  const [errorDialog, setErrorDialog] = useState<{ title: string; message: string } | null>(null)
+
+  const showError = (title: string, message?: string) => {
+    setErrorDialog({
+      title,
+      message: message?.trim() || "Something went wrong. Please try again.",
+    })
+  }
 
   const fullName = user ? `${user.firstName} ${user.lastName}` : "You"
 
@@ -225,13 +239,14 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
   }
 
   const submitNew = async () => {
-    if (!body.trim()) return
+    if (!body.trim() && createFiles.length === 0) return
     setIsCreating(true)
     const response = await createCustomerSupportTicket({
       subject: subject.trim() || topic,
       departmentType: getDepartmentForTopic(topic),
-      message: body.trim(),
-      priority: "medium", // default priority, backend will handle
+      message: body.trim() || " ",
+      priority: "medium",
+      attachments: createFiles.length > 0 ? createFiles : undefined,
     })
     setIsCreating(false)
 
@@ -239,32 +254,33 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
       toast({ title: "Ticket created successfully" })
       setSubject("")
       setBody("")
+      setCreateFiles([])
+      if (createFileInputRef.current) createFileInputRef.current.value = ""
       setTopic(TOPICS[0])
       setComposing(false)
       loadTickets()
       openConversation(response.data.id)
     } else {
-      toast({
-        title: "Failed to create ticket",
-        description: response.message || "Please try again.",
-        variant: "destructive",
-      })
+      showError("Failed to create ticket", response.message)
     }
   }
 
   const sendReply = async () => {
-    if (!activeId || !reply.trim()) return
+    if (!activeId || (!reply.trim() && replyFiles.length === 0)) return
     setIsReplying(true)
     const response = await replyCustomerSupportTicket(activeId, {
-      message: reply.trim(),
+      message: reply.trim() || " ",
+      attachments: replyFiles.length > 0 ? replyFiles : undefined,
     })
     setIsReplying(false)
 
     if (response.success && response.data) {
       setActiveDetail(response.data)
       setReply("")
+      setReplyFiles([])
+      if (replyFileInputRef.current) replyFileInputRef.current.value = ""
     } else {
-      toast({ title: "Failed to send reply", variant: "destructive" })
+      showError("Failed to send reply", response.message)
     }
   }
 
@@ -387,12 +403,15 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
               setSubject={setSubject}
               body={body}
               setBody={setBody}
+              files={createFiles}
+              onFilesChange={setCreateFiles}
+              fileInputRef={createFileInputRef}
               onSubmit={submitNew}
               onBack={() => {
                 setMobileThreadOpen(false)
                 if (tickets.length) setComposing(false)
               }}
-              canSubmit={!!body.trim()}
+              canSubmit={!!body.trim() || createFiles.length > 0}
               isCreating={isCreating}
             />
           ) : !activeId ? (
@@ -472,6 +491,10 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
                             )}
                           >
                             <div className="whitespace-pre-wrap">{m.message}</div>
+                            <SupportMessageAttachments
+                              attachments={m.attachments}
+                              linkClassName={isCustomer ? "text-primary-foreground/90" : "text-secondary"}
+                            />
                           </div>
                           <div
                             className={cn(
@@ -498,6 +521,10 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
               {/* Composer */}
               <div className="border-t border-border p-3">
                 <div className="rounded-xl border border-border bg-background focus-within:ring-2 focus-within:ring-ring">
+                  <SupportComposerAttachments
+                    files={replyFiles}
+                    onRemove={(index) => setReplyFiles((prev) => prev.filter((_, i) => i !== index))}
+                  />
                   <Textarea
                     placeholder={t.mfg.supportTicketDetails.typeReply}
                     value={reply}
@@ -512,11 +539,36 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
                     rows={2}
                   />
                   <div className="flex items-center justify-between gap-2 px-2 pb-2">
-                    <span className="hidden items-center gap-1 px-1 text-[11px] text-muted-foreground sm:flex">
-                      <CornerDownLeft className="h-3 w-3" />
-                      ⌘ + Enter to send
-                    </span>
-                    <Button onClick={sendReply} disabled={!reply.trim() || isReplying} size="sm" className="ml-auto gap-1.5">
+                    <div className="flex items-center gap-1">
+                      <input
+                        ref={replyFileInputRef}
+                        type="file"
+                        multiple
+                        accept={SUPPORT_ATTACHMENT_ACCEPT}
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            setReplyFiles((prev) => [...prev, ...Array.from(e.target.files!)])
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => replyFileInputRef.current?.click()}
+                        aria-label="Attach file"
+                      >
+                        <Paperclip className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Button
+                      onClick={sendReply}
+                      disabled={(!reply.trim() && replyFiles.length === 0) || isReplying}
+                      size="sm"
+                      className="gap-1.5"
+                    >
                       {isReplying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                       {t.mfg.messages.send}
                     </Button>
@@ -527,6 +579,13 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
           ) : null}
         </div>
       </div>
+
+      <SupportErrorDialog
+        open={!!errorDialog}
+        title={errorDialog?.title ?? ""}
+        message={errorDialog?.message ?? ""}
+        onClose={() => setErrorDialog(null)}
+      />
     </div>
   )
 }
@@ -538,6 +597,9 @@ function NewConversationForm({
   setSubject,
   body,
   setBody,
+  files,
+  onFilesChange,
+  fileInputRef,
   onSubmit,
   onBack,
   canSubmit,
@@ -549,6 +611,9 @@ function NewConversationForm({
   setSubject: (v: string) => void
   body: string
   setBody: (v: string) => void
+  files: File[]
+  onFilesChange: (files: File[]) => void
+  fileInputRef: React.RefObject<HTMLInputElement | null>
   onSubmit: () => void
   onBack: () => void
   canSubmit: boolean
@@ -616,6 +681,36 @@ function NewConversationForm({
               placeholder="Describe your question or issue in detail…"
               className="min-h-[160px] resize-none"
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Attachments</label>
+            <SupportComposerAttachments
+              files={files}
+              onRemove={(index) => onFilesChange(files.filter((_, i) => i !== index))}
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={SUPPORT_ATTACHMENT_ACCEPT}
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) {
+                  onFilesChange([...files, ...Array.from(e.target.files)])
+                }
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip className="h-4 w-4" />
+              Add files
+            </Button>
           </div>
 
           <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground">

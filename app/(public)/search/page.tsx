@@ -96,11 +96,11 @@ function SearchContent() {
   const totalResults = products.length + suppliers.length + industries.length
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
       <Header />
       <main className="flex-1">
         {/* Search Header */}
-        <section className="bg-primary py-12 lg:py-16">
+        <section className="bg-primary py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <h1 className="text-center font-serif text-3xl font-medium text-primary-foreground sm:text-4xl">
               Search SourceNest
@@ -131,7 +131,7 @@ function SearchContent() {
         </section>
 
         {/* Results */}
-        <section className="py-8 lg:py-12">
+        <section className="py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {loading ? (
               <div className="py-20 text-center text-muted-foreground">
@@ -172,7 +172,7 @@ function SearchContent() {
                             </Link>
                           </Button>
                         </div>
-                        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 lg:gap-6">
                           {products.slice(0, 3).map((product) => (
                             <Link
                               key={product.id}
@@ -321,7 +321,7 @@ function SearchContent() {
 
                   {/* Products Tab */}
                   <TabsContent value="products">
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 lg:gap-6">
                       {products.map((product) => (
                         <Link
                           key={product.id}
@@ -435,7 +435,7 @@ function SearchContent() {
 
                   {/* Industries Tab */}
                   <TabsContent value="industries">
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 lg:gap-6">
                       {industries.map((industry) => (
                         <Link
                           key={industry.id}

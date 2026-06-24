@@ -9,11 +9,11 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
       <Header />
       <main className="flex-1">
-        <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-          <h1 className="font-serif text-4xl font-medium text-foreground">Privacy Policy</h1>
+        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
+          <h1 className="font-serif text-3xl font-medium text-foreground min-[400px]:text-4xl sm:text-5xl">Privacy Policy</h1>
           <p className="mt-4 text-muted-foreground">Last updated: March 2026</p>
           
           <div className="prose prose-neutral mt-8 max-w-none">

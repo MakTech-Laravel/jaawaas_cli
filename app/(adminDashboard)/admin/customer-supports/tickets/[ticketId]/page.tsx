@@ -28,6 +28,8 @@ import {
   type CustomerSupportTicketStatus,
 } from "@/lib/api/admin-customer-support-tickets"
 import { ArrowLeft, Loader2, Paperclip, Send, Save } from "lucide-react"
+import { SupportErrorDialog } from "@/components/support/support-error-dialog"
+import { SUPPORT_ATTACHMENT_ACCEPT } from "@/components/support/support-message-attachments"
 
 function statusClass(status: CustomerSupportTicketStatus): string {
   if (status === "open") return "bg-amber-100 text-amber-700"
@@ -76,6 +78,14 @@ export default function AdminCustomerSupportTicketDetailsPage() {
 
   const [replyMessage, setReplyMessage] = useState("")
   const [replyAttachments, setReplyAttachments] = useState<File[]>([])
+  const [errorDialog, setErrorDialog] = useState<{ title: string; message: string } | null>(null)
+
+  const showError = (title: string, message?: string) => {
+    setErrorDialog({
+      title,
+      message: message?.trim() || c.pleaseTryAgain,
+    })
+  }
 
   const getStatusLabel = (value: CustomerSupportTicketStatus): string => {
     if (value === "open") return ts.pending
@@ -200,11 +210,7 @@ export default function AdminCustomerSupportTicketDetailsPage() {
     setIsReplying(false)
 
     if (!response.success || !response.data) {
-      toast({
-        title: c.failedToSendReplyGeneric,
-        description: response.message || c.pleaseTryAgain,
-        variant: "destructive",
-      })
+      showError(c.failedToSendReplyGeneric, response.message)
       return
     }
 
@@ -412,6 +418,7 @@ export default function AdminCustomerSupportTicketDetailsPage() {
                 id="reply-attachments"
                 type="file"
                 multiple
+                accept={SUPPORT_ATTACHMENT_ACCEPT}
                 onChange={(event) => setReplyAttachments(Array.from(event.target.files || []))}
               />
               {replyAttachments.length > 0 ? (
@@ -436,6 +443,14 @@ export default function AdminCustomerSupportTicketDetailsPage() {
           </div>
         </div>
       </div>
+
+      <SupportErrorDialog
+        open={!!errorDialog}
+        title={errorDialog?.title ?? ""}
+        message={errorDialog?.message ?? ""}
+        onClose={() => setErrorDialog(null)}
+        closeLabel={c.ok}
+      />
     </div>
   )
 }

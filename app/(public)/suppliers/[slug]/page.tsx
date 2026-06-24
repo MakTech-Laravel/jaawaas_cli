@@ -166,7 +166,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ slug:
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
       <Header />
       <main className="flex-1">
         {/* Breadcrumb */}
@@ -333,7 +333,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ slug:
                     </div>
 
                     {/* Business Type & Capabilities */}
-                    <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:gap-6">
                       {/* Business Type */}
                       {supplier.businessType && supplier.businessType.length > 0 && (
                         <div className="rounded-xl border border-border bg-card p-6">
@@ -370,7 +370,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ slug:
                     </div>
 
                     {/* Languages & Payment Terms */}
-                    <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:gap-6">
                       {/* Languages */}
                       {supplier.languages && supplier.languages.length > 0 && (
                         <div className="rounded-xl border border-border bg-card p-6">
@@ -513,7 +513,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ slug:
 
               {/* Products Tab */}
               <TabsContent value="products">
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 lg:gap-6">
                   {apiProducts.map((product) => (
                     <Link
                       key={product.id}

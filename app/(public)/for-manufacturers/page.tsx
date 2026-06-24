@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function ForManufacturersPage() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-x-hidden">
       <Header />
       <ManufacturerPageContent />
       <Footer />

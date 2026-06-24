@@ -107,6 +107,7 @@ export interface SupplierProductsResponse {
 
 export interface GetSuppliersParams {
   page?: number
+  per_page?: number
   search?: string
   industry?: string
   country?: string
@@ -117,9 +118,16 @@ export interface GetSuppliersParams {
   sort?: string
 }
 
+export const SUPPLIERS_LIST_PER_PAGE = 12
+
 export async function getPublicSuppliers(params?: GetSuppliersParams): Promise<SuppliersResponse | null> {
   try {
-    const response = await publicApiClient.get<SuppliersResponse>("/suppliers", { params })
+    const response = await publicApiClient.get<SuppliersResponse>("/suppliers", {
+      params: {
+        per_page: SUPPLIERS_LIST_PER_PAGE,
+        ...params,
+      },
+    })
     return response.data
   } catch (error) {
     console.error("Failed to fetch public suppliers:", getApiErrorMessage(error))

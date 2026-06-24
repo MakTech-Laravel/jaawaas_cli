@@ -38,17 +38,17 @@ export default function AboutPage() {
   ]
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-x-hidden">
       <Header />
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-primary py-20 lg:py-28">
+        <section className="bg-primary py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center">
-              <h1 className="font-serif text-4xl font-medium tracking-tight text-primary-foreground sm:text-5xl">
+              <h1 className="font-serif text-3xl font-medium tracking-tight text-primary-foreground min-[400px]:text-4xl sm:text-5xl lg:text-6xl">
                 {t.about.hero.title}
               </h1>
-              <p className="mx-auto mt-6 max-w-2xl text-lg text-primary-foreground/80">
+              <p className="mx-auto mt-4 max-w-2xl text-sm text-primary-foreground/80 sm:mt-6 sm:text-base lg:text-lg">
                 {t.about.hero.subtitle}
               </p>
             </div>
@@ -56,10 +56,10 @@ export default function AboutPage() {
         </section>
 
         {/* Our Story */}
-        <section className="py-20 lg:py-28">
+        <section className="py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl">
-              <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
+              <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl lg:text-4xl">
                 {t.about.story.title}
               </h2>
               <div className="mt-8 space-y-6 text-muted-foreground leading-relaxed">
@@ -73,19 +73,19 @@ export default function AboutPage() {
         </section>
 
         {/* Mission & Vision */}
-        <section className="py-20 lg:py-28">
+        <section className="py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
-              <div className="rounded-2xl bg-primary p-8 text-primary-foreground lg:p-12">
-                <Target className="h-12 w-12" />
-                <h3 className="mt-6 font-serif text-2xl font-medium">{t.about.missionVision.missionTitle}</h3>
+            <div className="grid gap-5 sm:gap-8 lg:grid-cols-2 lg:gap-12">
+              <div className="rounded-xl bg-primary p-4 text-primary-foreground sm:rounded-2xl sm:p-6 lg:p-8">
+                <Target className="h-10 w-10 sm:h-12 sm:w-12" />
+                <h3 className="mt-4 font-serif text-xl font-medium sm:mt-6 sm:text-2xl">{t.about.missionVision.missionTitle}</h3>
                 <p className="mt-4 text-primary-foreground/80 leading-relaxed">
                   {t.about.missionVision.missionDesc}
                 </p>
               </div>
-              <div className="rounded-2xl border border-border bg-card p-8 lg:p-12">
-                <Heart className="h-12 w-12 text-secondary" />
-                <h3 className="mt-6 font-serif text-2xl font-medium text-foreground">{t.about.missionVision.visionTitle}</h3>
+              <div className="rounded-xl border border-border bg-card p-4 sm:rounded-2xl sm:p-6 lg:p-8">
+                <Heart className="h-10 w-10 text-secondary sm:h-12 sm:w-12" />
+                <h3 className="mt-4 font-serif text-xl font-medium text-foreground sm:mt-6 sm:text-2xl">{t.about.missionVision.visionTitle}</h3>
                 <p className="mt-4 text-muted-foreground leading-relaxed">
                   {t.about.missionVision.visionDesc}
                 </p>
@@ -95,25 +95,25 @@ export default function AboutPage() {
         </section>
 
         {/* Values */}
-        <section className="bg-muted/50 py-20 lg:py-28">
+        <section className="bg-muted/50 py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center">
-              <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
+              <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl lg:text-4xl">
                 {t.about.values.title}
               </h2>
-              <p className="mt-4 text-lg text-muted-foreground">
+              <p className="mt-3 text-sm text-muted-foreground sm:mt-4 sm:text-base">
                 {t.about.values.subtitle}
               </p>
             </div>
 
-            <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-12 sm:gap-5 lg:grid-cols-4 lg:gap-6">
               {values.map((value) => (
-                <div key={value.title} className="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 transition-shadow hover:shadow-lg">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10">
-                    <value.icon className="h-6 w-6 text-secondary" />
+                <div key={value.title} className="group relative overflow-hidden rounded-xl border border-border bg-card p-3 transition-shadow hover:shadow-lg sm:rounded-2xl sm:p-6">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary/10 sm:h-12 sm:w-12">
+                    <value.icon className="h-5 w-5 text-secondary sm:h-6 sm:w-6" />
                   </div>
-                  <h3 className="mt-4 font-semibold text-foreground">{value.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{value.description}</p>
+                  <h3 className="mt-3 text-sm font-semibold text-foreground sm:mt-4 sm:text-base">{value.title}</h3>
+                  <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed sm:mt-2 sm:text-sm">{value.description}</p>
                 </div>
               ))}
             </div>
@@ -121,10 +121,10 @@ export default function AboutPage() {
         </section>
 
         {/* Why We're Different */}
-        <section className="py-20 lg:py-28">
+        <section className="py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center">
-              <h2 className="font-serif text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
+              <h2 className="font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl lg:text-4xl">
                 {t.about.difference.title}
               </h2>
               <div className="mt-8 space-y-6 text-left text-muted-foreground leading-relaxed">
@@ -146,7 +146,7 @@ export default function AboutPage() {
         </section>
 
         {/* CTA */}
-        <section className="bg-primary py-20">
+        <section className="py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center">
               <h2 className="font-serif text-3xl font-medium tracking-tight text-primary-foreground sm:text-4xl">
