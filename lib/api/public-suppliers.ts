@@ -335,9 +335,23 @@ export interface ApiSupplierMapResponse {
   }
 }
 
-export async function getSuppliersMap(): Promise<ApiSupplierMapResponse | null> {
+export interface SuppliersMapParams {
+  search?: string
+  group?: string
+  page?: number
+  per_page?: number
+}
+
+export async function getSuppliersMap(params?: SuppliersMapParams): Promise<ApiSupplierMapResponse | null> {
   try {
-    const response = await publicApiClient.get<ApiSupplierMapResponse>("/suppliers/map")
+    const response = await publicApiClient.get<ApiSupplierMapResponse>("/suppliers/map", {
+      params: {
+        ...(params?.search ? { search: params.search } : {}),
+        ...(params?.group ? { group: params.group } : {}),
+        ...(typeof params?.page === "number" ? { page: params.page } : {}),
+        ...(typeof params?.per_page === "number" ? { per_page: params.per_page } : {}),
+      },
+    })
     return response.data
   } catch (error) {
     console.error("Failed to fetch suppliers map:", getApiErrorMessage(error))

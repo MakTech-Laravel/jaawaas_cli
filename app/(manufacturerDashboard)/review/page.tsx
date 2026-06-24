@@ -235,7 +235,7 @@ function ManufacturerAccountReviewContent() {
                   <div className="rounded-lg border border-red-200/50 bg-red-50/50 p-4 dark:border-red-900/50 dark:bg-red-950/20 text-sm text-red-900 dark:text-red-200">
                     <p className="font-semibold">Need Help?</p>
                     <p className="mt-1 text-xs opacity-90">
-                      If you believe this is in error or you want to request another review, please send a message to support or contact admin@sourcenest.com.
+                      If you believe this is in error or you want to request another review, please send a message to support or contact info@sourcenest.tesh.
                     </p>
                   </div>
                 </CardContent>

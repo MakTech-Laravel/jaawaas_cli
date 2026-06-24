@@ -390,8 +390,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // For buyers, they always have "free" plan (no subscription needed)
-      if (user.role === "buyer") {
+      // Only manufacturers use subscription / promotion APIs
+      if (user.role !== "manufacturer") {
         setSubscription(null)
         setIsLoading(false)
         return
@@ -464,44 +464,53 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       }
 
       if (!hasSubscription) {
-        try {
-          const promoAppRes = await apiClient.get('/manufacturer/promotions/my-application')
-          if (promoAppRes.data?.success && promoAppRes.data?.data) {
-            const promoAppData = promoAppRes.data.data
-            const appStatus = promoAppData.application?.status?.toLowerCase()
-            const planName = promoAppData.promotion?.plan?.name?.toLowerCase() || "growth"
-            
-            let mappedPlanId: PlanId = "growth"
-            if (["starter", "growth", "enterprise", "free"].includes(planName)) {
-              mappedPlanId = planName as PlanId
+        const promoAppRes = await apiClient
+          .get("/manufacturer/promotions/my-application")
+          .catch((error: unknown) => {
+            const status = (error as { response?: { status?: number } })?.response?.status
+            if (status !== 404 && status !== 403) {
+              console.error("Failed to fetch promotion application:", error)
             }
+            return null
+          })
 
-            setSubscription({
-              planId: mappedPlanId,
-              status: appStatus === "approved" ? "active" : "trialing",
-              billingCycle: "monthly",
-              currentPeriodStart: promoAppData.application?.joined_at || new Date().toISOString().split("T")[0],
-              currentPeriodEnd: promoAppData.application?.trial_ends_at || new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-              cancelAtPeriodEnd: false,
-              daysRemaining: 180,
-              priceAmount: "0.00",
-              priceCurrency: "USD",
-              autoRenew: false
-            })
+        if (promoAppRes?.data?.success && promoAppRes.data?.data) {
+          const promoAppData = promoAppRes.data.data
+          const appStatus = promoAppData.application?.status?.toLowerCase()
+          const planName = promoAppData.promotion?.plan?.name?.toLowerCase() || "growth"
 
-            // Construct mock subData so metrics work correctly
-            subData = {
-              status: appStatus === "approved" ? "active" : "trialing",
-              billing_interval: "month",
-              starts_at: promoAppData.application?.joined_at || new Date().toISOString().split("T")[0],
-              ends_at: promoAppData.application?.trial_ends_at || new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-              auto_renew: false,
-              days_remaining: 180,
-              plan: promoAppData.promotion?.plan
-            }
+          let mappedPlanId: PlanId = "growth"
+          if (["starter", "growth", "enterprise", "free"].includes(planName)) {
+            mappedPlanId = planName as PlanId
           }
-        } catch (promoErr) {
-          console.error("Failed to fetch promotion application:", promoErr)
+
+          setSubscription({
+            planId: mappedPlanId,
+            status: appStatus === "approved" ? "active" : "trialing",
+            billingCycle: "monthly",
+            currentPeriodStart: promoAppData.application?.joined_at || new Date().toISOString().split("T")[0],
+            currentPeriodEnd:
+              promoAppData.application?.trial_ends_at ||
+              new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+            cancelAtPeriodEnd: false,
+            daysRemaining: 180,
+            priceAmount: "0.00",
+            priceCurrency: "USD",
+            autoRenew: false,
+          })
+
+          // Construct mock subData so metrics work correctly
+          subData = {
+            status: appStatus === "approved" ? "active" : "trialing",
+            billing_interval: "month",
+            starts_at: promoAppData.application?.joined_at || new Date().toISOString().split("T")[0],
+            ends_at:
+              promoAppData.application?.trial_ends_at ||
+              new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+            auto_renew: false,
+            days_remaining: 180,
+            plan: promoAppData.promotion?.plan,
+          }
         }
       }
 

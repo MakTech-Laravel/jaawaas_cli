@@ -290,6 +290,15 @@ export async function getPublicCategories(params?: { perPage?: number; page?: nu
   }
 }
 
+export async function getPublicCategoriesTotal(): Promise<number> {
+  try {
+    const response = await publicApiClient.get("/categories", { params: { per_page: 1 } })
+    return parseCategoriesMeta(response.data)?.total ?? 0
+  } catch {
+    return 0
+  }
+}
+
 /**
  * Reads Laravel pagination `meta.last_page` from a `/categories` JSON body so we can
  * fetch every page even when the server caps `per_page` below our requested value.
