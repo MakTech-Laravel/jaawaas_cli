@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import {
   useRfqs,
@@ -8,6 +8,7 @@ import {
   type Rfq,
   type RfqStatus,
 } from "@/lib/rfqs-context"
+import { getAdminRfqs, type AdminRfqItem, type AdminRfqMeta } from "@/lib/api/admin-rfqs"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
@@ -34,7 +35,9 @@ import {
 import { cn } from "@/lib/utils"
 import { formatCurrency } from "@/lib/orders-context"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
+import { AdminPagination } from "@/components/admin/admin-pagination"
 import { useTranslation } from "@/lib/i18n"
+import { Loader2 } from "lucide-react"
 
 const statusStyles: Record<RfqStatus, { color: string; icon: typeof Clock }> = {
   pending: { color: "bg-amber-100 text-amber-700", icon: Clock },
@@ -150,10 +153,38 @@ function RfqCard({ rfq, config, getLabel, common }: {
   )
 }
 
+const ADMIN_PER_PAGE = 15
+
+function mapAdminRfqToRfq(item: AdminRfqItem): Rfq {
+  const targetPrice = Number.parseFloat(item.targetPrice) || 0
+
+  return {
+    id: String(item.id),
+    productName: item.productName,
+    quantity: item.quantity,
+    quantityUnit: item.quantityUnit,
+    targetPrice,
+    targetCurrencyCode: item.targetCurrencyCode,
+    destinationPortCity: "",
+    destinationCountry: "",
+    additionalRequirements: "",
+    packagingDetails: "",
+    shippingTerms: "",
+    requiredDeliveryDate: item.requiredDeliveryDate || new Date().toISOString(),
+    buyerEmail: "",
+    buyerName: item.buyerName,
+    buyerCompany: item.buyerName,
+    supplierCompanyName: item.supplierCompanyName,
+    status: item.status as RfqStatus,
+    createdAt: item.createdAt || new Date().toISOString(),
+    updates: [],
+  }
+}
+
 export function RfqList({ config }: { config: RfqListConfig }) {
   const { t } = useTranslation()
   const adminPages = t.admin.pages.rfqs
-  const adminRfqs = t.admin.rfqs
+  const adminRfqsCopy = t.admin.rfqs
   const common = t.admin.common
   const rfqStatus = t.admin.rfqStatus
   const isAdmin = config.role === "admin"
@@ -162,36 +193,91 @@ export function RfqList({ config }: { config: RfqListConfig }) {
 
   const listTitle = config.listTitle ?? adminPages.title
   const listSubtitle = config.listSubtitle ?? adminPages.subtitle
-  const { getRfqsForBuyer, getRfqsForManufacturer, getRfqsForAdmin } = useRfqs()
+  const { getRfqsForBuyer, getRfqsForManufacturer } = useRfqs()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [page, setPage] = useState(1)
+  const [serverRfqs, setServerRfqs] = useState<Rfq[]>([])
+  const [adminMeta, setAdminMeta] = useState<AdminRfqMeta | null>(null)
+  const [adminLoading, setAdminLoading] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch, statusFilter])
+
+  useEffect(() => {
+    if (!isAdmin) return
+
+    let mounted = true
+
+    async function fetchAdminRfqs() {
+      setAdminLoading(true)
+      const res = await getAdminRfqs({
+        page,
+        per_page: ADMIN_PER_PAGE,
+        search: debouncedSearch || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+      })
+
+      if (!mounted) return
+
+      if (res.success) {
+        setServerRfqs(res.data.map(mapAdminRfqToRfq))
+        setAdminMeta(res.meta)
+      } else {
+        setServerRfqs([])
+        setAdminMeta(null)
+      }
+      setAdminLoading(false)
+    }
+
+    void fetchAdminRfqs()
+
+    return () => {
+      mounted = false
+    }
+  }, [isAdmin, page, debouncedSearch, statusFilter])
 
   let myRfqs: Rfq[] = []
-  if (config.role === "buyer" && config.roleId) {
+  if (isAdmin) {
+    myRfqs = serverRfqs
+  } else if (config.role === "buyer" && config.roleId) {
     myRfqs = getRfqsForBuyer(config.roleId)
   } else if (config.role === "manufacturer" && config.roleId) {
     myRfqs = getRfqsForManufacturer(config.roleId)
-  } else if (config.role === "admin") {
-    myRfqs = getRfqsForAdmin()
   }
 
-  const filtered = myRfqs.filter((r) => {
-    if (statusFilter !== "all" && r.status !== statusFilter) return false
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      return (
-        r.productName.toLowerCase().includes(q) ||
-        r.id.toLowerCase().includes(q) ||
-        (r.buyerCompany && r.buyerCompany.toLowerCase().includes(q)) ||
-        (r.supplierCompanyName && r.supplierCompanyName.toLowerCase().includes(q))
-      )
-    }
-    return true
-  })
+  const filtered = isAdmin
+    ? myRfqs
+    : myRfqs.filter((r) => {
+        if (statusFilter !== "all" && r.status !== statusFilter) return false
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase()
+          return (
+            r.productName.toLowerCase().includes(q) ||
+            r.id.toLowerCase().includes(q) ||
+            (r.buyerCompany && r.buyerCompany.toLowerCase().includes(q)) ||
+            (r.supplierCompanyName && r.supplierCompanyName.toLowerCase().includes(q))
+          )
+        }
+        return true
+      })
 
-  const activeCount = myRfqs.filter(
-    (r) => r.status === "pending" || r.status === "in_review" || r.status === "quoted",
-  ).length
+  const activeCount = isAdmin
+    ? filtered.filter(
+        (r) => r.status === "pending" || r.status === "in_review" || r.status === "quoted",
+      ).length
+    : myRfqs.filter(
+        (r) => r.status === "pending" || r.status === "in_review" || r.status === "quoted",
+      ).length
+
+  const totalRfqs = isAdmin ? (adminMeta?.total ?? filtered.length) : myRfqs.length
 
   const statusOptions = isAdmin
     ? (Object.keys(rfqStatus) as RfqStatus[])
@@ -218,7 +304,7 @@ export function RfqList({ config }: { config: RfqListConfig }) {
         <div className="mb-6 grid gap-4 sm:grid-cols-3">
           <AdminStatCard
             title={adminPages.totalRfqs}
-            value={myRfqs.length}
+            value={totalRfqs}
             layout="vertical"
             contentClassName="pt-6 pb-6 px-6"
           />
@@ -245,7 +331,7 @@ export function RfqList({ config }: { config: RfqListConfig }) {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder={isAdmin ? adminRfqs.searchPlaceholder : common.searchRfqPlaceholder}
+            placeholder={isAdmin ? adminRfqsCopy.searchPlaceholder : common.searchRfqPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -253,10 +339,10 @@ export function RfqList({ config }: { config: RfqListConfig }) {
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full sm:w-52">
-            <SelectValue placeholder={isAdmin ? adminRfqs.allStatus : common.allStatuses} />
+            <SelectValue placeholder={isAdmin ? adminRfqsCopy.allStatus : common.allStatuses} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{isAdmin ? adminRfqs.allStatus : common.allStatuses}</SelectItem>
+            <SelectItem value="all">{isAdmin ? adminRfqsCopy.allStatus : common.allStatuses}</SelectItem>
             {statusOptions.map((k) => (
               <SelectItem key={k} value={k}>
                 {getLabel(k)}
@@ -266,11 +352,24 @@ export function RfqList({ config }: { config: RfqListConfig }) {
         </Select>
       </div>
 
-      {filtered.length > 0 ? (
+      {isAdmin && adminLoading ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="mt-3 text-sm text-muted-foreground">{common.loading}</p>
+        </div>
+      ) : filtered.length > 0 ? (
         <div className="space-y-3">
           {filtered.map((rfq) => (
             <RfqCard key={rfq.id} rfq={rfq} config={config} getLabel={getLabel} common={common} />
           ))}
+
+          <AdminPagination
+            page={page}
+            meta={adminMeta}
+            itemCount={filtered.length}
+            onPageChange={setPage}
+            className="pt-2"
+          />
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-16 text-center">
@@ -278,16 +377,16 @@ export function RfqList({ config }: { config: RfqListConfig }) {
             <FileText className="h-6 w-6 text-muted-foreground" />
           </div>
           <h3 className="mt-4 font-medium text-foreground">
-            {myRfqs.length === 0
-              ? (isAdmin ? adminRfqs.noRfqs : common.noRfqsYet)
-              : (isAdmin ? adminRfqs.noRfqs : common.noRfqsMatchFilters)}
+            {totalRfqs === 0
+              ? (isAdmin ? adminRfqsCopy.noRfqs : common.noRfqsYet)
+              : (isAdmin ? adminRfqsCopy.noRfqs : common.noRfqsMatchFilters)}
           </h3>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            {myRfqs.length === 0
+            {totalRfqs === 0
               ? (config.role === "buyer" ? common.submitFirstRfq : common.noRfqsAtThisTime)
               : common.adjustFilters}
           </p>
-          {myRfqs.length === 0 && config.role === "buyer" && (
+          {totalRfqs === 0 && config.role === "buyer" && (
             <Button asChild className="mt-4 gap-2">
               <Link href={`/rfq/new`}>
                 <Plus className="h-4 w-4" />

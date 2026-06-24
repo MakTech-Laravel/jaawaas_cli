@@ -21,8 +21,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import * as Icons from "lucide-react"
 import { getAdminProducts, updateAdminProductApprovalStatus, deleteAdminProduct } from "@/lib/api/admin-products"
-import type { AdminProduct } from "@/lib/api/admin-products"
+import type { AdminProduct, AdminProductMeta } from "@/lib/api/admin-products"
 import { useTranslation } from "@/lib/i18n"
+import { AdminPagination } from "@/components/admin/admin-pagination"
 
 const iconMap: Record<string, React.ReactNode> = {
   Factory: <Icons.Factory className="h-7 w-7" />,
@@ -56,7 +57,7 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<AdminProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [lastPage, setLastPage] = useState(1)
+  const [meta, setMeta] = useState<AdminProductMeta | null>(null)
   const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set())
 
   // Get query parameters
@@ -97,7 +98,7 @@ export default function AdminProductsPage() {
       const response = await getAdminProducts(page, params)
       if (response.success) {
         setProducts(response.data)
-        setLastPage(response.meta?.lastPage ?? 1)
+        setMeta(response.meta ?? null)
       } else {
         setError(response.message || p.fetchFailed)
         setProducts([])
@@ -344,34 +345,13 @@ export default function AdminProductsPage() {
             })}
           </div>
 
-          {/* Pagination */}
-          {lastPage > 1 && (
-            <div className="flex items-center justify-center gap-2 py-4">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 1}
-                onClick={() =>
-                  updateQueryParams({ page: Math.max(1, page - 1) })
-                }
-              >
-                {c.previous}
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                {c.pageOf.replace("{page}", String(page)).replace("{lastPage}", String(lastPage))}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === lastPage}
-                onClick={() =>
-                  updateQueryParams({ page: Math.min(lastPage, page + 1) })
-                }
-              >
-                {c.next}
-              </Button>
-            </div>
-          )}
+          <AdminPagination
+            page={page}
+            meta={meta}
+            itemCount={products.length}
+            onPageChange={(nextPage) => updateQueryParams({ page: nextPage })}
+            className="py-4"
+          />
         </>
       )}
     </div>

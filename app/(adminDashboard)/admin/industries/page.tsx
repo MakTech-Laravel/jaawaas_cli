@@ -40,8 +40,10 @@ import {
   updateAdminSubcategory,
   type BackendCategory,
   type BackendSubcategory,
+  type CategoriesPaginationMeta,
 } from "@/lib/api/categories"
 import { useTranslation } from "@/lib/i18n"
+import { AdminPagination } from "@/components/admin/admin-pagination"
 import { 
   Search,
   Plus,
@@ -96,6 +98,8 @@ interface Industry {
   categories: Category[]
 }
 
+const PER_PAGE = 10
+
 export default function AdminIndustriesPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.industries
@@ -103,8 +107,12 @@ export default function AdminIndustriesPage() {
   const [industries, setIndustries] = useState<Industry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [meta, setMeta] = useState<CategoriesPaginationMeta | null>(null)
+  const [totalSubcategories, setTotalSubcategories] = useState(0)
   
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
   const [expandedIndustries, setExpandedIndustries] = useState<Set<string>>(new Set())
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   
@@ -159,6 +167,15 @@ export default function AdminIndustriesPage() {
   })
   const [newSubcategory, setNewSubcategory] = useState({ name: "" })
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch])
+
   const slugify = (value: string) => value.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
 
   const mapServerData = (categories: BackendCategory[], subcategories: BackendSubcategory[]): Industry[] => {
@@ -210,17 +227,18 @@ export default function AdminIndustriesPage() {
     })
   }
 
-  const loadFromBackend = async () => {
+  const loadFromBackend = async (targetPage = page) => {
     setIsLoading(true)
     setErrorMessage(null)
 
     const [categoriesResult, subcategoriesResult] = await Promise.all([
-      getAdminCategories({ perPage: 50 }),
+      getAdminCategories({ perPage: PER_PAGE, page: targetPage, search: debouncedSearch || undefined }),
       getAdminSubcategories(),
     ])
 
     if (!categoriesResult.success) {
       setIndustries([])
+      setMeta(null)
       setErrorMessage(categoriesResult.message || c.failedToLoadCategories)
       setIsLoading(false)
       return
@@ -231,6 +249,10 @@ export default function AdminIndustriesPage() {
       subcategoriesResult.success ? subcategoriesResult.data : []
     )
     setIndustries(mapped)
+    setMeta(categoriesResult.meta ?? null)
+    setTotalSubcategories(
+      subcategoriesResult.success ? subcategoriesResult.data.length : 0,
+    )
 
     if (!subcategoriesResult.success) {
       setErrorMessage(subcategoriesResult.message || c.subcategoriesFailed)
@@ -240,13 +262,10 @@ export default function AdminIndustriesPage() {
   }
 
   useEffect(() => {
-    void loadFromBackend()
-  }, [])
+    void loadFromBackend(page)
+  }, [page, debouncedSearch])
 
-  // Filter industries
-  const filteredIndustries = industries.filter(ind => 
-    (ind.name || "").toLowerCase().includes((searchQuery || "").toLowerCase())
-  )
+  const filteredIndustries = industries
 
   // Toggle expand
   const toggleIndustry = (id: string) => {
@@ -600,8 +619,7 @@ export default function AdminIndustriesPage() {
 
   // Stats
   const featuredCount = industries.filter(ind => ind.featured).length
-  const totalCategories = industries.length
-  const totalSubcategories = industries.reduce((sum, ind) => sum + ind.categories.length, 0)
+  const totalCategories = meta?.total ?? industries.length
   const hasCorrectMainCategoryCount = featuredCount === 8
 
   return (
@@ -644,7 +662,7 @@ export default function AdminIndustriesPage() {
       <div className="grid gap-4 sm:grid-cols-4">
         <AdminStatCard
           title={p.mainCategories}
-          value={industries.length}
+          value={totalCategories}
           icon={Layers}
           iconClassName="text-secondary"
           iconWrapperClassName="bg-secondary/10"
@@ -941,6 +959,14 @@ export default function AdminIndustriesPage() {
             </div>
           ))}
         </div>
+
+        <AdminPagination
+          page={page}
+          meta={meta}
+          itemCount={filteredIndustries.length}
+          onPageChange={setPage}
+          className="border-t border-border px-4 py-3"
+        />
       </div>
 
       {/* Add Industry Dialog */}

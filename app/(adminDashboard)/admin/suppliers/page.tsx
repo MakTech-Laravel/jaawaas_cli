@@ -61,6 +61,8 @@ import { Separator } from "@/components/ui/separator"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/i18n"
+import { AdminPagination } from "@/components/admin/admin-pagination"
+import type { PaginationMeta } from "@/lib/api/admin-manufacturer-registrations"
 
 type SupplierStatus = "draft" | "pending" | "approved" | "rejected" | "suspended" | "needs_info" | "active" | "deactivated"
 
@@ -135,16 +137,32 @@ export default function AdminSuppliersPage() {
   const [rejecting, setRejecting] = useState<boolean>(false)
   const [sendingMessage, setSendingMessage] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const [meta, setMeta] = useState<PaginationMeta | null>(null)
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [debouncedSearch, statusFilter])
 
   // Load suppliers from API
   useEffect(() => {
     const loadSuppliers = async () => {
       try {
         setLoading(true)
-        const response = await fetchSuppliers(currentPage, PER_PAGE)
-        // Filter out pending status
-        const filtered = response.data.filter(row => (row.manufacture_status || row.status) !== "pending")
+        const response = await fetchSuppliers(currentPage, PER_PAGE, {
+          search: debouncedSearch || undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+        })
+        const filtered = response.data.filter(
+          (row) => (row.manufacture_status || row.status) !== "pending",
+        )
         setSuppliers(filtered)
+        setMeta(response.meta ?? null)
       } catch (err) {
         toast({
           title: c.error,
@@ -156,19 +174,9 @@ export default function AdminSuppliersPage() {
       }
     }
     loadSuppliers()
-  }, [currentPage, toast])
+  }, [currentPage, debouncedSearch, statusFilter, toast, p.loadFailed])
 
-  const filteredSuppliers = suppliers.filter(supplier => {
-    const name = [supplier.first_name, supplier.last_name].filter(Boolean).join(" ").toLowerCase()
-    const company = (supplier.company_name || supplier.company?.company_name || "").toLowerCase()
-    
-    if (searchQuery && !name.includes(searchQuery.toLowerCase()) && !company.includes(searchQuery.toLowerCase())) {
-      return false
-    }
-    const rowStatus = (supplier.manufacture_status || supplier.status || "draft").toLowerCase()
-    if (statusFilter !== "all" && rowStatus !== statusFilter) return false
-    return true
-  })
+  const filteredSuppliers = suppliers
 
   const allSelected = filteredSuppliers.length > 0 && selectedSuppliers.length === filteredSuppliers.length
 
@@ -385,8 +393,8 @@ export default function AdminSuppliersPage() {
           <p className="mt-4 text-muted-foreground">{p.noSuppliers}</p>
         </div>
       ) : (
-        /* Suppliers Grid */
-        <div className="grid gap-4">
+        <div className="space-y-4">
+          <div className="grid gap-4">
           {/* Header Row */}
           <div className="hidden lg:flex items-center gap-4 px-4 py-2 text-sm font-medium text-muted-foreground">
             <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
@@ -483,6 +491,15 @@ export default function AdminSuppliersPage() {
               </div>
             )
           })}
+          </div>
+
+          <AdminPagination
+            page={currentPage}
+            meta={meta}
+            itemCount={filteredSuppliers.length}
+            onPageChange={setCurrentPage}
+            className="px-1"
+          />
         </div>
       )}
 

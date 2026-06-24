@@ -36,6 +36,7 @@ import {
 import { useTranslation } from "@/lib/i18n"
 import { format } from "date-fns"
 import { SubscriptionDetailModal } from "@/components/admin/subscription-detail-modal"
+import { AdminPagination } from "@/components/admin/admin-pagination"
 
 const statusConfig: Record<string, { color: string }> = {
   active: { color: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" },
@@ -56,8 +57,22 @@ export default function AdminSubscriptionsPage() {
   const [loading, setLoading] = useState(true)
   const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([])
   const [stats, setStats] = useState<AdminSubscriptionStats | null>(null)
+  const [page, setPage] = useState(1)
+  const [meta, setMeta] = useState<{
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from?: number
+    to?: number
+  } | null>(null)
+  const perPage = 15
   
   const [selectedSubId, setSelectedSubId] = useState<number | string | null>(null)
+
+  useEffect(() => {
+    setPage(1)
+  }, [searchQuery, statusFilter])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,15 +80,17 @@ export default function AdminSubscriptionsPage() {
       
       const [subsRes, statsRes] = await Promise.all([
         getAdminSubscriptions({
-          page: 1, // You could add pagination state here if needed
+          page,
+          per_page: perPage,
           search: searchQuery || undefined,
-          status: statusFilter !== "all" ? statusFilter : undefined
+          status: statusFilter !== "all" ? statusFilter : undefined,
         }),
-        getAdminSubscriptionStats() // Fetches stats for current month by default
+        getAdminSubscriptionStats(),
       ])
 
       if (subsRes.success) {
         setSubscriptions(subsRes.data)
+        setMeta(subsRes.meta ?? null)
       }
       if (statsRes.success) {
         setStats(statsRes.data)
@@ -82,13 +99,12 @@ export default function AdminSubscriptionsPage() {
       setLoading(false)
     }
 
-    // Debounce search slightly
     const timeoutId = setTimeout(() => {
       fetchData()
     }, 300)
 
     return () => clearTimeout(timeoutId)
-  }, [searchQuery, statusFilter])
+  }, [searchQuery, statusFilter, page])
 
   return (
     <div className="space-y-6">
@@ -250,6 +266,15 @@ export default function AdminSubscriptionsPage() {
             )}
           </tbody>
         </table>
+
+        <div className="border-t border-border px-4 py-3">
+          <AdminPagination
+            page={page}
+            meta={meta}
+            itemCount={subscriptions.length}
+            onPageChange={setPage}
+          />
+        </div>
       </div>
 
       <SubscriptionDetailModal

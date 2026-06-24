@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
   formatCurrency,
@@ -25,6 +24,8 @@ import {
   Loader2,
 } from "lucide-react"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
+import { AdminPagination } from "@/components/admin/admin-pagination"
+import type { OrderMeta } from "@/lib/api/orders"
 
 const statusColors: Record<string, string> = {
   created: "bg-blue-100 text-blue-700",
@@ -52,7 +53,8 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(false)
+  const [meta, setMeta] = useState<OrderMeta | null>(null)
+  const perPage = 20
   
   // Debounce search
   const [debouncedSearch, setDebouncedSearch] = useState("")
@@ -60,6 +62,10 @@ export default function AdminOrdersPage() {
     const timer = setTimeout(() => setDebouncedSearch(search), 500)
     return () => clearTimeout(timer)
   }, [search])
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch, statusFilter])
 
   useEffect(() => {
     async function fetchStats() {
@@ -75,38 +81,21 @@ export default function AdminOrdersPage() {
     async function fetchOrders() {
       setIsLoading(true)
       const res = await getAdminOrders({
-        page: 1,
-        per_page: 20,
+        page,
+        per_page: perPage,
         search: debouncedSearch || undefined,
         status: statusFilter === "all" ? undefined : statusFilter,
       })
       
       if (res.success) {
         setOrders(res.data)
-        setHasMore(res.meta ? res.meta.currentPage < res.meta.lastPage : false)
-        setPage(1)
+        setMeta(res.meta ?? null)
       }
       setIsLoading(false)
     }
     
     fetchOrders()
-  }, [debouncedSearch, statusFilter])
-
-  const loadMore = async () => {
-    const nextPage = page + 1
-    const res = await getAdminOrders({
-      page: nextPage,
-      per_page: 20,
-      search: debouncedSearch || undefined,
-      status: statusFilter === "all" ? undefined : statusFilter,
-    })
-    
-    if (res.success) {
-      setOrders(prev => [...prev, ...res.data])
-      setHasMore(res.meta ? res.meta.currentPage < res.meta.lastPage : false)
-      setPage(nextPage)
-    }
-  }
+  }, [debouncedSearch, statusFilter, page])
 
   return (
     <div className="space-y-6">
@@ -196,7 +185,7 @@ export default function AdminOrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {isLoading && page === 1 ? (
+              {isLoading ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center">
                     <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
@@ -263,14 +252,15 @@ export default function AdminOrdersPage() {
               )}
             </tbody>
           </table>
-          
-          {hasMore && !isLoading && (
-            <div className="border-t border-border p-4 text-center">
-              <Button variant="outline" size="sm" onClick={loadMore}>
-                {p.loadMore}
-              </Button>
-            </div>
-          )}
+
+          <div className="border-t border-border px-4 py-3">
+            <AdminPagination
+              page={page}
+              meta={meta}
+              itemCount={orders.length}
+              onPageChange={setPage}
+            />
+          </div>
         </div>
       </div>
     </div>
