@@ -19,6 +19,7 @@ import {
 import { getProduct, type Product } from "@/lib/api/products"
 import { createRFQ } from "@/lib/api/rfqs"
 import { suppliers } from "@/lib/data/suppliers"
+import { getPublicSupplierDetails } from "@/lib/api/public-suppliers"
 import { countries } from "@/lib/data/countries"
 import { useToast } from "@/hooks/use-toast"
 import Swal from "sweetalert2"
@@ -128,6 +129,22 @@ function NewRFQForm() {
 
     fetchProductData()
   }, [productId, initialSupplier])
+
+  useEffect(() => {
+    if (supplierSlug && !initialSupplier) {
+      const fetchSupplierData = async () => {
+        try {
+          const res = await getPublicSupplierDetails(supplierSlug)
+          if (res && res.success && res.data) {
+            setSelectedSupplier(res.data)
+          }
+        } catch (e) {
+          console.error("Failed to fetch supplier details:", e)
+        }
+      }
+      fetchSupplierData()
+    }
+  }, [supplierSlug, initialSupplier])
 
 
   const handleSubmit = async (e: React.FormEvent) => {

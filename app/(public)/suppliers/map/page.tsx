@@ -341,7 +341,7 @@ export default function GlobalSupplierMapPage() {
                         />
                         <div>
                           <h3 className="font-semibold">{country.name}</h3>
-                          <p className="text-sm text-muted-foreground">{country.suppliers.toLocaleString()} {t?.landing?.suppliers?.productsLabel || "suppliers"}</p>
+                          <p className="text-sm text-muted-foreground">{country.suppliers.toLocaleString()} {t?.landing?.featured?.suppliersLabel || "suppliers"}</p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-sm">

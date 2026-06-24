@@ -1,9 +1,8 @@
 import type { TranslationKeys } from "./en";
 import adminZh from "./admin/zh";
+import buyerZh from "./buyer/zh";
 
-// NOTE: this file replaces the original Spanish translations and now provides
-// Chinese (Simplified) translations under the existing `es` locale code.
-const es = {
+const zh: TranslationKeys = {
   common: {
     save: "保存更改",
     cancel: "取消",
@@ -645,6 +644,17 @@ const es = {
       inquiriesLabel: "次查询",
       noProductsFound: "未找到产品",
       errorLoadingProducts: "加载产品时出错",
+      filters: "筛选",
+      clearAll: "清除所有",
+      sortBy: "排序",
+      relevance: "相关性",
+      country: "国家",
+      allCountries: "所有国家",
+      minimumOrder: "最小起订量",
+      anyMoq: "任意最小起订量",
+      certifications: "认证",
+      exportMarkets: "出口市场",
+      pieces: "件",
     },
     suppliersMap: {
       globalNetwork: "全球网络",
@@ -1950,10 +1960,10 @@ const es = {
         ipAddress: "IP 地址",
         device: "设备/浏览器",
         location: "地点",
-        timestamp: "时间戳"
       }
     },
   admin: adminZh,
-} as const;
+  buyer: buyerZh,
+};
 
-export default es as unknown as TranslationKeys;
+export default zh as unknown as TranslationKeys;

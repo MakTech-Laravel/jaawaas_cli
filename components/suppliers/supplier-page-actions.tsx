@@ -54,7 +54,7 @@ export function SupplierPageActions({ supplier }: SupplierPageActionsProps) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
       <Button size="lg" className="gap-2" asChild>
-        <Link href={`/messages/new?supplier=${supplier.slug}`}>
+        <Link href={`/dashboard/buyer/messages?supplier=${supplier.id}`}>
           <MessageSquare className="h-4 w-4" />
           Contact Supplier
         </Link>

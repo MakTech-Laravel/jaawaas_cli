@@ -13,6 +13,7 @@ import {
   Package,
   ArrowRight
 } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 
 const activities = [
   {
@@ -108,12 +109,18 @@ const activityLabels: Record<string, string> = {
 }
 
 export default function BuyerActivityPage() {
+  const { t } = useTranslation()
+  
+  const getActivityLabel = (type: string) => {
+    return t.buyer.activity.labels[type as keyof typeof t.buyer.activity.labels] || type
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-serif text-2xl font-medium text-foreground">Recent Activity</h1>
+        <h1 className="font-serif text-2xl font-medium text-foreground">{t.buyer.activity.title}</h1>
         <p className="mt-1 text-muted-foreground">
-          Track your interactions with suppliers and products
+          {t.buyer.activity.subtitle}
         </p>
       </div>
 
@@ -133,7 +140,7 @@ export default function BuyerActivityPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-medium text-foreground">{activity.title}</h3>
                     <Badge className={activityBadgeColors[activity.type]} variant="secondary">
-                      {activityLabels[activity.type]}
+                      {getActivityLabel(activity.type)}
                     </Badge>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground line-clamp-1">
@@ -160,21 +167,21 @@ export default function BuyerActivityPage() {
             <Factory className="h-6 w-6 text-muted-foreground" />
           </div>
           <p className="mt-3 text-2xl font-bold text-foreground">12</p>
-          <p className="text-sm text-muted-foreground">Suppliers Contacted</p>
+          <p className="text-sm text-muted-foreground">{t.buyer.activity.stats.suppliersContacted}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-6 text-center">
           <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-full bg-muted">
             <FileText className="h-6 w-6 text-muted-foreground" />
           </div>
           <p className="mt-3 text-2xl font-bold text-foreground">8</p>
-          <p className="text-sm text-muted-foreground">RFQs Submitted</p>
+          <p className="text-sm text-muted-foreground">{t.buyer.activity.stats.rfqsSubmitted}</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-6 text-center">
           <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-full bg-muted">
             <Heart className="h-6 w-6 text-muted-foreground" />
           </div>
           <p className="mt-3 text-2xl font-bold text-foreground">5</p>
-          <p className="text-sm text-muted-foreground">Suppliers Saved</p>
+          <p className="text-sm text-muted-foreground">{t.buyer.activity.stats.suppliersSaved}</p>
         </div>
       </div>
     </div>

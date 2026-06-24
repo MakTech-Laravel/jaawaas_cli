@@ -156,12 +156,6 @@ export function Header() {
       description: t?.nav?.compareSuppliersDesc || "Compare manufacturers side by side",
       icon: Scale,
     },
-    {
-      title: t?.nav?.newSuppliers || "New Suppliers",
-      href: "/suppliers?sort=newest",
-      description: t?.nav?.newSuppliersDesc || "Recently joined manufacturers on SourceNest",
-      icon: Factory,
-    },
   ]
 
   const platformItems: HeaderNavItemDef[] = [

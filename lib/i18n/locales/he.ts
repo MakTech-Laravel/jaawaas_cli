@@ -1,5 +1,6 @@
 import type { TranslationKeys } from "./en";
 import adminHe from "./admin/he";
+import buyerHe from "./buyer/he";
 
 // Keep translations as a constant and cast on export to avoid strict
 // literal-type mismatches with `en` while preserving runtime values.
@@ -641,6 +642,17 @@ const he = {
       inquiriesLabel: "שאילתות",
       noProductsFound: "לא נמצאו מוצרים",
       errorLoadingProducts: "שגיאה בטעינת מוצרים",
+      filters: "מסננים",
+      clearAll: "נקה הכל",
+      sortBy: "מיין לפי",
+      relevance: "רלוונטיות",
+      country: "מדינה",
+      allCountries: "כל המדינות",
+      minimumOrder: "הזמנה מינימלית",
+      anyMoq: "כל כמות",
+      certifications: "הסמכות",
+      exportMarkets: "שווקי ייצוא",
+      pieces: "יחידות",
     },
     suppliersMap: {
       globalNetwork: "רשת גלובלית",
@@ -1948,6 +1960,7 @@ const he = {
       }
     },
   admin: adminHe,
+  buyer: buyerHe,
 } as const;
 
 export default he as unknown as TranslationKeys;

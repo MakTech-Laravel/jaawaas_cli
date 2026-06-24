@@ -36,6 +36,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/lib/i18n"
 
 const statusStyles: Record<string, { color: string; icon: typeof Clock }> = {
   created: { color: "bg-blue-100 text-blue-700", icon: Clock },
@@ -46,9 +47,14 @@ const statusStyles: Record<string, { color: string; icon: typeof Clock }> = {
   cancelled: { color: "bg-gray-100 text-gray-600", icon: XCircle },
 }
 
-function StatusStepper({ status }: { status: string }) {
+function StatusStepper({ status, t }: { status: string; t: any }) {
   const cancelled = status === "cancelled"
   const currentIndex = ORDER_STATUS_FLOW.indexOf(status as OrderStatus)
+
+  const translateStatus = (s: string) => {
+    const key = s === "in-production" ? "inProduction" : s === "ready" ? "readyForShipment" : s;
+    return t.common.orderStatus?.[key] || ORDER_STATUS_LABELS[s as OrderStatus] || s;
+  }
 
   return (
     <div className="flex items-center">
@@ -74,7 +80,7 @@ function StatusStepper({ status }: { status: string }) {
                   done ? "font-medium text-foreground" : "text-muted-foreground",
                 )}
               >
-                {ORDER_STATUS_LABELS[s]}
+                {translateStatus(s)}
               </span>
             </div>
             {i < ORDER_STATUS_FLOW.length - 1 && (
@@ -115,9 +121,15 @@ function DetailRow({
   )
 }
 
-function UpdateEntry({ update, isLast }: { update: OrderStatusUpdate; isLast: boolean }) {
+function UpdateEntry({ update, isLast, t }: { update: OrderStatusUpdate; isLast: boolean; t: any }) {
   const style = statusStyles[update.status] || { color: "bg-gray-100 text-gray-700", icon: Clock }
   const Icon = style.icon
+  
+  const translateStatus = (s: string) => {
+    const key = s === "in-production" ? "inProduction" : s === "ready" ? "readyForShipment" : s;
+    return t.common.orderStatus?.[key] || ORDER_STATUS_LABELS[s as OrderStatus] || s;
+  }
+  
   return (
     <div className="relative flex gap-4 pb-6 last:pb-0">
       {/* line */}
@@ -132,7 +144,7 @@ function UpdateEntry({ update, isLast }: { update: OrderStatusUpdate; isLast: bo
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <p className="font-medium text-foreground">{ORDER_STATUS_LABELS[update.status as OrderStatus] || update.status}</p>
+          <p className="font-medium text-foreground">{translateStatus(update.status)}</p>
           <span className="text-xs text-muted-foreground">{formatOrderDate(update.createdAt)}</span>
         </div>
         {update.notes && <p className="mt-1 text-sm text-muted-foreground">{update.notes}</p>}
@@ -184,6 +196,7 @@ function UpdateEntry({ update, isLast }: { update: OrderStatusUpdate; isLast: bo
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const { t } = useTranslation()
   const [order, setOrder] = useState<ApiOrder | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -193,7 +206,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       setIsLoading(true)
       const numericId = parseInt(id, 10)
       if (isNaN(numericId)) {
-        setError("Invalid order ID")
+        setError(t.buyer.orders.details.invalidId)
         setIsLoading(false)
         return
       }
@@ -202,7 +215,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       if (res.success && res.data) {
         setOrder(res.data)
       } else {
-        setError(res.message || "Failed to load order details")
+        setError(res.message || t.buyer.orders.details.failedToLoad)
       }
       setIsLoading(false)
     }
@@ -221,9 +234,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   if (error || !order) {
     return (
       <div className="flex h-64 flex-col items-center justify-center space-y-4">
-        <p className="text-muted-foreground">{error || "Order not found"}</p>
+        <p className="text-muted-foreground">{error || t.buyer.orders.details.notFound}</p>
         <Button asChild variant="outline">
-          <Link href="/dashboard/buyer/orders">Back to Orders</Link>
+          <Link href="/dashboard/buyer/orders">{t.buyer.orders.details.backToOrders}</Link>
         </Button>
       </div>
     )
@@ -241,7 +254,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Orders
+        {t.buyer.orders.details.backToOrders}
       </Link>
 
       {/* Header */}
@@ -252,8 +265,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <span className="text-sm font-medium text-muted-foreground">{order.orderNumber}</span>
               <Badge className={cn("gap-1 text-xs", style.color)}>
                 <StatusIcon className="h-3 w-3" />
-                {ORDER_STATUS_LABELS[order.status as OrderStatus] || order.status}
+                {t.common.orderStatus?.[order.status === "in-production" ? "inProduction" : order.status === "ready" ? "readyForShipment" : order.status] || ORDER_STATUS_LABELS[order.status as OrderStatus] || order.status}
               </Badge>
+            </div>
+            <h1 className="mt-1.5 font-serif text-2xl font-medium text-foreground">{order.title}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-4 w-4" />
+                {t.buyer.orders.details.orderPlaced} {formatOrderDate(order.createdAt)}
+              </span>
             </div>
             <h1 className="mt-1.5 font-serif text-2xl font-medium text-foreground">{order.title}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
@@ -295,23 +315,23 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <div className="space-y-6 lg:col-span-3">
           {/* Order details */}
           <section className="rounded-xl border border-border bg-card p-6">
-            <h2 className="font-medium text-foreground">Order Details</h2>
+            <h2 className="font-medium text-foreground">{t.buyer.orders.details.orderDetails}</h2>
             <div className="mt-2 grid gap-x-6 sm:grid-cols-2">
-              <DetailRow icon={Package} label="Quantity" value={`${order.quantity} ${order.quantityUnit}`} />
+              <DetailRow icon={Package} label={t.buyer.orders.details.quantity} value={`${order.quantity} ${order.quantityUnit}`} />
               <DetailRow
                 icon={CreditCard}
-                label="Total Amount"
+                label={t.buyer.orders.details.totalAmount}
                 value={formatCurrency(order.totalAmount, order.currencyCode)}
               />
               <DetailRow icon={Clock} label="Production Time" value={order.productionLead} />
               <DetailRow
                 icon={Calendar}
-                label="Estimated Delivery"
+                label={t.buyer.orders.details.estimatedDelivery}
                 value={formatOrderDate(order.estimatedDeliveryAt)}
               />
-              <DetailRow icon={CreditCard} label="Payment Terms" value={order.paymentTerms} />
-              <DetailRow icon={Ship} label="Shipping Terms" value={order.shippingTerms} />
-              <DetailRow icon={MapPin} label="Destination" value={order.destination} />
+              <DetailRow icon={CreditCard} label={t.buyer.orders.details.paymentMethod} value={order.paymentTerms} />
+              <DetailRow icon={Ship} label={t.buyer.orders.details.shippingDetails} value={order.shippingTerms} />
+              <DetailRow icon={MapPin} label={t.buyer.orders.details.shippingAddress} value={order.destination} />
             </div>
             {order.notes && (
               <div className="mt-3 flex items-start gap-3 rounded-lg bg-muted/40 p-3">
@@ -326,7 +346,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
           {/* Documents */}
           <section className="rounded-xl border border-border bg-card p-6">
-            <h2 className="font-medium text-foreground">Documents</h2>
+            <h2 className="font-medium text-foreground">{t.buyer.orders.details.documents}</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Invoices, quotations, and product files shared by the manufacturer.
             </p>
@@ -350,7 +370,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   </a>
                 ))
               ) : (
-                <p className="py-6 text-center text-sm text-muted-foreground">No documents attached.</p>
+                <p className="py-6 text-center text-sm text-muted-foreground">{t.buyer.orders.details.noDocuments}</p>
               )}
             </div>
           </section>
@@ -359,7 +379,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         {/* Right: progress timeline */}
         <div className="lg:col-span-2">
           <section className="rounded-xl border border-border bg-card p-6">
-            <h2 className="font-medium text-foreground">Progress Updates</h2>
+            <h2 className="font-medium text-foreground">{t.buyer.orders.details.statusUpdates}</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Photos, documents, and notes posted as your order moves forward.
             </p>
@@ -371,7 +391,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               ) : (
                 <div className="flex flex-col items-center py-8 text-center">
                   <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">No updates yet.</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{t.buyer.orders.details.noUpdates}</p>
                 </div>
               )}
             </div>

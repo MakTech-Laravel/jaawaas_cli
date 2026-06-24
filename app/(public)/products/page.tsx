@@ -21,6 +21,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { getProducts, type Product } from "@/lib/api/products"
 import { getPublicCategories, type BackendCategory } from "@/lib/api/categories"
 import { ProductActionButtons } from "@/components/products/product-action-buttons"
+import { countries as countryData } from "@/lib/data/countries"
+import { getPublicSuppliers, type Supplier } from "@/lib/api/public-suppliers"
+
+
+
 import { 
   Search, 
   Filter, 
@@ -29,13 +34,23 @@ import {
   X,
   Factory,
   CheckCircle,
-  Loader2
+  Loader2,
+  MapPin,
+  ShieldCheck,
+  Globe
 } from "lucide-react"
 
 function ProductsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { t } = useTranslation()
+
+  const moqRanges = useMemo(() => [
+    { label: `< 100 ${t?.landing?.products?.pieces || "pieces"}`, value: "<100" },
+    { label: `100 - 500 ${t?.landing?.products?.pieces || "pieces"}`, value: "100-500" },
+    { label: `500 - 1000 ${t?.landing?.products?.pieces || "pieces"}`, value: "500-1000" },
+    { label: `> 1000 ${t?.landing?.products?.pieces || "pieces"}`, value: ">1000" },
+  ], [t])
 
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,10 +64,54 @@ function ProductsPageContent() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalProducts, setTotalProducts] = useState(0)
 
-  // Reset page when category, search or sort changes
+  // New Quick Filters states
+  const [selectedCountry, setSelectedCountry] = useState<string>("")
+  const [selectedMoq, setSelectedMoq] = useState<string>("")
+  const [selectedCerts, setSelectedCerts] = useState<string[]>([])
+  const [selectedMarkets, setSelectedMarkets] = useState<string[]>([])
+
+  // Get featured countries
+  const featuredCountries = useMemo(() => {
+    const featured = countryData.filter(c => c.featured)
+    if (featured.length > 0) {
+      return featured.slice(0, 8)
+    }
+    return countryData
+      .filter(c => ["CN", "IN", "VN", "TH", "TR", "DE", "ID", "BD"].includes(c.code))
+      .slice(0, 8)
+  }, [])
+
+  const [dynamicCertifications, setDynamicCertifications] = useState<string[]>([])
+  const [dynamicExportMarkets, setDynamicExportMarkets] = useState<string[]>([])
+  const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([])
+
+  // Fetch global dynamic filters (certifications and markets) from suppliers
+  useEffect(() => {
+    const fetchGlobalFilters = async () => {
+      const response = await getPublicSuppliers()
+      if (response && response.data) {
+        setAllSuppliers(response.data)
+        const certSet = new Set<string>()
+        const marketSet = new Set<string>()
+        response.data.forEach(supplier => {
+          if (supplier.certifications) {
+            supplier.certifications.forEach(cert => certSet.add(cert))
+          }
+          if (supplier.export_markets) {
+            supplier.export_markets.forEach(market => marketSet.add(market))
+          }
+        })
+        setDynamicCertifications(Array.from(certSet).sort())
+        setDynamicExportMarkets(Array.from(marketSet).sort())
+      }
+    }
+    fetchGlobalFilters()
+  }, [])
+
+  // Reset page when category, search, sort or filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [selectedCategory, searchQuery, sortBy])
+  }, [selectedCategory, searchQuery, sortBy, selectedCountry, selectedMoq, selectedCerts, selectedMarkets])
 
   // Fetch all categories once
   useEffect(() => {
@@ -117,6 +176,10 @@ function ProductsPageContent() {
       if (searchQuery) {
         filters.search = searchQuery
       }
+      if (selectedCountry) filters.country = selectedCountry
+      if (selectedMoq) filters.moq = selectedMoq
+      if (selectedCerts.length > 0) filters.certifications = selectedCerts.join(",")
+      if (selectedMarkets.length > 0) filters.markets = selectedMarkets.join(",")
 
       const response = await getProducts(currentPage, filters)
       
@@ -136,7 +199,7 @@ function ProductsPageContent() {
 
     const timeoutId = setTimeout(fetchProducts, 300)
     return () => clearTimeout(timeoutId)
-  }, [selectedCategory, searchQuery, currentPage])
+  }, [selectedCategory, searchQuery, currentPage, selectedCountry, selectedMoq, selectedCerts, selectedMarkets])
 
   // Sync state with URL params when they change
   useEffect(() => {
@@ -200,6 +263,47 @@ function ProductsPageContent() {
       })
     }
 
+    // Apply MOQ filter locally
+    if (selectedMoq && selectedMoq !== "all") {
+      result = result.filter(p => {
+        const moq = p.pricing_quantities?.minimum_order_quantity || 1;
+        if (selectedMoq === "<100") return moq < 100;
+        if (selectedMoq === "100-500") return moq >= 100 && moq <= 500;
+        if (selectedMoq === "500-1000") return moq >= 500 && moq <= 1000;
+        if (selectedMoq === ">1000") return moq > 1000;
+        return true;
+      });
+    }
+
+
+
+    // Apply Country filter locally
+    if (selectedCountry) {
+      result = result.filter(p => {
+        const pSupplier = allSuppliers.find(s => s.id.toString() === p.supplierId?.toString());
+        const pCountry = pSupplier?.location?.country || p.supplierCountry;
+        return pCountry?.toLowerCase() === selectedCountry.toLowerCase();
+      });
+    }
+
+    // Apply Certifications filter locally
+    if (selectedCerts.length > 0) {
+      result = result.filter(p => {
+        const pSupplier = allSuppliers.find(s => s.id.toString() === p.supplierId?.toString());
+        const certs = pSupplier?.certifications || p.supplierCertifications || [];
+        return selectedCerts.some(cert => certs.includes(cert));
+      });
+    }
+
+    // Apply Markets filter locally
+    if (selectedMarkets.length > 0) {
+      result = result.filter(p => {
+        const pSupplier = allSuppliers.find(s => s.id.toString() === p.supplierId?.toString());
+        const markets = pSupplier?.export_markets || p.supplierExportMarkets || [];
+        return selectedMarkets.some(market => markets.includes(market));
+      });
+    }
+
     // Apply sorting
     switch (sortBy) {
       case "price-low":
@@ -239,9 +343,13 @@ function ProductsPageContent() {
     setSearchQuery("")
     setSelectedCategory("all")
     setSortBy("relevance")
+    setSelectedCountry("")
+    setSelectedMoq("")
+    setSelectedCerts([])
+    setSelectedMarkets([])
   }
 
-  const hasActiveFilters = searchQuery || selectedCategory !== "all" || sortBy !== "relevance"
+  const hasActiveFilters = searchQuery || selectedCategory !== "all" || sortBy !== "relevance" || selectedCountry || selectedMoq || selectedCerts.length > 0 || selectedMarkets.length > 0
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -340,6 +448,105 @@ function ProductsPageContent() {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Country Filter */}
+                    <div className="border-t border-border pt-5">
+                      <label className="text-sm font-medium text-foreground">{t?.landing?.products?.country || "Country"}</label>
+                      <Select 
+                        value={selectedCountry || "all"} 
+                        onValueChange={(val) => setSelectedCountry(val === "all" ? "" : val)}
+                      >
+                        <SelectTrigger className="mt-2 w-full">
+                          <SelectValue placeholder={t?.landing?.products?.country || "Select country"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t?.landing?.products?.allCountries || "All Countries"}</SelectItem>
+                          {featuredCountries.map((country) => (
+                            <SelectItem key={country.code} value={country.name.toLowerCase()}>
+                              {country.flag || ""} {country.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* MOQ Range */}
+                    <div className="border-t border-border pt-5">
+                      <label className="text-sm font-medium text-foreground">{t?.landing?.products?.minimumOrder || "Minimum Order"}</label>
+                      <Select 
+                        value={selectedMoq || "all"} 
+                        onValueChange={(val) => setSelectedMoq(val === "all" ? "" : val)}
+                      >
+                        <SelectTrigger className="mt-2 w-full">
+                          <SelectValue placeholder={t?.landing?.products?.minimumOrder || "Select MOQ range"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t?.landing?.products?.anyMoq || "Any MOQ"}</SelectItem>
+                          {moqRanges.map((range) => (
+                            <SelectItem key={range.value} value={range.value}>
+                              {range.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Certifications */}
+                    <div className="border-t border-border pt-5">
+                      <label className="text-sm font-medium text-foreground">{t?.landing?.products?.certifications || "Certifications"}</label>
+                      <div className="mt-3 space-y-2">
+                        {dynamicCertifications.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">No certifications available</p>
+                        ) : dynamicCertifications.map((cert) => (
+                          <label
+                            key={cert}
+                            className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+                          >
+                            <Checkbox
+                              checked={selectedCerts.includes(cert)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedCerts([...selectedCerts, cert])
+                                } else {
+                                  setSelectedCerts(selectedCerts.filter(c => c !== cert))
+                                }
+                              }}
+                            />
+                            <ShieldCheck className="h-3 w-3" />
+                            {cert}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Export Markets 
+                    <div className="border-t border-border pt-5">
+                      <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Globe className="h-4 w-4" />
+                        {t?.landing?.products?.exportMarkets || "Export Markets"}
+                      </label>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {dynamicExportMarkets.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">No markets available</p>
+                        ) : dynamicExportMarkets.map((market) => (
+                          <Badge 
+                            key={market}
+                            variant={selectedMarkets.includes(market) ? "default" : "outline"} 
+                            className={`cursor-pointer transition-colors ${selectedMarkets.includes(market) ? 'bg-secondary text-secondary-foreground hover:bg-secondary/90' : 'hover:bg-secondary hover:text-secondary-foreground'}`}
+                            onClick={() => {
+                              if (selectedMarkets.includes(market)) {
+                                setSelectedMarkets(selectedMarkets.filter(m => m !== market))
+                              } else {
+                                setSelectedMarkets([...selectedMarkets, market])
+                              }
+                            }}
+                          >
+                            {market}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    */}
                   </div>
                 </div>
               </aside>
@@ -349,7 +556,7 @@ function ProductsPageContent() {
                 {/* Results Header */}
                 <div className="mb-6 flex items-center justify-between">
                   <p className="text-muted-foreground">
-                    <span className="font-medium text-foreground">{totalProducts}</span> {t?.landing?.products?.productsFound || "products found"}
+                    <span className="font-medium text-foreground">{filteredAndSortedProducts.length}</span> {t?.landing?.products?.productsFound || "products found"}
                   </p>
                 </div>
 
@@ -381,6 +588,38 @@ function ProductsPageContent() {
                         </button>
                       </Badge>
                     )}
+                    {selectedCountry && (
+                      <Badge variant="secondary" className="gap-1">
+                        {t?.landing?.products?.country || "Country"}: {selectedCountry}
+                        <button onClick={() => setSelectedCountry("")}>
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    )}
+                    {selectedMoq && (
+                      <Badge variant="secondary" className="gap-1">
+                        {t?.landing?.products?.moqLabel || "MOQ:"} {moqRanges.find(r => r.value === selectedMoq)?.label || selectedMoq}
+                        <button onClick={() => setSelectedMoq("")}>
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    )}
+                    {selectedCerts.map(cert => (
+                      <Badge key={cert} variant="secondary" className="gap-1">
+                        {t?.landing?.products?.certifications || "Cert:"} {cert}
+                        <button onClick={() => setSelectedCerts(selectedCerts.filter(c => c !== cert))}>
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    {selectedMarkets.map(market => (
+                      <Badge key={market} variant="secondary" className="gap-1">
+                        {t?.landing?.products?.exportMarkets || "Market:"} {market}
+                        <button onClick={() => setSelectedMarkets(selectedMarkets.filter(m => m !== market))}>
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
                   </div>
                 )}
 

@@ -1,5 +1,6 @@
 import type { TranslationKeys } from "./en";
 import adminAr from "./admin/ar";
+import buyerAr from "./buyer/ar";
 
 // Keep translations as a constant and cast on export to avoid strict
 // literal-type mismatches with `en` while preserving runtime values.
@@ -644,6 +645,17 @@ const ar = {
       inquiriesLabel: "استفسارات",
       noProductsFound: "لم يتم العثور على منتجات",
       errorLoadingProducts: "خطأ في تحميل المنتجات",
+      filters: "عوامل التصفية",
+      clearAll: "مسح الكل",
+      sortBy: "ترتيب حسب",
+      relevance: "الصلة",
+      country: "الدولة",
+      allCountries: "جميع الدول",
+      minimumOrder: "الحد الأدنى للطلب",
+      anyMoq: "أي كمية",
+      certifications: "الشهادات",
+      exportMarkets: "أسواق التصدير",
+      pieces: "قطع",
     },
     suppliersMap: {
       globalNetwork: "الشبكة العالمية",
@@ -1953,6 +1965,7 @@ const ar = {
       }
     },
   admin: adminAr,
+  buyer: buyerAr,
 } as const;
 
 export default ar as unknown as TranslationKeys;

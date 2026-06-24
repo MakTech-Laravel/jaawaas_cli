@@ -1,4 +1,5 @@
 import adminEn from "./admin/en";
+import buyerEn from "./buyer/en";
 
 const en = {
   // ── Common / Shared ─────────────────────────────────────────────────
@@ -802,6 +803,13 @@ const en = {
       clearAll: "Clear all",
       sortBy: "Sort by",
       relevance: "Relevance",
+      country: "Country",
+      allCountries: "All Countries",
+      minimumOrder: "Minimum Order",
+      anyMoq: "Any MOQ",
+      certifications: "Certifications",
+      exportMarkets: "Export Markets",
+      pieces: "pieces",
     },
     suppliersMap: {
       globalNetwork: "Global Network",
@@ -2005,6 +2013,7 @@ const en = {
       }
     },
   admin: adminEn,
+  buyer: buyerEn,
 } as const;
 
 export type TranslationKeys = typeof en;
