@@ -59,8 +59,8 @@ export default function PrivacyPage() {
             
             <h2 className="mt-8 font-serif text-2xl font-medium text-foreground">9. Contact</h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              <a href="mailto:privacy@sourcenest.com" className="text-primary hover:underline">
-                privacy@sourcenest.com
+              <a href="mailto:info@sourcenest.tesh" className="text-primary hover:underline">
+                info@sourcenest.tesh
               </a>
             </p>
           </div>

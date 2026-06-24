@@ -839,6 +839,13 @@ const en = {
       cantFindDesc: "Submit a Request for Quotation and let reviewed manufacturers come to you with competitive offers.",
       submitRFQ: "Submit RFQ",
       browseAllSuppliers: "Browse All Suppliers",
+      searchResultsTitle: "Search Results",
+      searchRegionsTitle: "Matching Regions",
+      searchCountriesTitle: "Matching Countries",
+      searchNoResults: "Your search was not found",
+      searchNoResultsHint: "We couldn't find any countries or regions matching your search. Try a different term, browse our FAQ, or contact support.",
+      searchViewFaq: "View FAQ",
+      searchContactSupport: "Contact Support",
     },
     forBuyers: {
       hero: {
@@ -1225,6 +1232,13 @@ const en = {
     browseCategoryTitle: "Browse by Category",
     viewAllArticles: "View all articles",
     popularArticlesTitle: "Popular Articles",
+    searchResultsTitle: "Search results",
+    searchResultsCount: "{count} articles found",
+    searchNoResults: "Your search was not found",
+    searchNoResultsHint:
+      "We couldn't find any help articles matching your search. You can visit our FAQ or contact support for more help.",
+    searchViewFaq: "View FAQ",
+    searchContactSupport: "Contact Support",
     backToHelp: "Back to Help Center",
     backToCategory: "Back to {category}",
     wasHelpful: "Was this article helpful?",

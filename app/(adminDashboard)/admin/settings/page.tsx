@@ -53,7 +53,7 @@ export default function AdminSettingsPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">{t.settings.supportEmail}</label>
-              <Input defaultValue="support@sourcenest.com" className="mt-2" type="email" />
+              <Input defaultValue="info@sourcenest.tesh" className="mt-2" type="email" />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">{t.settings.contactPhone}</label>

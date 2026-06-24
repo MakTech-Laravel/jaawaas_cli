@@ -6,13 +6,10 @@ import { notFound } from "next/navigation"
 import { useTranslation } from "@/lib/i18n"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
-import { Button } from "@/components/ui/button"
 import { 
   ArrowLeft,
   ChevronRight,
-  ThumbsUp,
-  ThumbsDown,
-  MessageSquare
+  MessageSquare,
 } from "lucide-react"
 import { 
   defaultHelpCenterData, 
@@ -95,28 +92,15 @@ export default function HelpArticlePage({ params }: { params: Promise<{ category
               )}
             </article>
 
-            {/* Feedback */}
-            <div className="mt-12 rounded-xl border border-border bg-muted/50 p-6">
-              <p className="text-center font-medium text-foreground">{t?.help?.wasHelpful}</p>
-              <div className="mt-4 flex items-center justify-center gap-4">
-                <Button variant="outline" className="gap-2">
-                  <ThumbsUp className="h-4 w-4" />
-                  Yes
-                </Button>
-                <Button variant="outline" className="gap-2">
-                  <ThumbsDown className="h-4 w-4" />
-                  No
-                </Button>
-              </div>
-              <div className="mt-6 text-center">
-                <Link 
-                  href="/contact?type=support" 
-                  className="inline-flex items-center gap-2 text-sm text-secondary hover:underline"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  Still need help? {t?.help?.contactSupportCta}
-                </Link>
-              </div>
+            {/* Support */}
+            <div className="mt-12 rounded-xl border border-border bg-muted/50 p-6 text-center">
+              <Link 
+                href="/contact?type=support" 
+                className="inline-flex items-center gap-2 text-sm text-secondary hover:underline"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Still need help? {t?.help?.contactSupportCta}
+              </Link>
             </div>
           </div>
         </section>
