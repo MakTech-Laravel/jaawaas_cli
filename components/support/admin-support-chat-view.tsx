@@ -52,6 +52,8 @@ import { useTranslation } from "@/lib/i18n"
 type CustomerRole = "buyer" | "supplier" | "provider" | "unknown"
 
 const CANNED_REPLY_KEYS = ["cannedReply1", "cannedReply2", "cannedReply3", "cannedReply4"] as const
+const AUTO_CLOSE_MESSAGE =
+  "This support ticket has been closed by the admin.\nIf you still need help or have another question, you can open a new support ticket anytime. Thank you."
 
 const FILTERS: { key: CustomerSupportTicketStatus | "all" | "unresolved"; labelKey: "active" | "open" | "waiting" | "resolved" | "all" }[] = [
   { key: "unresolved", labelKey: "active" },
@@ -366,6 +368,20 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
 
   const updateStatus = async (id: number, status: CustomerSupportTicketStatus) => {
     if (!active) return
+
+    if (status === "closed" && active.status !== "closed") {
+      const closeReplyRes = await replyAdminCustomerSupportTicket(id, {
+        message: AUTO_CLOSE_MESSAGE,
+      })
+
+      if (closeReplyRes.success && closeReplyRes.data) {
+        setActive(closeReplyRes.data)
+      } else {
+        showError(s.sendReplyFailed, closeReplyRes.message)
+        return
+      }
+    }
+
     const res = await updateAdminCustomerSupportTicket(id, {
       status,
       priority: active.priority,

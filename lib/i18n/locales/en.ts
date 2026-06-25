@@ -1633,7 +1633,9 @@ const en = {
         low: "Low",
         medium: "Medium",
         high: "High",
-        responseTime: "We typically respond within 24 hours."
+        responseTime: "We typically respond within 24 hours.",
+        conversationClosed: "This support ticket is closed. You cannot reply until an admin reopens it.",
+        createNewForMoreHelp: "Need more help? Create a new support ticket.",
       },
       supportTicketDetails: {
         title: "Support Ticket Details",

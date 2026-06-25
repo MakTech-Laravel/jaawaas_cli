@@ -1585,7 +1585,9 @@ const ar = {
         low: "منخفضة",
         medium: "متوسطة",
         high: "عالية",
-        responseTime: "نرد عادةً خلال 24 ساعة."
+        responseTime: "نرد عادةً خلال 24 ساعة.",
+        conversationClosed: "تم إغلاق تذكرة الدعم هذه. لا يمكنك الرد حتى يعيدها المسؤول فتحها.",
+        createNewForMoreHelp: "هل تحتاج إلى مزيد من المساعدة؟ أنشئ تذكرة دعم جديدة.",
       },
       supportTicketDetails: {
         title: "تفاصيل تذكرة الدعم",
