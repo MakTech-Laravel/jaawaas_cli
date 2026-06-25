@@ -1,6 +1,6 @@
 import { Metadata } from "next"
 import Link from "next/link"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { getFaqCategories } from "@/lib/api/faqs"
@@ -92,7 +92,7 @@ export default async function FaqPage() {
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden">
-      <Header />
+      <SiteHeader />
       <main className="flex-1">
         {/* Hero */}
         <section className="bg-primary py-8 sm:py-12 lg:py-16">

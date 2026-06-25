@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -123,7 +123,7 @@ export default function ProductPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden bg-background">
-        <Header />
+        <SiteHeader />
         <main className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </main>
@@ -135,7 +135,7 @@ export default function ProductPage() {
   if (error || !product) {
     return (
       <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden bg-background">
-        <Header />
+        <SiteHeader />
         <main className="flex-1">
           <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
             <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-700">
@@ -173,7 +173,7 @@ export default function ProductPage() {
 
   return (
     <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden bg-background">
-      <Header />
+      <SiteHeader />
       <main className="min-w-0 flex-1">
         <div className="border-b border-border bg-muted/50">
           <div className="mx-auto max-w-7xl px-4 py-2.5 sm:px-6 sm:py-3 lg:px-8">

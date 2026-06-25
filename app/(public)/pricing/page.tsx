@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -21,7 +21,7 @@ import { fetchActivePromotion, enrollInPromotion, type ActivePromotion } from "@
 import { useAuth } from "@/lib/auth-context"
 
 import { useRouter } from "next/navigation"
-import { useSubscription, type PlanId } from "@/lib/subscription-context"
+import { useSubscription, type PlanId, SubscriptionProvider } from "@/lib/subscription-context"
 import Swal from "sweetalert2"
 import { toast } from "sonner"
 
@@ -33,6 +33,14 @@ interface PlanOption {
 }
 
 export default function PricingPage() {
+  return (
+    <SubscriptionProvider>
+      <PricingPageContent />
+    </SubscriptionProvider>
+  )
+}
+
+function PricingPageContent() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly")
@@ -131,7 +139,7 @@ export default function PricingPage() {
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden">
-      <Header />
+      <SiteHeader />
       <main className="flex-1">
         {/* Hero */}
         <section className="bg-primary py-8 sm:py-12 lg:py-16">

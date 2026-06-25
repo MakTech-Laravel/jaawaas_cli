@@ -108,8 +108,9 @@ export function Footer() {
               <Image
                 src="/images/logoFooter.png"
                 alt="SourceNest"
-                width={120}
-                height={120}
+                width={110}
+                height={110}
+                sizes="(max-width: 768px) 110px, 150px"
                 className="rounded-lg object-contain h-27.5 w-27.5 md:h-37.5 md:w-37.5"
               />
             </Link>

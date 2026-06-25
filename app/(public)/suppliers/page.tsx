@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -224,7 +224,7 @@ function SuppliersPageContent() {
 
   return (
     <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden bg-background">
-      <Header />
+      <SiteHeader />
       <main className="min-w-0 flex-1">
         <section className="bg-primary py-8 sm:py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

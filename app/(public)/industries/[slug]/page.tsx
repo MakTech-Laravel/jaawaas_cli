@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -174,7 +174,7 @@ export default function IndustryPage() {
   if (!industry) {
     return (
       <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
-        <Header />
+        <SiteHeader />
         <main className="flex flex-1 items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground">Industry Not Found</h1>
@@ -191,7 +191,7 @@ export default function IndustryPage() {
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
-      <Header />
+      <SiteHeader />
       <main className="flex-1">
         {/* Breadcrumb */}
         <div className="border-b border-border bg-muted/50">

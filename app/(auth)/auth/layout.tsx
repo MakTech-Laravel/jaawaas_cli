@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import Script from "next/script"
 import { CheckCircle2 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useEffect } from "react"
@@ -43,7 +44,9 @@ export default function AuthLayout({
   }, [isConstrainedAuthPage])
 
   return (
-    <div className={`flex min-h-screen ${isConstrainedAuthPage ? "h-screen overflow-hidden" : ""}`}>
+    <>
+      <Script src="https://accounts.google.com/gsi/client" strategy="lazyOnload" />
+      <div className={`flex min-h-screen ${isConstrainedAuthPage ? "h-screen overflow-hidden" : ""}`}>
       {/* Left Side - Clean Brand Panel */}
       <div
         className={`hidden w-1/2 bg-primary lg:flex lg:flex-col lg:p-20 ${
@@ -143,5 +146,6 @@ export default function AuthLayout({
         </div>
       </div>
     </div>
+    </>
   )
 }

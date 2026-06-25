@@ -54,7 +54,7 @@ export function IndustriesSection() {
   }
   
   return (
-    <section className="bg-muted/50 py-8 sm:py-12 lg:py-16">
+    <section className="relative -mt-px bg-muted/50 py-8 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="flex flex-col items-center text-center mb-8 sm:mb-12 lg:mb-16">

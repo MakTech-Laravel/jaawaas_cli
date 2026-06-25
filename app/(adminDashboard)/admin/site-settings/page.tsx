@@ -369,27 +369,6 @@ export default function SiteSettingsPage() {
     })
   }
 
-  const moveArticle = (categoryId: string, articleId: string, direction: "up" | "down") => {
-    const category = helpCenter.categories.find(c => c.id === categoryId)
-    if (!category) return
-    
-    const articles = [...category.articles].sort((a, b) => a.order - b.order)
-    const index = articles.findIndex(a => a.id === articleId)
-    if ((direction === "up" && index === 0) || (direction === "down" && index === articles.length - 1)) {
-      return
-    }
-    const swapIndex = direction === "up" ? index - 1 : index + 1
-    ;[articles[index], articles[swapIndex]] = [articles[swapIndex], articles[index]]
-    articles.forEach((art, i) => art.order = i + 1)
-    
-    setHelpCenter({
-      ...helpCenter,
-      categories: helpCenter.categories.map(cat =>
-        cat.id === categoryId ? { ...cat, articles } : cat
-      )
-    })
-  }
-
   const deleteArticle = (categoryId: string, articleId: string) => {
     setHelpCenter({
       ...helpCenter,
@@ -500,18 +479,6 @@ export default function SiteSettingsPage() {
       ...helpCenter,
       popularArticles: helpCenter.popularArticles.filter(a => a.id !== popularId)
     })
-  }
-
-  const movePopularArticle = (popularId: string, direction: "up" | "down") => {
-    const articles = [...helpCenter.popularArticles].sort((a, b) => a.order - b.order)
-    const index = articles.findIndex(a => a.id === popularId)
-    if ((direction === "up" && index === 0) || (direction === "down" && index === articles.length - 1)) {
-      return
-    }
-    const swapIndex = direction === "up" ? index - 1 : index + 1
-    ;[articles[index], articles[swapIndex]] = [articles[swapIndex], articles[index]]
-    articles.forEach((art, i) => art.order = i + 1)
-    setHelpCenter({ ...helpCenter, popularArticles: articles })
   }
 
   const currentLegalPage = legalPages.find(p => p.id === selectedLegalPage)
@@ -916,7 +883,6 @@ export default function SiteSettingsPage() {
                             onClick={() => setSelectedArticle({ categoryId: currentCategory.id, articleId: article.id })}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
                               <div className="min-w-0">
                                 <p className="text-sm font-medium truncate">{article.title}</p>
                                 <p className="text-xs text-muted-foreground">
@@ -950,28 +916,6 @@ export default function SiteSettingsPage() {
                                   {c.popularBadge}
                                 </Button>
                               )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  moveArticle(currentCategory.id, article.id, "up")
-                                }}
-                              >
-                                <ArrowUp className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  moveArticle(currentCategory.id, article.id, "down")
-                                }}
-                              >
-                                <ArrowDown className="h-3 w-3" />
-                              </Button>
                               <Switch
                                 checked={article.enabled}
                                 onCheckedChange={() => toggleArticle(currentCategory.id, article.id)}
@@ -1166,9 +1110,6 @@ export default function SiteSettingsPage() {
               <div className="space-y-2">
                 {helpCenter.popularArticles.sort((a, b) => a.order - b.order).map((article, index) => {
                   const category = helpCenter.categories.find(c => c.id === article.categoryId)
-                  const sortedArticles = [...helpCenter.popularArticles].sort((a, b) => a.order - b.order)
-                  const isFirst = index === 0
-                  const isLast = index === sortedArticles.length - 1
                   return (
                     <div
                       key={article.id}
@@ -1177,26 +1118,6 @@ export default function SiteSettingsPage() {
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="flex flex-col">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-5 w-5"
-                            onClick={() => movePopularArticle(article.id, "up")}
-                            disabled={isFirst}
-                          >
-                            <ArrowUp className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-5 w-5"
-                            onClick={() => movePopularArticle(article.id, "down")}
-                            disabled={isLast}
-                          >
-                            <ArrowDown className="h-3 w-3" />
-                          </Button>
-                        </div>
                         <Badge variant="outline" className="h-6 w-6 flex items-center justify-center p-0 text-xs">
                           {index + 1}
                         </Badge>
@@ -1222,14 +1143,6 @@ export default function SiteSettingsPage() {
                           <Pencil className="h-3 w-3" />
                           {c.edit}
                         </Button>
-                        <a
-                          href={`/help/${article.categorySlug}/${article.articleSlug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-                        >
-                          {c.view} <ExternalLink className="h-3 w-3" />
-                        </a>
                         <Switch
                           checked={article.enabled}
                           onCheckedChange={() => togglePopularArticle(article.id)}
@@ -1252,11 +1165,6 @@ export default function SiteSettingsPage() {
                   </p>
                 )}
               </div>
-              {helpCenter.popularArticles.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-4">
-                  {p.popularReorderTip}
-                </p>
-              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -39,18 +39,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react"
-
-const UNIT_OPTIONS = [
-  "pieces",
-  "sets",
-  "units",
-  "kg",
-  "meters",
-  "cartons",
-  "pallets",
-  "20ft container",
-  "40ft container",
-]
+import { DEFAULT_PRODUCT_UNIT, PRODUCT_UNIT_OPTIONS } from "@/lib/product-units"
 
 interface RfqProductLine {
   key: string
@@ -63,7 +52,7 @@ interface RfqProductLine {
 
 let lineCounterSeed = 0
 
-function newProductLine(productId = "", unit = "pieces"): RfqProductLine {
+function newProductLine(productId = "", unit = DEFAULT_PRODUCT_UNIT): RfqProductLine {
   lineCounterSeed += 1
   return {
     key: `line-${Date.now()}-${lineCounterSeed}`,
@@ -585,7 +574,7 @@ function NewRFQForm() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {UNIT_OPTIONS.map((u) => (
+                              {PRODUCT_UNIT_OPTIONS.map((u) => (
                                 <SelectItem key={u} value={u}>
                                   {u}
                                 </SelectItem>
@@ -779,7 +768,7 @@ function NewRFQForm() {
 export default function NewRFQPage() {
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
-      <Header />
+      <SiteHeader />
       <main className="flex-1">
         <Suspense
           fallback={

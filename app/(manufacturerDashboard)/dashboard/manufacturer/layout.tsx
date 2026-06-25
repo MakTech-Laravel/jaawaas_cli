@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
-import { useSubscription } from "@/lib/subscription-context"
+import { SubscriptionProvider, useSubscription } from "@/lib/subscription-context"
+import { MessagesProvider } from "@/lib/messages-context"
 import { NotificationsDropdown } from "@/components/notifications-dropdown"
 import { useTranslation } from "@/lib/i18n"
 import { 
@@ -53,6 +54,20 @@ const navigation = [
 ]
 
 export default function ManufacturerDashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <SubscriptionProvider>
+      <MessagesProvider>
+        <ManufacturerDashboardLayoutInner>{children}</ManufacturerDashboardLayoutInner>
+      </MessagesProvider>
+    </SubscriptionProvider>
+  )
+}
+
+function ManufacturerDashboardLayoutInner({
   children,
 }: {
   children: React.ReactNode

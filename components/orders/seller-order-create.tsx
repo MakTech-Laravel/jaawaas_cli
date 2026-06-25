@@ -34,20 +34,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n"
-
-const UNIT_OPTIONS = [
-  "pcs",
-  "units",
-  "boxes",
-  "cartons",
-  "sets",
-  "pairs",
-  "kg",
-  "tons",
-  "meters",
-  "rolls",
-  "pallets",
-]
+import { DEFAULT_PRODUCT_UNIT, PRODUCT_UNIT_OPTIONS } from "@/lib/product-units"
 
 interface ProductLine {
   key: string
@@ -68,7 +55,7 @@ function newLine(): ProductLine {
     productId: "",
     productName: "",
     quantity: "",
-    unit: "pcs",
+    unit: DEFAULT_PRODUCT_UNIT,
     unitPrice: "",
     notes: "",
   }
@@ -407,7 +394,7 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {UNIT_OPTIONS.map((u) => (
+                            {PRODUCT_UNIT_OPTIONS.map((u) => (
                               <SelectItem key={u} value={u}>
                                 {u}
                               </SelectItem>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -196,7 +196,7 @@ export default function ContactPage() {
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden">
-      <Header />
+      <SiteHeader />
       <main className="flex-1">
         {/* Hero */}
         <section className="bg-primary py-8 sm:py-12 lg:py-16">
