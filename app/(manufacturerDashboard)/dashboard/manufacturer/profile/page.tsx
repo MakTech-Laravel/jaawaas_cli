@@ -302,7 +302,7 @@ export default function ManufacturerProfilePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
@@ -584,7 +584,7 @@ export default function ManufacturerProfilePage() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6 overflow-x-hidden">
           {/* Company Logo */}
           <Card>
             <CardHeader>

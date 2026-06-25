@@ -125,7 +125,7 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
 
   if (error || !order) {
     return (
-      <div className="mx-auto max-w-3xl py-16 text-center">
+      <div className="mx-auto max-w-3xl py-12 text-center sm:py-16">
         <h1 className="font-serif text-xl font-medium text-foreground">{error || t.mfg.orderDetails.notFound}</h1>
         <Button asChild variant="outline" className="mt-4">
           <Link href={config.basePath}>{t.mfg.orderDetails.backToList}</Link>
@@ -249,8 +249,8 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
         {/* Main */}
         <div className="space-y-6 lg:col-span-2">
           {/* Add update */}
-          <div className="rounded-xl border border-border bg-card p-6">
-            <div className="flex items-center justify-between">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="font-medium text-foreground">{t.mfg.orderDetails.progressUpdates}</h2>
               {order.status !== "completed" && order.status !== "cancelled" && (
                 <Button size="sm" variant={showForm ? "outline" : "default"} className="gap-1.5" onClick={() => setShowForm(!showForm)}>

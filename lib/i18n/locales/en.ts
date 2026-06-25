@@ -810,6 +810,11 @@ const en = {
       certifications: "Certifications",
       exportMarkets: "Export Markets",
       pieces: "pieces",
+      showingResults: "Showing {from}-{to} of {total}",
+      previous: "Previous",
+      next: "Next",
+      pageOf: "Page {page} of {lastPage}",
+      perPage: "per page",
     },
     suppliersMap: {
       globalNetwork: "Global Network",

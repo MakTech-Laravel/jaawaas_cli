@@ -597,7 +597,7 @@ export default function SubscriptionPage() {
   const messageLimit = plan?.limits.messagesPerMonth ?? 0
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-foreground">{t.mfg.subscription.title}</h1>
@@ -607,7 +607,7 @@ export default function SubscriptionPage() {
       {/* Current Plan Overview */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Crown className="h-5 w-5 text-secondary" />
@@ -636,14 +636,14 @@ export default function SubscriptionPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 sm:gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Package className="h-4 w-4" />
                 {t.mfg.subscription.productsLimit}
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-semibold">{usage.productsUsed}</span>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-xl font-semibold sm:text-2xl">{usage.productsUsed}</span>
                 <span className="text-sm text-muted-foreground">
                   / {productLimit === -1 ? "∞" : productLimit}
                 </span>
@@ -655,8 +655,8 @@ export default function SubscriptionPage() {
                 <Eye className="h-4 w-4" />
                 {t.mfg.subscription.inquiriesLimit}
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-semibold">{usage.inquiriesThisMonth}</span>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-xl font-semibold sm:text-2xl">{usage.inquiriesThisMonth}</span>
                 <span className="text-sm text-muted-foreground">
                   / {inquiryLimit === -1 ? "∞" : inquiryLimit}
                 </span>
@@ -668,8 +668,8 @@ export default function SubscriptionPage() {
                 <MessageSquare className="h-4 w-4" />
                 {t.mfg.subscription.messagesLimit}
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-semibold">{usage.messagesThisMonth}</span>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-xl font-semibold sm:text-2xl">{usage.messagesThisMonth}</span>
                 <span className="text-sm text-muted-foreground">
                   / {messageLimit === -1 ? "∞" : messageLimit}
                 </span>
@@ -736,7 +736,7 @@ export default function SubscriptionPage() {
                 )}
               >
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <CardTitle>{planOption.name}</CardTitle>
                     {planOption.id === "growth" && !isCurrentPlan && (
                       <Badge className="bg-secondary text-secondary-foreground">{t.mfg.subscription.popular}</Badge>
@@ -751,7 +751,7 @@ export default function SubscriptionPage() {
                   <div className="mb-6">
                     {displayPrice !== null && displayPrice !== undefined ? (
                       <>
-                        <span className="text-3xl font-bold">
+                        <span className="text-2xl font-bold sm:text-3xl">
                           ${displayPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                         </span>
                         <span className="text-muted-foreground">

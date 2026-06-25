@@ -8,27 +8,29 @@ import { useTranslation } from "@/lib/i18n"
 import { getPublicCategories, BackendCategory } from "@/lib/api/categories"
 import DynamicIcon from "@/components/dynamic-icon"
 
+const industryIconClass = "h-6 w-6"
+
 // Map industry icons
 const industryIcons: Record<string, React.ReactNode> = {
-  "electronics-electrical": <Cpu className="h-8 w-8" />,
-  "machinery-equipment": <Cog className="h-8 w-8" />,
-  "textiles-apparel": <Shirt className="h-8 w-8" />,
-  "home-garden": <Home className="h-8 w-8" />,
-  "health-beauty": <Heart className="h-8 w-8" />,
-  "automotive-parts": <Car className="h-8 w-8" />,
-  "food-beverage": <UtensilsCrossed className="h-8 w-8" />,
-  "chemicals-materials": <FlaskConical className="h-8 w-8" />,
-  "packaging": <Package className="h-8 w-8" />,
-  "lighting": <Lightbulb className="h-8 w-8" />,
-  "metal-products": <Wrench className="h-8 w-8" />,
-  "construction-materials": <HardHat className="h-8 w-8" />,
-  "furniture": <Sofa className="h-8 w-8" />,
-  "medical-equipment": <Stethoscope className="h-8 w-8" />,
-  "agriculture": <Wheat className="h-8 w-8" />,
-  "plastic-products": <Box className="h-8 w-8" />,
-  "paper-products": <FileText className="h-8 w-8" />,
-  "industrial-machinery": <Factory className="h-8 w-8" />,
-  "consumer-goods": <ShoppingBag className="h-8 w-8" />,
+  "electronics-electrical": <Cpu className={industryIconClass} />,
+  "machinery-equipment": <Cog className={industryIconClass} />,
+  "textiles-apparel": <Shirt className={industryIconClass} />,
+  "home-garden": <Home className={industryIconClass} />,
+  "health-beauty": <Heart className={industryIconClass} />,
+  "automotive-parts": <Car className={industryIconClass} />,
+  "food-beverage": <UtensilsCrossed className={industryIconClass} />,
+  "chemicals-materials": <FlaskConical className={industryIconClass} />,
+  "packaging": <Package className={industryIconClass} />,
+  "lighting": <Lightbulb className={industryIconClass} />,
+  "metal-products": <Wrench className={industryIconClass} />,
+  "construction-materials": <HardHat className={industryIconClass} />,
+  "furniture": <Sofa className={industryIconClass} />,
+  "medical-equipment": <Stethoscope className={industryIconClass} />,
+  "agriculture": <Wheat className={industryIconClass} />,
+  "plastic-products": <Box className={industryIconClass} />,
+  "paper-products": <FileText className={industryIconClass} />,
+  "industrial-machinery": <Factory className={industryIconClass} />,
+  "consumer-goods": <ShoppingBag className={industryIconClass} />,
 }
 
 export function IndustriesSection() {
@@ -97,21 +99,21 @@ export function IndustriesSection() {
               >
                 <div className="relative p-3 sm:p-6 lg:p-8">
                   <div 
-                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-card shadow-sm transition-transform duration-300 group-hover:scale-110 sm:h-16 sm:w-16 sm:rounded-2xl sm:shadow-md lg:h-20 lg:w-20"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-card shadow-sm transition-transform duration-300 group-hover:scale-110 sm:h-12 sm:w-12 sm:rounded-2xl sm:shadow-md lg:h-14 lg:w-14"
                   >
                     {iconUrl ? (
-                      <img src={iconUrl} alt={industry.name} className="h-5 w-5 object-contain sm:h-8 sm:w-8 lg:h-10 lg:w-10" />
+                      <img src={iconUrl} alt={industry.name} className={`${industryIconClass} object-contain`} />
                     ) : industry.icon && (industry.icon.includes(".") || industry.icon.startsWith("/")) ? (
-                      <img src={industry.icon} alt={industry.name} className="h-5 w-5 object-contain sm:h-8 sm:w-8 lg:h-10 lg:w-10" />
+                      <img src={industry.icon} alt={industry.name} className={`${industryIconClass} object-contain`} />
                     ) : industry.icon ? (
                       <DynamicIcon 
                         name={industry.icon} 
-                        size={20} 
+                        className={industryIconClass}
                         color={industry.icon_color || undefined}
                       />
                     ) : (
-                      <div className="scale-75 sm:scale-100" style={{ color: industry.icon_color || "#64748b" }}>
-                        {industryIcons[industry.slug || ""] || <Package className="h-8 w-8 lg:h-10 lg:w-10" />}
+                      <div style={{ color: industry.icon_color || "#64748b" }}>
+                        {industryIcons[industry.slug || ""] || <Package className={industryIconClass} />}
                       </div>
                     )}
                   </div>

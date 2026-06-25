@@ -368,7 +368,7 @@ export default function ManufacturerProductsPage() {
   const total = meta?.total ?? productsList.length
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-medium text-foreground">{t.mfg.products.title}</h1>
@@ -382,7 +382,7 @@ export default function ManufacturerProductsPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <ManufacturerStatCard
           title={t.mfg.products.title}
           value={loading && !stats ? "—" : stats?.total ?? total}
@@ -436,7 +436,7 @@ export default function ManufacturerProductsPage() {
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         {loading && productsList.length === 0 ? (
-          <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+          <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground sm:py-16">
             <Loader2 className="h-5 w-5 animate-spin" />
             {t.common.loading}
           </div>

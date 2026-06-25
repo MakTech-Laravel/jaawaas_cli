@@ -62,7 +62,7 @@ function AdditionalInformationSubmitPageContent() {
   if (loading) {
     return (
       <Card>
-        <CardContent className="flex flex-col items-center py-16 text-center">
+        <CardContent className="flex flex-col items-center py-12 text-center sm:py-16">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           <p className="mt-4 text-sm text-muted-foreground">{t.mfg.inquiries.loading}</p>
         </CardContent>
@@ -90,7 +90,7 @@ function AdditionalInformationSubmitPageContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" asChild className="-ml-2">
           <Link href="/dashboard/manufacturer/review-center">

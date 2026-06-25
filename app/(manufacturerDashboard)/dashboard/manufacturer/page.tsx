@@ -57,7 +57,7 @@ export default function ManufacturerDashboardPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-full overflow-hidden">
+    <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden">
       {/* Welcome Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

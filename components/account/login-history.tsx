@@ -51,8 +51,8 @@ export default function AccountLoginHistory({ backHref }: { backHref: string }) 
   }, [page])
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-medium text-foreground">{t.mfg.loginHistory.title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t.mfg.loginHistory.subtitle}</p>

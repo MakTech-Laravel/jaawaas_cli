@@ -81,7 +81,7 @@ export function HeroSection() {
 
       <HeroLocaleSync initial={hero} />
 
-      <div className="absolute bottom-0 left-0 right-0 leading-[0]" aria-hidden>
+      <div className="absolute bottom-0 left-0 right-0 leading-0" aria-hidden>
         <svg
           viewBox="0 0 1440 60"
           fill="none"

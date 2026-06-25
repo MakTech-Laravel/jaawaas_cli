@@ -284,7 +284,7 @@ export function SellerOrdersList({ config }: { config: SellerConfig }) {
           )}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-16 text-center">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-12 text-center sm:py-16">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <PackageCheck className="h-6 w-6 text-muted-foreground" />
           </div>

@@ -257,12 +257,11 @@ export function IndustriesPageContent() {
                 >
                   <div className="p-3 sm:p-6">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary/10 text-secondary sm:h-14 sm:w-14 sm:rounded-xl">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-secondary/10 text-secondary sm:h-12 sm:w-12 sm:rounded-xl">
                         <DynamicIcon
                           name={industry.icon}
-                          size={32}
-                          className="h-5 w-5 sm:h-8 sm:w-8"
-                          fallback={<Factory className="h-5 w-5 sm:h-8 sm:w-8" />}
+                          className="h-6 w-6"
+                          fallback={<Factory className="h-6 w-6" />}
                         />
                       </div>
                       {industry.featured && (

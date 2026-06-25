@@ -283,7 +283,7 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto min-w-0 max-w-2xl overflow-x-hidden">
       <Button asChild variant="ghost" size="sm" className="mb-4 gap-1.5 text-muted-foreground">
         <Link href={config.basePath}>
           <ArrowLeft className="h-4 w-4" />
@@ -647,7 +647,7 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-6">
+    <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:p-6">
       <h2 className="mb-4 font-medium text-foreground">{title}</h2>
       <div className="space-y-4">{children}</div>
     </div>
