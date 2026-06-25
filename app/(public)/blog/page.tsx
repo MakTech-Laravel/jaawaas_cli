@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, Calendar, User, Clock, Globe, BookOpen, ChevronRight } from "lucide-react"
@@ -32,7 +32,7 @@ export default function BlogPage() {
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
-      <Header />
+      <SiteHeader />
       <main className="flex-1">
 
         {/* ─── Hero ─── */}

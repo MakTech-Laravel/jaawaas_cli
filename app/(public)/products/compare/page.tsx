@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react"
 import Link from "next/link"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -90,7 +90,7 @@ export default function ProductComparePage() {
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
-      <Header />
+      <SiteHeader />
       <main className="flex-1">
         <div className="border-b border-border bg-muted/40">
           <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">

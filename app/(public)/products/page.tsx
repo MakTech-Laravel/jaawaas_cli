@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useMemo, useRef } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useTranslation } from "@/lib/i18n"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -269,7 +269,7 @@ function ProductsPageContent() {
 
   return (
     <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden bg-background">
-      <Header />
+      <SiteHeader />
       <main className="min-w-0 flex-1">
         {/* Hero Section */}
         <section className="bg-primary py-8 sm:py-12 lg:py-16">
@@ -758,7 +758,7 @@ export default function ProductsPage() {
   return (
     <Suspense fallback={
       <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
-        <Header />
+        <SiteHeader />
         <main className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </main>

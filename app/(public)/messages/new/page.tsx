@@ -3,7 +3,7 @@
 import { useState, Suspense, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -398,7 +398,7 @@ function NewMessageForm() {
 export default function NewMessagePage() {
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
-      <Header />
+      <SiteHeader />
       <main className="flex-1">
         <Suspense fallback={
           <div className="flex min-h-[50vh] items-center justify-center">

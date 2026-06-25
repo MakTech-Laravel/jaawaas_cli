@@ -38,11 +38,25 @@ import {
   ClipboardList,
   Award,
   ScanEye,
-  ShoppingBag
+  ShoppingBag,
+  Globe,
 } from "lucide-react"
 import { useState } from "react"
+import { RfqsProvider } from "@/lib/rfqs-context"
 
 export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <RfqsProvider>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </RfqsProvider>
+  )
+}
+
+function AdminLayoutInner({
   children,
 }: {
   children: React.ReactNode
@@ -73,8 +87,11 @@ export default function AdminLayout({
     { name: t.nav.adminSubscriptions, href: "/admin/subscriptions", icon: CreditCard },
     { name: t.nav.adminCertificateType, href: "/admin/certificatetype", icon: Award },
     { name: t.nav.adminAnalytics, href: "/admin/analytics", icon: BarChart3 },
+    { name: t.nav.adminInsights, href: "/admin/insights", icon: Lightbulb },
+    { name: t.nav.adminReports, href: "/admin/reports", icon: Flag },
     { name: t.nav.adminContactPage, href: "/admin/contact", icon: Mail },
     { name: t.nav.adminFAQManagement, href: "/admin/faq", icon: HelpCircle },
+    { name: t.nav.adminSiteSettings, href: "/admin/site-settings", icon: Globe },
     { name: t.nav.adminSettings, href: "/admin/settings", icon: Settings },
   ]
 

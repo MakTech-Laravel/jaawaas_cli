@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, User } from "lucide-react"
@@ -78,7 +78,7 @@ export default function ArticlePage() {
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden">
-      <Header />
+      <SiteHeader />
       <main className="flex-1">
         <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
           {loading ? (

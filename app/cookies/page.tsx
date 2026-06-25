@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 
 export const metadata: Metadata = {
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function CookiesPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Header />
+      <SiteHeader />
       <main className="flex-1">
         <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
           <h1 className="font-serif text-4xl font-medium text-foreground">Cookie Policy</h1>

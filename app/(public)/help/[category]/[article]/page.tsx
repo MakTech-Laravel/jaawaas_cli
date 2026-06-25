@@ -4,7 +4,7 @@ import { use } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { useTranslation } from "@/lib/i18n"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { 
   ArrowLeft,
@@ -36,7 +36,7 @@ export default function HelpArticlePage({ params }: { params: Promise<{ category
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden">
-      <Header />
+      <SiteHeader />
       <main className="flex-1">
         {/* Breadcrumb */}
         <section className="border-b border-border bg-muted/50 py-4">

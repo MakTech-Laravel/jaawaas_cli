@@ -4,7 +4,7 @@ import React from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, User, Clock, ArrowLeft, ChevronRight, Globe } from "lucide-react"
@@ -28,7 +28,7 @@ export default function BlogArticlePage() {
   if (!article) {
     return (
       <div className="flex min-h-screen flex-col">
-        <Header />
+        <SiteHeader />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center py-24 px-4">
             <div className="text-6xl mb-6">📄</div>
@@ -52,7 +52,7 @@ export default function BlogArticlePage() {
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
-      <Header />
+      <SiteHeader />
       <main className="flex-1">
 
         {/* ─── Hero ─── */}

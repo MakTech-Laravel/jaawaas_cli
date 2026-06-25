@@ -221,16 +221,17 @@ export function Header() {
   }
 
   return (
-    <>
-    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-border/40 bg-[#fffefa]/95 backdrop-blur supports-backdrop-filter:bg-background/80">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-border/40 bg-[#fffefa]/95 max-lg:bg-[#fffefa] lg:backdrop-blur lg:supports-backdrop-filter:bg-background/80">
       <div className="mx-auto flex h-18 md:h-24 min-w-0 max-w-7xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <Image
             src="/images/logo.png"
             alt="SourceNest"
-            width={120}
-            height={120}
+            width={110}
+            height={110}
+            priority
+            sizes="(max-width: 768px) 110px, 150px"
             className="rounded-lg object-contain h-27.5 w-27.5 md:h-37.5 md:w-37.5"
           />
         </Link>
@@ -502,8 +503,9 @@ export function Header() {
                   <Image
                     src="/images/logo.png"
                     alt="SourceNest"
-                    width={120}
-                    height={120}
+                    width={110}
+                    height={110}
+                    sizes="(max-width: 768px) 110px, 150px"
                     className="rounded-lg object-contain h-27.5 w-27.5 md:h-37.5 md:w-37.5"
                   />
                 </SheetTitle>
@@ -655,7 +657,18 @@ export function Header() {
         </div>
       </div>
     </header>
-    <div className="h-18 shrink-0 md:h-24" aria-hidden />
+  )
+}
+
+export function HeaderSpacer() {
+  return <div className="h-18 shrink-0 md:h-24" aria-hidden />
+}
+
+export function SiteHeader() {
+  return (
+    <>
+      <Header />
+      <HeaderSpacer />
     </>
   )
 }

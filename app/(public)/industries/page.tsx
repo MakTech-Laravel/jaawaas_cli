@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import { Metadata } from "next"
-import { Header } from "@/components/layout/header"
+import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { IndustriesPageContent } from "@/components/industries/industries-page-content"
 import { Loader2 } from "lucide-react"
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function IndustriesPage() {
   return (
     <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden bg-background">
-      <Header />
+      <SiteHeader />
       <Suspense
         fallback={
           <main className="flex flex-1 items-center justify-center py-24">
