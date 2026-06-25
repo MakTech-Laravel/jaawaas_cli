@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Search, Send, MoreVertical, ArrowLeft, MessageSquare, User, Factory, Globe, CheckCircle, X, Package } from "lucide-react"
+import { Search, Send, ArrowLeft, MessageSquare, User, Factory, Globe, CheckCircle, X, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -222,7 +222,7 @@ export function ChatView({
         {selectedConversation ? (
           <>
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-border p-4 bg-card/50 backdrop-blur-sm z-10">
+            <div className="flex items-center border-b border-border p-4 bg-card/50 backdrop-blur-sm z-10">
               <div className="flex items-center gap-3 min-w-0">
                 <Button 
                   variant="ghost" 
@@ -262,9 +262,6 @@ export function ChatView({
                   </div>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" className="text-muted-foreground">
-                <MoreVertical className="h-5 w-5" />
-              </Button>
             </div>
 
             {/* Messages Area */}

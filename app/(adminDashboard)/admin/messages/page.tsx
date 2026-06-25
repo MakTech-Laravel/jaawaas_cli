@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react"
 import { ChatView, ChatConversation, ChatMessage, ChatParticipant } from "@/components/chat/chat-view"
 import { useAuth } from "@/lib/auth-context"
-import { Badge } from "@/components/ui/badge"
-import { Shield, AlertTriangle, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { getConversations, getMessages, sendMessage, markAsRead } from "@/lib/api/messages"
 import { getEcho } from "@/lib/echo"
 import { useTranslation } from "@/lib/i18n"
@@ -227,23 +226,11 @@ export default function AdminMessagesPage() {
 
   return (
     <div className="space-y-6 h-[calc(100dvh-140px)] flex flex-col">
-      <div className="flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {p.subtitle}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Badge variant="outline" className="gap-1">
-            <Shield className="h-3.5 w-3.5 text-secondary" />
-            {c.moderationActive}
-          </Badge>
-          <Badge variant="destructive" className="gap-1">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            {conversations.filter(conv => (conv as any).flagged).length} {c.flagged}
-          </Badge>
-        </div>
+      <div className="shrink-0">
+        <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {p.subtitle}
+        </p>
       </div>
 
       <div className="flex-1 min-h-0">
