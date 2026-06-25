@@ -2,8 +2,20 @@
 
 import React, { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
-import { apiClient } from "@/lib/api/client"
 import { getApiErrorMessage } from "@/lib/api/errors"
+import {
+  createAdminArticle,
+  createArticleCategory,
+  deleteAdminArticle,
+  deleteArticleCategory,
+  fetchAdminArticle,
+  fetchAdminArticles,
+  fetchArticleCategories,
+  mapAdminArticleToInsight,
+  updateAdminArticle,
+  updateArticleCategory,
+  type ArticleStatus,
+} from "@/lib/api/admin-articles"
 import { useTranslation } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -62,7 +74,7 @@ interface InsightArticle {
   tags: string[]
   author: string
   publishedAt: string | null
-  status: "draft" | "published" | "archived"
+  status: ArticleStatus
   featured: boolean
   featuredImage?: string | null
   featuredImageName?: string | null
@@ -70,84 +82,6 @@ interface InsightArticle {
   createdAt: string
   updatedAt: string
 }
-
-const initialCategories = [
-  "Industry News",
-  "Sourcing Tips",
-  "Market Analysis",
-  "Success Stories",
-  "How-to Guides",
-  "Trade Shows",
-  "Supplier Spotlights",
-  "Compliance & Regulations"
-]
-
-const initialArticles: InsightArticle[] = [
-  {
-    id: "1",
-    title: "Top 10 Tips for Finding Reliable Manufacturers",
-    slug: "top-10-tips-finding-reliable-manufacturers",
-    excerpt: "Learn the essential strategies for identifying and vetting trustworthy manufacturing partners.",
-    content: "Finding reliable manufacturers is crucial for business success...",
-    category: "Sourcing Tips",
-    tags: ["sourcing", "manufacturers", "review"],
-    author: "Editorial Team",
-    publishedAt: "2024-01-15",
-    status: "published",
-    featured: true,
-    views: 2450,
-    createdAt: "2024-01-10",
-    updatedAt: "2024-01-15"
-  },
-  {
-    id: "2",
-    title: "Understanding MOQ: A Buyer's Guide",
-    slug: "understanding-moq-buyers-guide",
-    excerpt: "Everything you need to know about Minimum Order Quantities and how to negotiate them.",
-    content: "Minimum Order Quantity (MOQ) is a critical factor...",
-    category: "How-to Guides",
-    tags: ["MOQ", "negotiation", "buying"],
-    author: "Editorial Team",
-    publishedAt: "2024-01-20",
-    status: "published",
-    featured: false,
-    views: 1820,
-    createdAt: "2024-01-18",
-    updatedAt: "2024-01-20"
-  },
-  {
-    id: "3",
-    title: "2024 Manufacturing Trends in Asia",
-    slug: "2024-manufacturing-trends-asia",
-    excerpt: "An in-depth analysis of the latest manufacturing trends across Asian markets.",
-    content: "The manufacturing landscape in Asia continues to evolve...",
-    category: "Market Analysis",
-    tags: ["trends", "asia", "market"],
-    author: "Research Team",
-    publishedAt: null,
-    status: "draft",
-    featured: false,
-    views: 0,
-    createdAt: "2024-02-01",
-    updatedAt: "2024-02-05"
-  },
-  {
-    id: "4",
-    title: "How TechMart Found Their Perfect Supplier",
-    slug: "techmart-success-story",
-    excerpt: "A case study of how TechMart used SourceNest to find their ideal manufacturing partner.",
-    content: "When TechMart first started looking for a supplier...",
-    category: "Success Stories",
-    tags: ["case study", "success", "electronics"],
-    author: "Marketing Team",
-    publishedAt: "2024-01-25",
-    status: "published",
-    featured: true,
-    views: 3200,
-    createdAt: "2024-01-22",
-    updatedAt: "2024-01-25"
-  }
-]
 
 export default function AdminInsightsPage() {
   const { t } = useTranslation()
@@ -168,7 +102,7 @@ export default function AdminInsightsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [showCategoriesDialog, setShowCategoriesDialog] = useState(false)
   const [categoryForm, setCategoryForm] = useState({ name: "", index: -1 })
-  const [rawCategories, setRawCategories] = useState<Array<Record<string, any>>>([])
+  const [rawCategories, setRawCategories] = useState<Array<{ id: number; name: string; slug?: string }>>([])
   const [categoriesLoading, setCategoriesLoading] = useState(false)
   const [categoriesError, setCategoriesError] = useState<string | null>(null)
   const [featuredImageError, setFeaturedImageError] = useState<string | null>(null)
@@ -225,7 +159,7 @@ export default function AdminInsightsPage() {
     category: "",
     tags: "",
     author: "",
-    status: "draft" as "draft" | "published" | "archived",
+    status: "draft" as ArticleStatus,
     featured: false,
     featuredImage: null as string | null,
     featuredImageName: undefined as string | undefined
@@ -256,7 +190,7 @@ export default function AdminInsightsPage() {
       category: "",
       tags: "",
       author: c.editorialTeam,
-      status: "published",
+      status: "draft",
       featured: false,
       featuredImage: null,
       featuredImageName: undefined
@@ -287,142 +221,89 @@ export default function AdminInsightsPage() {
     setShowEditDialog(true)
   }
 
-  const saveArticle = () => {
-    const now = new Date().toISOString().split('T')[0]
-    
-    if (editingArticle) {
-      // Update existing (PUT to backend)
-      ;(async () => {
-        setIsSubmittingArticle(true)
-        const form = new FormData()
-        form.append('title', editForm.title)
-        form.append('slug', editForm.slug)
-        form.append('excerpt', editForm.excerpt)
-        form.append('content', editForm.content)
-        form.append('author', editForm.author)
-        form.append('is_featured', editForm.featured ? '1' : '0')
-        form.append('status', editForm.status)
+  const buildArticlePayload = () => {
+    const cat = rawCategories.find((item) => String(item.name) === String(editForm.category))
+    const tags = editForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean)
 
-        // find category id if available
-        const cat = rawCategories.find(c => String(c.name) === String(editForm.category))
-        if (cat && cat.id) {
-          form.append('article_category_id', String(cat.id))
-        }
-
-        if (featuredFile) {
-          form.append('article_image', featuredFile)
-        }
-
-        const tags = editForm.tags.split(',').map(t => t.trim()).filter(Boolean)
-        tags.forEach((t) => form.append('tags[]', t))
-
-        try {
-          const res = await apiClient.put(`/admin/articles/${editingArticle.id}`, form)
-          const updated = res.data?.data ?? null
-          toast({ title: p.articleUpdated, description: res.data?.message || p.articleSaved })
-
-          // Update in-memory list with returned data
-          setArticles(prev => prev.map(a => 
-            a.id === editingArticle.id 
-              ? {
-                  id: String(updated?.id ?? editingArticle.id),
-                  title: updated?.title ?? editForm.title,
-                  slug: updated?.slug ?? editForm.slug,
-                  excerpt: updated?.excerpt ?? editForm.excerpt,
-                  content: updated?.content ?? editForm.content,
-                  category: editForm.category,
-                  tags: tags,
-                  author: updated?.author ?? editForm.author,
-                  publishedAt: updated?.published_at ?? (editForm.status === 'published' ? now : null),
-                  status: editForm.status,
-                  featured: editForm.featured,
-                  featuredImage: updated?.image_url ?? editForm.featuredImage ?? null,
-                  featuredImageName: updated?.image_url ? updated.image_url.split('/').pop() : editForm.featuredImageName ?? null,
-                  views: updated?.views ?? a.views,
-                  createdAt: a.createdAt,
-                  updatedAt: updated?.updated_at ?? now,
-                }
-              : a
-          ))
-          setShowEditDialog(false)
-          setFeaturedFile(null)
-          setFeaturedImageError(null)
-        } catch (err: unknown) {
-          toast({ title: p.saveFailed, description: getApiErrorMessage(err, p.saveFailed) })
-        } finally {
-          setIsSubmittingArticle(false)
-        }
-      })()
-    } else {
-      // Create new (POST to backend)
-      ;(async () => {
-        setIsSubmittingArticle(true)
-        const form = new FormData()
-        form.append('title', editForm.title)
-        form.append('slug', editForm.slug)
-        form.append('excerpt', editForm.excerpt)
-        form.append('content', editForm.content)
-        form.append('author', editForm.author)
-        form.append('is_featured', editForm.featured ? '1' : '0')
-        form.append('status', editForm.status)
-
-        // find category id if available
-        const cat = rawCategories.find(c => String(c.name) === String(editForm.category))
-        if (cat && cat.id) {
-          form.append('article_category_id', String(cat.id))
-        }
-
-        if (featuredFile) {
-          form.append('article_image', featuredFile)
-        }
-
-        const tags = editForm.tags.split(',').map(t => t.trim()).filter(Boolean)
-        tags.forEach((t) => form.append('tags[]', t))
-
-        try {
-          const res = await apiClient.post('/admin/articles/create', form)
-          const created = res.data?.data ?? null
-          toast({ title: p.articleCreated, description: res.data?.message || p.articleSaved })
-
-          // Add to in-memory list using returned data when available
-          const newArticle: InsightArticle = {
-            id: created?.id ? String(created.id) : `article-${Date.now()}`,
-            title: created?.title ?? editForm.title,
-            slug: created?.slug ?? editForm.slug,
-            excerpt: created?.excerpt ?? editForm.excerpt,
-            content: created?.content ?? editForm.content,
-            category: editForm.category,
-            tags: tags,
-            author: created?.author ?? editForm.author,
-            publishedAt: editForm.status === 'published' ? now : null,
-            status: editForm.status,
-            featured: editForm.featured,
-            featuredImage: created?.article_image ?? editForm.featuredImage ?? null,
-            featuredImageName: created?.article_image_name ?? editForm.featuredImageName ?? null,
-            views: 0,
-            createdAt: created?.created_at ?? now,
-            updatedAt: created?.updated_at ?? now,
-          }
-          setArticles(prev => [newArticle, ...prev])
-          setShowEditDialog(false)
-        } catch (err: unknown) {
-          toast({ title: p.failedToCreate, description: getApiErrorMessage(err, p.articleCreateFailed) })
-        } finally {
-          setIsSubmittingArticle(false)
-        }
-      })()
+    return {
+      title: editForm.title.trim(),
+      slug: editForm.slug.trim(),
+      excerpt: editForm.excerpt.trim(),
+      content: editForm.content.trim(),
+      author: editForm.author.trim(),
+      is_featured: editForm.featured,
+      status: editForm.status,
+      article_category_id: cat?.id,
+      article_image: featuredFile,
+      tags,
     }
+  }
+
+  const saveArticle = () => {
+    if (!editForm.title.trim() || !editForm.slug.trim() || !editForm.content.trim()) {
+      toast({
+        title: c.validationError,
+        description: c.fillRequiredFields,
+        variant: "destructive",
+      })
+      return
+    }
+
+    const cat = rawCategories.find((item) => String(item.name) === String(editForm.category))
+    if (!cat?.id) {
+      toast({
+        title: c.validationError,
+        description: p.selectCategory,
+        variant: "destructive",
+      })
+      return
+    }
+
+    const payload = buildArticlePayload()
+
+    ;(async () => {
+      setIsSubmittingArticle(true)
+      try {
+        if (editingArticle) {
+          const result = await updateAdminArticle(editingArticle.id, payload)
+          toast({
+            title: p.articleUpdated,
+            description: result.message || p.articleSaved,
+          })
+        } else {
+          const result = await createAdminArticle(payload)
+          toast({
+            title: p.articleCreated,
+            description: result.message || p.articleSaved,
+          })
+        }
+
+        setShowEditDialog(false)
+        setFeaturedFile(null)
+        setFeaturedImageError(null)
+        await fetchArticles()
+      } catch (err: unknown) {
+        toast({
+          title: editingArticle ? p.saveFailed : p.failedToCreate,
+          description: getApiErrorMessage(
+            err,
+            editingArticle ? p.saveFailed : p.articleCreateFailed
+          ),
+          variant: "destructive",
+        })
+      } finally {
+        setIsSubmittingArticle(false)
+      }
+    })()
   }
 
   async function fetchCategories() {
     setCategoriesLoading(true)
     setCategoriesError(null)
     try {
-      const res = await apiClient.get("/admin/article/categories")
-      const payload = res.data
-      const list = Array.isArray(payload?.data) ? payload.data : []
+      const list = await fetchArticleCategories()
       setRawCategories(list)
-      setCategories(list.map((c: any) => String(c.name)))
+      setCategories(list.map((category) => String(category.name)))
     } catch (err: unknown) {
       setCategoriesError(getApiErrorMessage(err, p.failedLoadCategories))
     } finally {
@@ -434,30 +315,8 @@ export default function AdminInsightsPage() {
     setArticlesLoading(true)
     setArticlesError(null)
     try {
-      const res = await apiClient.get("/admin/articles")
-      const payload = res.data
-      const list = Array.isArray(payload?.data) ? payload.data : []
-      
-      const normalized = list.map((article: any) => ({
-        id: String(article.id),
-        title: String(article.title || ''),
-        slug: String(article.slug || ''),
-        excerpt: String(article.excerpt || ''),
-        content: String(article.content || ''),
-        category: article.category?.name ? String(article.category.name) : '',
-        tags: Array.isArray(article.tags) ? article.tags.map((t: any) => String(t)) : [],
-        author: String(article.author || ''),
-        publishedAt: article.published_at ? String(article.published_at) : null,
-        status: ['draft', 'published', 'archived'].includes(article.status) ? article.status : 'draft',
-        featured: Boolean(article.is_featured),
-        views: Number(article.views) || 0,
-        createdAt: String(article.created_at || ''),
-        updatedAt: String(article.updated_at || ''),
-        featuredImage: article.image_url ? String(article.image_url) : null,
-        featuredImageName: article.image_url ? article.image_url.split('/').pop() : null,
-      }))
-      
-      setArticles(normalized)
+      const list = await fetchAdminArticles()
+      setArticles(list.map(mapAdminArticleToInsight))
     } catch (err: unknown) {
       setArticlesError(getApiErrorMessage(err, p.failedLoadArticles))
     } finally {
@@ -468,32 +327,15 @@ export default function AdminInsightsPage() {
   async function fetchAndPreviewArticle(articleId: string) {
     setPreviewLoading(true)
     try {
-      const res = await apiClient.get(`/admin/articles/${articleId}`)
-      const article = res.data?.data
-      
-      const normalized: InsightArticle = {
-        id: String(article.id),
-        title: String(article.title || ''),
-        slug: String(article.slug || ''),
-        excerpt: String(article.excerpt || ''),
-        content: String(article.content || ''),
-        category: article.category?.name ? String(article.category.name) : '',
-        tags: Array.isArray(article.tags) ? article.tags.map((t: any) => String(t)) : [],
-        author: String(article.author || ''),
-        publishedAt: article.published_at ? String(article.published_at) : null,
-        status: ['draft', 'published', 'archived'].includes(article.status) ? article.status : 'draft',
-        featured: Boolean(article.is_featured),
-        views: Number(article.views) || 0,
-        createdAt: String(article.created_at || ''),
-        updatedAt: String(article.updated_at || ''),
-        featuredImage: article.image_url ? String(article.image_url) : null,
-        featuredImageName: article.image_url ? article.image_url.split('/').pop() : null,
-      }
-      
-      setPreviewArticle(normalized)
+      const article = await fetchAdminArticle(articleId)
+      setPreviewArticle(mapAdminArticleToInsight(article))
       setShowPreviewDialog(true)
     } catch (err: unknown) {
-      toast({ variant: "destructive", title: c.error, description: getApiErrorMessage(err, p.previewFailed) })
+      toast({
+        variant: "destructive",
+        title: c.error,
+        description: getApiErrorMessage(err, p.previewFailed),
+      })
     } finally {
       setPreviewLoading(false)
     }
@@ -503,8 +345,12 @@ export default function AdminInsightsPage() {
     const trimmed = name.trim()
     if (!trimmed) return
     try {
-      const slug = trimmed.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 100)
-      await apiClient.post("/admin/article/categories", { name: trimmed, slug })
+      const slug = trimmed
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "")
+        .slice(0, 100)
+      await createArticleCategory({ name: trimmed, slug })
       await fetchCategories()
     } catch (err: unknown) {
       setCategoriesError(getApiErrorMessage(err, p.failedAddCategory))
@@ -515,13 +361,17 @@ export default function AdminInsightsPage() {
     const trimmed = name.trim()
     if (!trimmed) return
     const entry = rawCategories[index]
-    if (!entry || !entry.id) {
+    if (!entry?.id) {
       setCategoriesError(p.categoryNotFoundUpdate)
       return
     }
     try {
-      const slug = trimmed.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 100)
-      await apiClient.put(`/admin/article/categories/${entry.id}`, { name: trimmed, slug })
+      const slug = trimmed
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "")
+        .slice(0, 100)
+      await updateArticleCategory(entry.id, { name: trimmed, slug })
       await fetchCategories()
     } catch (err: unknown) {
       setCategoriesError(getApiErrorMessage(err, p.failedUpdateCategory))
@@ -530,12 +380,12 @@ export default function AdminInsightsPage() {
 
   async function removeCategory(index: number) {
     const entry = rawCategories[index]
-    if (!entry || !entry.id) {
+    if (!entry?.id) {
       setCategoriesError(p.categoryNotFoundDelete)
       return
     }
     try {
-      await apiClient.delete(`/admin/article/categories/${entry.id}`)
+      await deleteArticleCategory(entry.id)
       await fetchCategories()
     } catch (err: unknown) {
       setCategoriesError(getApiErrorMessage(err, p.failedDeleteCategory))
@@ -597,11 +447,23 @@ export default function AdminInsightsPage() {
   }
 
   const deleteArticle = () => {
-    if (deletingId) {
-      setArticles(prev => prev.filter(a => a.id !== deletingId))
-      setShowDeleteConfirm(false)
-      setDeletingId(null)
-    }
+    if (!deletingId) return
+
+    ;(async () => {
+      try {
+        await deleteAdminArticle(deletingId)
+        toast({ title: c.deleted, description: p.articleDeleted ?? c.deletedSuccessfully })
+        setShowDeleteConfirm(false)
+        setDeletingId(null)
+        await fetchArticles()
+      } catch (err: unknown) {
+        toast({
+          title: c.error,
+          description: getApiErrorMessage(err, c.actionFailed),
+          variant: "destructive",
+        })
+      }
+    })()
   }
 
   const publishArticle = (id: string) => {
@@ -673,6 +535,7 @@ export default function AdminInsightsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{c.allStatus}</SelectItem>
+                <SelectItem value="draft">{t.admin.supplierStatus.draft}</SelectItem>
                 <SelectItem value="published">{c.published}</SelectItem>
                 <SelectItem value="archived">{c.archived}</SelectItem>
               </SelectContent>
@@ -704,6 +567,13 @@ export default function AdminInsightsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {articlesLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          ) : articlesError ? (
+            <div className="py-8 text-center text-sm text-destructive">{articlesError}</div>
+          ) : (
           <div className="space-y-4">
             {filteredArticles.map((article) => (
               <div 
@@ -799,6 +669,7 @@ export default function AdminInsightsPage() {
               </div>
             )}
           </div>
+          )}
         </CardContent>
       </Card>
 
@@ -956,7 +827,7 @@ export default function AdminInsightsPage() {
                 <Label>{c.status}</Label>
                 <Select 
                   value={editForm.status}
-                  onValueChange={(value: "draft" | "published" | "archived") => 
+                  onValueChange={(value: ArticleStatus) => 
                     setEditForm({ ...editForm, status: value })
                   }
                 >
@@ -964,6 +835,7 @@ export default function AdminInsightsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="draft">{t.admin.supplierStatus.draft}</SelectItem>
                     <SelectItem value="published">{c.published}</SelectItem>
                     <SelectItem value="archived">{c.archived}</SelectItem>
                   </SelectContent>
