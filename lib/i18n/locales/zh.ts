@@ -1583,7 +1583,9 @@ const zh: TranslationKeys = {
         low: "低",
         medium: "中",
         high: "高",
-        responseTime: "我们通常在 24 小时内回复。"
+        responseTime: "我们通常在 24 小时内回复。",
+        conversationClosed: "此支持工单已关闭。在管理员重新打开之前，您无法回复。",
+        createNewForMoreHelp: "仍需帮助？请创建新的支持工单。",
       },
       supportTicketDetails: {
         title: "支持工单详情",

@@ -266,7 +266,7 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
   }
 
   const sendReply = async () => {
-    if (!activeId || (!reply.trim() && replyFiles.length === 0)) return
+    if (!activeId || activeDetail?.status === "closed" || (!reply.trim() && replyFiles.length === 0)) return
     setIsReplying(true)
     const response = await replyCustomerSupportTicket(activeId, {
       message: reply.trim() || " ",
@@ -454,6 +454,12 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
 
               {/* Messages */}
               <div className="min-h-0 flex-1 space-y-1 overflow-y-auto bg-muted/20 px-4 py-5">
+                {activeDetail.status === "closed" && (
+                  <div className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    {t.mfg.supportTickets.closed}
+                  </div>
+                )}
                 {activeDetail.status === "resolved" && (
                   <div className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
                     <CheckCircle2 className="h-3.5 w-3.5" />
@@ -520,6 +526,18 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
 
               {/* Composer */}
               <div className="border-t border-border p-3">
+                {activeDetail.status === "closed" ? (
+                  <div className="space-y-3 rounded-lg border border-dashed border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                    <p className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 shrink-0" />
+                      {t.mfg.supportTickets.conversationClosed}
+                    </p>
+                    <Button size="sm" variant="outline" className="gap-1.5 bg-transparent" onClick={startNew}>
+                      <Plus className="h-4 w-4" />
+                      {t.mfg.supportTickets.createNewForMoreHelp}
+                    </Button>
+                  </div>
+                ) : (
                 <div className="rounded-xl border border-border bg-background focus-within:ring-2 focus-within:ring-ring">
                   <SupportComposerAttachments
                     files={replyFiles}
@@ -574,6 +592,7 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
                     </Button>
                   </div>
                 </div>
+                )}
               </div>
             </>
           ) : null}

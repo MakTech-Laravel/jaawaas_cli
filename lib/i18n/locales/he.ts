@@ -1580,7 +1580,9 @@ const he = {
         low: "נמוכה",
         medium: "בינונית",
         high: "גבוהה",
-        responseTime: "אנו בדרך כלל מגיבים תוך 24 שעות."
+        responseTime: "אנו בדרך כלל מגיבים תוך 24 שעות.",
+        conversationClosed: "כרטיס התמיכה הזה סגור. לא ניתן להגיב עד שמנהל יפתח אותו מחדש.",
+        createNewForMoreHelp: "צריך עזרה נוספת? צור כרטיס תמיכה חדש.",
       },
       supportTicketDetails: {
         title: "פרטי קריאת שירות",
