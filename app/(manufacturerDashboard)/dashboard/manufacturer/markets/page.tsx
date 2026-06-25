@@ -251,7 +251,7 @@ export default function ExportMarketsPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="min-w-0 space-y-6 overflow-x-hidden">
         {/* Header Skeleton */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-2">
@@ -262,7 +262,7 @@ export default function ExportMarketsPage() {
         </div>
 
         {/* Stats Skeleton */}
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i} className="w-full overflow-hidden">
               <CardContent className="p-4 sm:p-5 py-0 sm:py-0">
@@ -308,7 +308,7 @@ export default function ExportMarketsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -322,7 +322,7 @@ export default function ExportMarketsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
         <ManufacturerStatCard
           title={m.activeMarkets}
           value={selectedCountries.length}
@@ -427,7 +427,7 @@ export default function ExportMarketsPage() {
           <CardDescription>{m.suggestedMarketsDesc}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 sm:gap-4">
             {suggestions.length > 0 ? (
               suggestions.map((market) => (
                 <div key={market.region} className="p-4 rounded-lg border border-dashed border-border hover:border-secondary transition-colors">

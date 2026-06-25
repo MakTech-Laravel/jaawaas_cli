@@ -120,7 +120,7 @@ function ManufacturerDashboardLayoutInner({
 
       <aside
         className={cn(
-          "fixed inset-y-0 start-0 z-50 flex h-dvh w-64 shrink-0 flex-col bg-sidebar shadow-lg transition-transform duration-200 ease-in-out lg:z-30 lg:shadow-none",
+          "fixed inset-y-0 inset-s-0 z-50 flex h-dvh w-64 shrink-0 flex-col bg-sidebar shadow-lg transition-transform duration-200 ease-in-out lg:z-30 lg:shadow-none",
           sidebarOpen ? "translate-x-0" : "ltr:-translate-x-full rtl:translate-x-full lg:translate-x-0 lg:rtl:translate-x-0 lg:ltr:translate-x-0"
         )}
       >
@@ -223,8 +223,8 @@ function ManufacturerDashboardLayoutInner({
       </aside>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:ps-64">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
-          <div className="flex items-center gap-4">
+        <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-border bg-card px-4 sm:gap-3 lg:px-6">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
             <button 
               className="lg:hidden"
               onClick={() => setSidebarOpen(true)}
@@ -242,9 +242,9 @@ function ManufacturerDashboardLayoutInner({
             </div>
             */}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <NotificationsDropdown />
-            <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link href="/" className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline">
               {t.nav.backToSite || "Back to Site"}
             </Link>
           </div>

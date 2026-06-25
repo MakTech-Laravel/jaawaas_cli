@@ -655,6 +655,11 @@ const zh: TranslationKeys = {
       certifications: "认证",
       exportMarkets: "出口市场",
       pieces: "件",
+      showingResults: "显示 {from}-{to}，共 {total} 条",
+      previous: "上一页",
+      next: "下一页",
+      pageOf: "第 {page} 页，共 {lastPage} 页",
+      perPage: "每页",
     },
     suppliersMap: {
       globalNetwork: "全球网络",

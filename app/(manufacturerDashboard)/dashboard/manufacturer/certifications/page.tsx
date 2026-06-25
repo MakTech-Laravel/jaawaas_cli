@@ -149,7 +149,7 @@ export default function ManufacturerCertificationsPage() {
   ).length
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-medium text-foreground">{c.title}</h1>
@@ -170,7 +170,7 @@ export default function ManufacturerCertificationsPage() {
         </Card>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
             <Card>
               <CardContent className="p-4 sm:p-5">
                 <div className="flex items-center gap-3">

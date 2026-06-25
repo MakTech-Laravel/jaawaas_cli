@@ -246,7 +246,7 @@ export default function ManufacturerMessagesPage() {
   }
 
   return (
-    <div className="h-[calc(100dvh-120px)] w-full max-w-full">
+    <div className="h-[calc(100dvh-8rem)] w-full min-w-0 max-w-full overflow-x-hidden">
       <ChatView
         conversations={conversations}
         messages={messages}

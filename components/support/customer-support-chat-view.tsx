@@ -285,7 +285,7 @@ export function CustomerSupportChatView({ title, basePath, initialTicketId }: Cu
   }
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] flex-col gap-4">
+    <div className="flex min-h-0 min-w-0 flex-col gap-4 overflow-x-hidden h-[calc(100dvh-8rem)]">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">

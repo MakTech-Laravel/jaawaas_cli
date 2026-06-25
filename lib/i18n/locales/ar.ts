@@ -656,6 +656,11 @@ const ar = {
       certifications: "الشهادات",
       exportMarkets: "أسواق التصدير",
       pieces: "قطع",
+      showingResults: "عرض {from}-{to} من {total}",
+      previous: "السابق",
+      next: "التالي",
+      pageOf: "صفحة {page} من {lastPage}",
+      perPage: "لكل صفحة",
     },
     suppliersMap: {
       globalNetwork: "الشبكة العالمية",

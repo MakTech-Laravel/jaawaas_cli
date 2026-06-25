@@ -255,18 +255,18 @@ export default function InquiryDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 min-w-0">
+          <Button variant="ghost" size="icon" asChild className="shrink-0 self-start">
             <Link href="/dashboard/manufacturer/inquiries">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="font-serif text-2xl font-medium text-foreground">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <h1 className="font-serif text-xl font-medium text-foreground sm:text-2xl">
                 {t.mfg.inquiryDetails.rfqNumber} {inquiry.rfq_number}
               </h1>
               <Badge className={statusColors[inquiry.status] || ""}>
@@ -282,7 +282,7 @@ export default function InquiryDetailPage() {
             </p>
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:gap-3">
           <Button variant="outline" className="gap-2" asChild>
             <Link href={`/dashboard/manufacturer/messages?buyer=${inquiry.buyer.id}`}>
               <MessageSquare className="h-4 w-4" />
@@ -307,7 +307,7 @@ export default function InquiryDetailPage() {
                 Product Request Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="min-w-0 space-y-6 overflow-x-hidden">
               {/* Product Info */}
               <div className="flex items-start gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-muted border border-border">
@@ -397,7 +397,7 @@ export default function InquiryDetailPage() {
               </CardTitle>
               <p className="text-sm text-muted-foreground">Fill in all details - buyer will see exactly what you submit</p>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="min-w-0 space-y-6 overflow-x-hidden">
               {quoteSubmitted ? (
                 <div className="text-center py-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
@@ -697,7 +697,7 @@ export default function InquiryDetailPage() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6 overflow-x-hidden">
           {/* Buyer Info */}
           <Card>
             <CardHeader>
@@ -738,7 +738,7 @@ export default function InquiryDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex gap-3">
+                <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/10">
                     <FileText className="h-4 w-4 text-secondary" />
                   </div>
@@ -748,7 +748,7 @@ export default function InquiryDetailPage() {
                   </div>
                 </div>
                 {inquiry.status !== "pending" && inquiry.quoted_at && (
-                  <div className="flex gap-3">
+                  <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:gap-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100">
                       <CheckCircle className="h-4 w-4 text-emerald-700" />
                     </div>
@@ -787,7 +787,7 @@ export default function InquiryDetailPage() {
             </div>
           ) : (
             <>
-              <div className="space-y-6">
+              <div className="min-w-0 space-y-6 overflow-x-hidden">
                 {/* Pricing Section */}
                 <div>
                   <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">

@@ -163,7 +163,7 @@ export default function ManufacturerAnalyticsPage() {
   }, [period, loadAnalytics])
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-medium text-foreground">{a.title}</h1>
@@ -229,8 +229,8 @@ export default function ManufacturerAnalyticsPage() {
               {a.performanceOverview}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-80 w-full flex items-center justify-center">
+          <CardContent className="overflow-x-auto">
+            <div className="h-80 min-w-[280px] w-full flex items-center justify-center">
               {isChartLoading ? (
                 <div className="flex flex-col items-center justify-center gap-2">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -376,7 +376,7 @@ export default function ManufacturerAnalyticsPage() {
                 No funnel data available for this period.
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                 {funnelSteps.map((step) => (
                   <div key={step.key} className="rounded-lg border border-border bg-muted/50 p-4 text-center">
                     <p className="text-2xl font-bold text-foreground">{step.value_formatted}</p>

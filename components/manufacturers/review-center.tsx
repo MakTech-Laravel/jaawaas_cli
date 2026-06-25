@@ -477,7 +477,7 @@ export default function ReviewCenter() {
                 </Badge>
               </div>
               {photos.length > 0 ? (
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                   {photos.map((photo, i) => {
                     const globalIdx = capturedPhotos.indexOf(photo)
                     return (
@@ -527,7 +527,7 @@ export default function ReviewCenter() {
         </Card>
 
         {/* Actions */}
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <Button
             variant="outline"
             onClick={() => {
@@ -596,14 +596,14 @@ export default function ReviewCenter() {
 
       {loading ? (
         <Card>
-          <CardContent className="flex flex-col items-center py-16 text-center">
+          <CardContent className="flex flex-col items-center py-12 text-center sm:py-16">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             <p className="mt-4 font-medium text-foreground">{t.mfg.inquiries.loading}</p>
           </CardContent>
         </Card>
       ) : !hasContent ? (
         <Card>
-          <CardContent className="flex flex-col items-center py-16 text-center">
+          <CardContent className="flex flex-col items-center py-12 text-center sm:py-16">
             <ScanEye className="h-12 w-12 text-muted-foreground/40" />
             <p className="mt-4 font-medium text-foreground">{t.mfg.reviewCenter.noReviews}</p>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">

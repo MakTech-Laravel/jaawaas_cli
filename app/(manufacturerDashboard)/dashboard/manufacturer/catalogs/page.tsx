@@ -537,7 +537,7 @@ export default function ManufacturerCatalogsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-medium text-foreground">{local.pageTitle}</h1>
@@ -552,7 +552,7 @@ export default function ManufacturerCatalogsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <ManufacturerStatCard
           title={local.totalCatalogs}
           value={stats?.total_catalogs ?? 0}
@@ -585,7 +585,7 @@ export default function ManufacturerCatalogsPage() {
             updateQueryParams({ status: value, page: 1 })
           }
         >
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder={local.statusLabel} />
           </SelectTrigger>
           <SelectContent>
@@ -921,7 +921,7 @@ export default function ManufacturerCatalogsPage() {
                 }}
               />
               <div 
-                className="mt-2 rounded-lg border-2 border-dashed border-border p-8 text-center hover:border-secondary transition-colors cursor-pointer"
+                className="mt-2 rounded-lg border-2 border-dashed border-border p-6 text-center hover:border-secondary transition-colors cursor-pointer sm:p-8"
                 onDragOver={(e) => {
                   e.preventDefault()
                   e.stopPropagation()

@@ -653,6 +653,11 @@ const he = {
       certifications: "הסמכות",
       exportMarkets: "שווקי ייצוא",
       pieces: "יחידות",
+      showingResults: "מציג {from}-{to} מתוך {total}",
+      previous: "הקודם",
+      next: "הבא",
+      pageOf: "עמוד {page} מתוך {lastPage}",
+      perPage: "לעמוד",
     },
     suppliersMap: {
       globalNetwork: "רשת גלובלית",

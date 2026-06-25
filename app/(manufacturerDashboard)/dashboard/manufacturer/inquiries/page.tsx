@@ -81,17 +81,17 @@ export default function ManufacturerInquiriesPage() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       {/* Header */}
       <div>
-        <h1 className="font-serif text-2xl font-medium text-foreground">{t.mfg.inquiries.title}</h1>
+        <h1 className="font-serif text-xl font-medium text-foreground sm:text-2xl">{t.mfg.inquiries.title}</h1>
         <p className="mt-1 text-muted-foreground">
           {t.mfg.inquiries.subtitle}
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <ManufacturerStatCard
           title={t.mfg.inquiries.totalInquiries}
           value={inquiries.length}
@@ -149,15 +149,13 @@ export default function ManufacturerInquiriesPage() {
           return (
             <div 
               key={inquiry.id} 
-              className="rounded-xl border border-border bg-card overflow-hidden transition-all hover:shadow-md"
+              className="overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-md"
             >
-
-              
-              <div className="p-5">
+              <div className="p-4 sm:p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1">
                     {/* Header */}
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
                       <span className="text-sm font-medium text-muted-foreground">{inquiry.rfq_number}</span>
                       <Badge className={statusConfig[inquiry.status]?.color || "bg-gray-100 text-gray-700"}>
                         <StatusIcon className="mr-1 h-3 w-3" />
@@ -170,52 +168,68 @@ export default function ManufacturerInquiriesPage() {
                     </div>
                     
                     {/* Buyer Info */}
-                    <h3 className="font-semibold text-foreground text-lg">{inquiry.buyer.name}</h3>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground mt-0.5">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {inquiry.destination_country}
+                    <h3 className="wrap-break-word text-base font-semibold text-foreground sm:text-lg">{inquiry.buyer.name}</h3>
+                    <div className="mt-0.5 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{inquiry.destination_country}</span>
                     </div>
                     
                     {/* Product & Specs Card */}
-                    <div className="mt-4 rounded-lg bg-muted/50 border border-border p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background border border-border">
+                    <div className="mt-4 rounded-lg border border-border bg-muted/50 p-3 sm:p-4">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background">
                           <Package className="h-5 w-5 text-muted-foreground" />
                         </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-foreground">{inquiry.product.name}</p>
-                          <p className="text-sm text-secondary font-medium">{inquiry.quantity} {inquiry.quantity_unit}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="wrap-break-word font-semibold text-foreground">{inquiry.product.name}</p>
+                          <p className="text-sm font-medium text-secondary">{inquiry.quantity} {inquiry.quantity_unit}</p>
                         </div>
                       </div>
                       
                       {/* Specifications */}
-                      <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                      <div className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
                         {inquiry.target_price && (
-                          <div className="flex items-center gap-2">
-                            <Tag className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">{t.mfg.inquiries.targetPrice}:</span>
-                            <span className="text-foreground">{inquiry.target_price} {inquiry.target_currency_code}</span>
+                          <div className="min-w-0">
+                            <div className="flex items-start gap-2">
+                              <Tag className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                              <div className="min-w-0">
+                                <p className="text-muted-foreground">{t.mfg.inquiries.targetPrice}</p>
+                                <p className="wrap-break-word text-foreground">{inquiry.target_price} {inquiry.target_currency_code}</p>
+                              </div>
+                            </div>
                           </div>
                         )}
                         {inquiry.required_delivery_date && (
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">{t.mfg.inquiries.deliveryBy}:</span>
-                            <span className="text-foreground">{format(new Date(inquiry.required_delivery_date), 'PP')}</span>
+                          <div className="min-w-0">
+                            <div className="flex items-start gap-2">
+                              <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                              <div className="min-w-0">
+                                <p className="text-muted-foreground">{t.mfg.inquiries.deliveryBy}</p>
+                                <p className="wrap-break-word text-foreground">{format(new Date(inquiry.required_delivery_date), 'PP')}</p>
+                              </div>
+                            </div>
                           </div>
                         )}
                         {inquiry.shipping_terms && (
-                          <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">{t.mfg.inquiries.terms}:</span>
-                            <span className="text-foreground">{inquiry.shipping_terms}</span>
+                          <div className="min-w-0">
+                            <div className="flex items-start gap-2">
+                              <Package className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                              <div className="min-w-0">
+                                <p className="text-muted-foreground">{t.mfg.inquiries.terms}</p>
+                                <p className="wrap-break-word text-foreground">{inquiry.shipping_terms}</p>
+                              </div>
+                            </div>
                           </div>
                         )}
                         {inquiry.destination_port_city && (
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">{t.mfg.inquiries.port}:</span>
-                            <span className="text-foreground">{inquiry.destination_port_city}</span>
+                          <div className="min-w-0 sm:col-span-2">
+                            <div className="flex items-start gap-2">
+                              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                              <div className="min-w-0">
+                                <p className="text-muted-foreground">{t.mfg.inquiries.port}</p>
+                                <p className="wrap-break-word text-foreground">{inquiry.destination_port_city}</p>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -223,28 +237,28 @@ export default function ManufacturerInquiriesPage() {
                     
                     {/* Buyer Message */}
                     {inquiry.additional_requirements && (
-                      <p className="mt-3 text-sm text-muted-foreground">{inquiry.additional_requirements}</p>
+                      <p className="mt-3 wrap-break-word text-sm text-muted-foreground">{inquiry.additional_requirements}</p>
                     )}
                   </div>
                   
                   {/* Actions */}
-                  <div className="flex flex-col items-end gap-3 lg:ml-6">
-                    <span className="text-xs text-muted-foreground">{format(new Date(inquiry.created_at), 'PP')}</span>
-                    <div className="flex flex-wrap gap-2">
-                      <Button variant="outline" size="sm" className="gap-1" asChild>
+                  <div className="flex w-full flex-col gap-3 border-t border-border pt-4 lg:ml-6 lg:w-auto lg:border-0 lg:pt-0">
+                    <span className="text-xs text-muted-foreground lg:text-end">{format(new Date(inquiry.created_at), 'PP')}</span>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
+                      <Button variant="outline" size="sm" className="w-full gap-1 sm:w-auto" asChild>
                         <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id}`}>
                           <Eye className="h-4 w-4" />
                           {t.mfg.inquiries.viewDetails}
                         </Link>
                       </Button>
-                      <Button variant="outline" size="sm" className="gap-1" asChild>
+                      <Button variant="outline" size="sm" className="w-full gap-1 sm:w-auto" asChild>
                         <Link href={`/dashboard/manufacturer/messages?buyer=${inquiry.buyer.id}`}>
                           <MessageSquare className="h-4 w-4" />
                           {t.mfg.inquiries.message}
                         </Link>
                       </Button>
                       {inquiry.status === "pending" && (
-                        <Button size="sm" className="gap-1" asChild>
+                        <Button size="sm" className="w-full gap-1 sm:w-auto" asChild>
                           <Link href={`/dashboard/manufacturer/inquiries/${inquiry.id}`}>
                             <Send className="h-4 w-4" />
                             {t.mfg.inquiries.sendQuote}

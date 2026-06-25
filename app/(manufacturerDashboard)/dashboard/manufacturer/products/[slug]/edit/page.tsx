@@ -451,9 +451,9 @@ export default function EditProductPage({
   const totalImages = existingImageUrls.length + newImageSlots.length
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 pb-12">
+    <div className="mx-auto min-w-0 max-w-4xl space-y-6 overflow-x-hidden pb-8 sm:space-y-8 sm:pb-12">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 min-w-0">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/dashboard/manufacturer/products">
             <ArrowLeft className="h-5 w-5" />
@@ -465,9 +465,9 @@ export default function EditProductPage({
         </div>
       </div>
 
-      <form onSubmit={(e) => handleSubmit(e)} className="space-y-8">
+      <form onSubmit={(e) => handleSubmit(e)} className="space-y-6 sm:space-y-8">
         {/* Basic Information */}
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
               <Package className="h-5 w-5 text-secondary" />
@@ -585,7 +585,7 @@ export default function EditProductPage({
         </div>
 
         {/* Product Images */}
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
               <ImageIcon className="h-5 w-5 text-secondary" />
@@ -657,7 +657,7 @@ export default function EditProductPage({
         </div>
 
         {/* Pricing & MOQ */}
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
               <DollarSign className="h-5 w-5 text-secondary" />
@@ -818,7 +818,7 @@ export default function EditProductPage({
         </div>
 
         {/* Specifications */}
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
               <FileText className="h-5 w-5 text-secondary" />
@@ -878,7 +878,7 @@ export default function EditProductPage({
         </div>
 
         {/* Key Features */}
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
               <Zap className="h-5 w-5 text-secondary" />
@@ -930,7 +930,7 @@ export default function EditProductPage({
         </div>
 
         {/* Customization Options */}
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
               <Sparkles className="h-5 w-5 text-secondary" />
@@ -984,7 +984,7 @@ export default function EditProductPage({
         </div>
 
         {/* Shipping & Packaging */}
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
               <Truck className="h-5 w-5 text-secondary" />
@@ -1106,7 +1106,7 @@ export default function EditProductPage({
         </div>
 
         {/* Additional Options */}
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10">
               <Tags className="h-5 w-5 text-secondary" />
@@ -1201,7 +1201,7 @@ export default function EditProductPage({
         </div>
 
         {/* Brochure */}
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5 lg:p-6">
           <h2 className="font-semibold text-foreground mb-4">{t.mfg.products.brochure || "Product Brochure"}</h2>
           <div className="space-y-3">
             <input
