@@ -131,7 +131,7 @@ export default function BuyerActivityPage() {
             href={activity.link}
             className="flex items-start gap-4 border-b border-border p-4 last:border-b-0 hover:bg-muted/50 transition-colors"
           >
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-muted">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
               <activity.icon className="h-5 w-5 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
@@ -147,7 +147,7 @@ export default function BuyerActivityPage() {
                     {activity.description}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     {activity.time}
