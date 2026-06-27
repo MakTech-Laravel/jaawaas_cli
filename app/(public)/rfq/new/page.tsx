@@ -52,7 +52,7 @@ interface RfqProductLine {
 
 let lineCounterSeed = 0
 
-function newProductLine(productId = "", unit = DEFAULT_PRODUCT_UNIT): RfqProductLine {
+function newProductLine(productId = "", unit: string = DEFAULT_PRODUCT_UNIT): RfqProductLine {
   lineCounterSeed += 1
   return {
     key: `line-${Date.now()}-${lineCounterSeed}`,

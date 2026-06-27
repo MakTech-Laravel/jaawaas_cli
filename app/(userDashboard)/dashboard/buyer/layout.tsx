@@ -243,7 +243,7 @@ export default function BuyerDashboardLayout({
       {/* Sidebar: fixed to viewport; main area uses lg:pl-64 so content is not hidden */}
       <aside
         className={cn(
-          "fixed inset-y-0 start-0 z-50 flex h-dvh w-64 shrink-0 flex-col border-e border-border bg-card shadow-lg transition-transform duration-200 ease-in-out lg:z-30 lg:shadow-none",
+          "fixed inset-y-0 inset-s-0 z-50 flex h-dvh w-64 shrink-0 flex-col border-e border-border bg-card shadow-lg transition-transform duration-200 ease-in-out lg:z-30 lg:shadow-none",
           isMobileMenuOpen ? "translate-x-0" : "ltr:-translate-x-full rtl:translate-x-full lg:translate-x-0 lg:rtl:translate-x-0 lg:ltr:translate-x-0"
         )}
       >
