@@ -138,7 +138,11 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
 
   const orderTotal = lines.reduce((sum, l) => sum + lineTotal(l), 0)
 
-  const firstCatalogProductId = lines.find((l) => l.productId)?.productId ?? ""
+  const selectedProductIds = lines
+    .map((l) => Number.parseInt(l.productId, 10))
+    .filter((id) => Number.isFinite(id) && id > 0)
+
+  const allProductsSelected = !isService && lines.length > 0 && lines.every((l) => l.productId)
 
   const linesValid =
     lines.length > 0 &&
@@ -174,7 +178,24 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
 
   useEffect(() => {
     async function loadBuyers() {
-      if (!firstCatalogProductId) {
+      if (isService) {
+        if (!products[0]?.id) {
+          setBuyers([])
+          setSelectedBuyerId("")
+          return
+        }
+        setIsLoadingBuyers(true)
+        const res = await getSelectBuyers({
+          product_ids: [products[0].id],
+        })
+        if (res.success) {
+          setBuyers(res.data)
+        }
+        setIsLoadingBuyers(false)
+        return
+      }
+
+      if (!allProductsSelected || selectedProductIds.length === 0) {
         setBuyers([])
         setSelectedBuyerId("")
         return
@@ -182,7 +203,7 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
 
       setIsLoadingBuyers(true)
       const res = await getSelectBuyers({
-        product_id: Number.parseInt(firstCatalogProductId, 10),
+        product_ids: selectedProductIds,
       })
       if (res.success) {
         setBuyers(res.data)
@@ -190,7 +211,7 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
       setIsLoadingBuyers(false)
     }
     void loadBuyers()
-  }, [firstCatalogProductId])
+  }, [isService, products, allProductsSelected, selectedProductIds.join(",")])
 
   const handleSubmit = async () => {
     if (!required || !selectedBuyerId) {
@@ -203,12 +224,18 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
     try {
       if (isService) {
         const amount = Number.parseFloat(form.totalAmount) || 0
+        const productId = products[0]?.id ?? 0
         const res = await createManufacturerOrder({
           buyer_id: Number.parseInt(selectedBuyerId, 10),
-          product_id: products[0]?.id ?? 0,
+          items: [
+            {
+              product_id: productId,
+              quantity: Number.parseInt(form.quantity, 10) || 1,
+              quantity_unit: form.quantityUnit,
+              unit_price: amount,
+            },
+          ],
           title: form.title,
-          quantity: Number.parseInt(form.quantity, 10) || 1,
-          quantity_unit: form.quantityUnit,
           total_amount: amount,
           currency_code: form.currency,
           estimated_delivery_at: form.estimatedDelivery,
@@ -221,9 +248,9 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
         })
 
         if (res.success && res.data) {
-        try {
-          postOrderCreated(res.data as never)
-        } catch {
+          try {
+            postOrderCreated(res.data as never)
+          } catch {
             // messaging is optional
           }
           router.push(`${config.basePath}/${res.data.id}`)
@@ -234,49 +261,40 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
         return
       }
 
-      let firstOrderId: number | null = null
+      const items = lines.map((line) => ({
+        product_id: Number.parseInt(line.productId, 10),
+        quantity: Number.parseInt(line.quantity, 10) || 1,
+        quantity_unit: line.unit,
+        unit_price: Number.parseFloat(line.unitPrice) || 0,
+        notes: line.notes.trim() || undefined,
+      }))
 
-      for (let i = 0; i < lines.length; i += 1) {
-        const line = lines[i]
-        const lineAmount = lineTotal(line)
-        const lineTitle =
-          lines.length === 1 ? form.title : `${form.title} — ${line.productName.trim()}`
+      const res = await createManufacturerOrder({
+        buyer_id: Number.parseInt(selectedBuyerId, 10),
+        items,
+        title: form.title,
+        total_amount: orderTotal,
+        currency_code: form.currency,
+        estimated_delivery_at: form.estimatedDelivery,
+        production_lead: form.productionTime,
+        payment_terms: form.paymentTerms,
+        shipping_terms: form.shippingTerms,
+        destination: form.destination,
+        notes: form.notes,
+        attachments: docs,
+      })
 
-        const res = await createManufacturerOrder({
-          buyer_id: Number.parseInt(selectedBuyerId, 10),
-          product_id: Number.parseInt(line.productId, 10),
-          title: lineTitle,
-          quantity: Number.parseInt(line.quantity, 10) || 1,
-          quantity_unit: line.unit,
-          total_amount: lineAmount,
-          currency_code: form.currency,
-          estimated_delivery_at: form.estimatedDelivery,
-          production_lead: form.productionTime,
-          payment_terms: form.paymentTerms,
-          shipping_terms: form.shippingTerms,
-          destination: form.destination,
-          notes: [form.notes, line.notes.trim()].filter(Boolean).join("\n\n"),
-          attachments: i === 0 ? docs : undefined,
-        })
-
-        if (!res.success || !res.data) {
-          alert(res.message || on.submitFailed)
-          return
-        }
-
-        if (i === 0) {
-          firstOrderId = res.data.id
-        try {
-          postOrderCreated(res.data as never)
-        } catch {
-            // messaging is optional
-          }
-        }
+      if (!res.success || !res.data) {
+        alert(res.message || on.submitFailed)
+        return
       }
 
-      if (firstOrderId != null) {
-        router.push(`${config.basePath}/${firstOrderId}`)
+      try {
+        postOrderCreated(res.data as never)
+      } catch {
+        // messaging is optional
       }
+      router.push(`${config.basePath}/${res.data.id}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -459,16 +477,18 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
             <Select
               value={selectedBuyerId}
               onValueChange={setSelectedBuyerId}
-              disabled={!firstCatalogProductId || isLoadingBuyers}
+              disabled={(!isService && !allProductsSelected) || (isService && !products[0]?.id) || isLoadingBuyers}
             >
               <SelectTrigger>
                 <SelectValue
                   placeholder={
-                    !firstCatalogProductId
+                    !isService && !allProductsSelected
                       ? on.selectProductFirst
-                      : isLoadingBuyers
-                        ? on.loadingBuyers
-                        : on.chooseBuyer
+                      : isService && !products[0]?.id
+                        ? on.selectProductFirst
+                        : isLoadingBuyers
+                          ? on.loadingBuyers
+                          : on.chooseBuyer
                   }
                 />
               </SelectTrigger>
@@ -478,7 +498,7 @@ export function SellerOrderCreate({ config }: { config: CreateConfig }) {
                     {b.company} — {b.name}
                   </SelectItem>
                 ))}
-                {buyers.length === 0 && !isLoadingBuyers && firstCatalogProductId && (
+                {buyers.length === 0 && !isLoadingBuyers && (allProductsSelected || (isService && products[0]?.id)) && (
                   <SelectItem value="none" disabled>
                     {on.noBuyers}
                   </SelectItem>

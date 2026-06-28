@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import {
@@ -205,23 +206,30 @@ export default function AdminOrdersPage() {
                   return (
                     <tr key={o.id} className="border-t border-border hover:bg-muted/50">
                       <td className="px-4 py-3">
-                        <span className="font-mono text-sm text-foreground">{o.orderNumber}</span>
+                        <Link
+                          href={`/admin/orders/${o.id}`}
+                          className="font-mono text-sm text-foreground hover:text-primary"
+                        >
+                          {o.orderNumber}
+                        </Link>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
-                              "bg-primary/10 text-primary",
-                            )}
-                          >
-                            <Package className="h-4 w-4" />
-                          </span>
-                          <div className="min-w-0">
-                            <p className="truncate font-medium text-foreground">{o.title}</p>
-                            <p className="text-xs text-muted-foreground">{c.productOrder}</p>
+                        <Link href={`/admin/orders/${o.id}`} className="block">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={cn(
+                                "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+                                "bg-primary/10 text-primary",
+                              )}
+                            >
+                              <Package className="h-4 w-4" />
+                            </span>
+                            <div className="min-w-0">
+                              <p className="truncate font-medium text-foreground">{o.title}</p>
+                              <p className="text-xs text-muted-foreground">{c.productOrder}</p>
+                            </div>
                           </div>
-                        </div>
+                        </Link>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
