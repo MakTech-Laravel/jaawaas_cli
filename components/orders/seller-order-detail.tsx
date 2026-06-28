@@ -11,7 +11,8 @@ import {
   type OrderStatus,
 } from "@/lib/orders-context"
 import { useMessages } from "@/lib/messages-context"
-import { getManufacturerOrder, updateManufacturerOrderStatus, type ApiOrder, type OrderStatusUpdate } from "@/lib/api/orders"
+import { getManufacturerOrder, summarizeOrderItems, updateManufacturerOrderStatus, type ApiOrder, type OrderStatusUpdate } from "@/lib/api/orders"
+import { OrderLineItemsTable } from "@/components/orders/order-line-items-table"
 import { useTranslation } from "@/lib/i18n"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -137,6 +138,11 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
   const style = statusStyles[order.status] || { color: "bg-gray-100 text-gray-700", icon: Clock }
   const StatusIcon = style.icon
   const currentIndex = ORDER_STATUS_FLOW.indexOf(order.status as OrderStatus)
+  const itemsSummary = summarizeOrderItems(order.items, {
+    quantity: order.quantity,
+    quantityUnit: order.quantityUnit,
+    productName: order.productName !== "N/A" ? order.productName : undefined,
+  })
 
   const submitUpdate = async () => {
     if (!note.trim() && order.status === newStatus) return
@@ -209,7 +215,7 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
             <p className="font-serif text-2xl font-medium text-foreground">
               {formatCurrency(order.totalAmount, order.currencyCode)}
             </p>
-            <p className="text-xs text-muted-foreground">{order.quantity} {order.quantityUnit}</p>
+            <p className="text-xs text-muted-foreground">{itemsSummary.quantityLabel}</p>
           </div>
         </div>
 
@@ -243,6 +249,23 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
             })}
           </div>
         )}
+      </div>
+
+      <div className="mt-6">
+        <OrderLineItemsTable
+          items={order.items}
+          currencyCode={order.currencyCode}
+          totalAmount={order.totalAmount}
+          title={t.mfg.orderDetails.items}
+          labels={{
+            product: t.mfg.orderNew.selectProduct,
+            quantity: t.mfg.orderDetails.quantity,
+            unitPrice: t.mfg.orderNew.unitPrice,
+            lineTotal: t.mfg.orderNew.lineTotal,
+            orderTotal: t.mfg.orderDetails.total,
+            notes: t.mfg.inquiryDetails.notes || "Notes",
+          }}
+        />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
@@ -429,7 +452,8 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
           <div className="rounded-xl border border-border bg-card p-5">
             <h2 className="font-medium text-foreground">{t.mfg.orderDetails.details || "Details"}</h2>
             <dl className="mt-3 space-y-3 text-sm">
-              <Row label={isService ? (t.mfg.orderDetails.scope || "Scope") : t.mfg.orderDetails.quantity} value={`${order.quantity} ${order.quantityUnit}`} />
+              <Row label={isService ? (t.mfg.orderDetails.scope || "Scope") : "Products"} value={itemsSummary.lineCount > 1 ? `${itemsSummary.lineCount} products` : itemsSummary.productLabel} />
+              <Row label={isService ? (t.mfg.orderDetails.scope || "Scope") : t.mfg.orderDetails.quantity} value={itemsSummary.quantityLabel} />
               <Row label={t.mfg.orderDetails.total} value={formatCurrency(order.totalAmount, order.currencyCode)} />
               <Row label={isService ? "Timeline" : t.mfg.orderDetails.productionTime} value={order.productionLead || "N/A"} />
               <Row label={isService ? "Delivery date" : t.mfg.orderDetails.estDelivery} value={formatOrderDate(order.estimatedDeliveryAt)} icon={Calendar} />

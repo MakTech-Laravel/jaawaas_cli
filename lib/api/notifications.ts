@@ -54,6 +54,9 @@ function toType(value: unknown): NotificationType {
   if (raw === "message" || raw === "inquiry" || raw === "quote" || raw === "supplier" || raw === "order") {
     return raw
   }
+  if (raw.startsWith("order.")) {
+    return "order"
+  }
 
   return "system"
 }

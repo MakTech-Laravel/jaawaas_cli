@@ -89,7 +89,7 @@ function OrderCard({ order, t }: { order: ApiOrder; t: any }) {
             <span className="text-xs font-medium text-muted-foreground">{order.orderNumber}</span>
             <Badge className={cn("gap-1 text-xs", style.color)}>
               <StatusIcon className="h-3 w-3" />
-              {t.common.orderStatus?.[order.status === "in-production" ? "inProduction" : order.status === "ready" ? "readyForShipment" : order.status] || getStatusLabel(order.status)}
+              {getStatusLabel(order.status)}
             </Badge>
           </div>
           <h3 className="mt-1.5 truncate font-medium text-foreground">{order.title}</h3>
@@ -252,7 +252,7 @@ export default function BuyerOrdersPage() {
             <SelectItem value="all">{t.buyer.orders.allStatus}</SelectItem>
             {ORDER_STATUS_FLOW.map((s) => (
               <SelectItem key={s} value={s}>
-                {t.common.orderStatus?.[s === "in-production" ? "inProduction" : s === "ready" ? "readyForShipment" : s] || ORDER_STATUS_LABELS[s]}
+                {getStatusLabel(s)}
               </SelectItem>
             ))}
             <SelectItem value="cancelled">Cancelled</SelectItem>

@@ -4,12 +4,10 @@ import { useAuth } from "@/lib/auth-context"
 import { SellerOrdersList } from "@/components/orders/seller-orders"
 import { useTranslation } from "@/lib/i18n"
 
-const DEMO_MANUFACTURER_ID = "mfr-1"
-
 export default function ManufacturerOrdersPage() {
   const { user } = useAuth()
   const { t } = useTranslation()
-  const sellerId = user?.id ?? DEMO_MANUFACTURER_ID
+  const sellerId = user?.id ?? ""
   return (
     <SellerOrdersList
       config={{
