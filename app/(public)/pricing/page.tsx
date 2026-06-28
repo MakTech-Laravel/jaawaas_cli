@@ -504,14 +504,7 @@ function PricingPageContent() {
               </div>
             )}
 
-            {/* Approval Notice */}
-            <div className="mx-auto mt-12 max-w-2xl rounded-xl bg-secondary/10 p-6 text-center">
-              <Shield className="mx-auto h-8 w-8 text-secondary" />
-              <h3 className="mt-4 font-semibold text-foreground">{t?.pricing?.approval?.title || "Approval Required"}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {t?.pricing?.approval?.description || "Payment does not automatically publish your profile. All manufacturer accounts go through a review process before becoming visible to buyers. This ensures quality and trust on the platform."}
-              </p>
-            </div>
+
           </div>
         </section>
 
