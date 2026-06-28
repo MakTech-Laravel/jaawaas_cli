@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Linkedin, Twitter, Facebook, Youtube } from "lucide-react"
+import { Instagram } from "lucide-react"
 import { useTranslation } from "@/lib/i18n"
 import { getPublicCategories, type BackendCategory } from "@/lib/api/categories"
 
@@ -120,40 +120,13 @@ export function Footer() {
             {/* Social Links */}
             <div className="mt-6 flex gap-4">
               <a
-                href="https://linkedin.com"
+                href="https://www.instagram.com/sourcenest1/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary-foreground/60 transition-colors hover:text-primary-foreground"
-                aria-label="LinkedIn"
+                aria-label="Instagram"
               >
-                <Linkedin className="h-5 w-5" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-foreground/60 transition-colors hover:text-primary-foreground"
-                aria-label="Twitter"
-              >
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-foreground/60 transition-colors hover:text-primary-foreground"
-                aria-label="Facebook"
-              >
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a
-                href="https://youtube.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-foreground/60 transition-colors hover:text-primary-foreground"
-                aria-label="YouTube"
-              >
-                <Youtube className="h-5 w-5" />
+                <Instagram className="h-5 w-5" />
               </a>
             </div>
           </div>

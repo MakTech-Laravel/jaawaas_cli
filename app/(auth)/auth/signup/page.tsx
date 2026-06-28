@@ -97,6 +97,23 @@ export default function SignUpPage() {
     setIsLoading(true)
     setError("")
     
+    if (formData.role === "buyer") {
+      // TODO (Backend): Integrate API call to send OTP to formData.email here
+      // For now, we simulate sending the OTP and move to the OTP route
+      setTimeout(() => {
+        setIsLoading(false)
+        sessionStorage.setItem("temp_signup_data", JSON.stringify(formData))
+        router.push(`/auth/verify-otp?email=${encodeURIComponent(formData.email)}`)
+      }, 1000)
+    } else {
+      await finalizeRegistration()
+    }
+  }
+
+  const finalizeRegistration = async () => {
+    setIsLoading(true)
+    setError("")
+    
     try {
       const deviceName = typeof window !== "undefined" ? navigator.userAgent : "web"
 
