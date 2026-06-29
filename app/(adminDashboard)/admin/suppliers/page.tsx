@@ -58,6 +58,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { useTranslation } from "@/lib/i18n"
 import { AdminPagination } from "@/components/admin/admin-pagination"
+import RequestAdditionalInfoDialog from "@/components/admin/request-additional-info-dialog"
 import type { PaginationMeta } from "@/lib/api/admin-manufacturer-registrations"
 
 type SupplierStatus = "draft" | "pending" | "approved" | "rejected" | "suspended" | "needs_info" | "active" | "deactivated"
@@ -125,7 +126,6 @@ export default function AdminSuppliersPage() {
   const [showInfoDialog, setShowInfoDialog] = useState(false)
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [currentSupplier, setCurrentSupplier] = useState<Supplier | null>(null)
-  const [infoRequest, setInfoRequest] = useState("")
   const [rejectReason, setRejectReason] = useState("")
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<(string | number) | null>(null)
@@ -232,7 +232,6 @@ export default function AdminSuppliersPage() {
 
   const openInfoRequest = (supplier: Supplier) => {
     setCurrentSupplier(supplier)
-    setInfoRequest("")
     setShowInfoDialog(true)
   }
 
@@ -304,16 +303,6 @@ export default function AdminSuppliersPage() {
       })
     } finally {
       setCreatingSupport(false)
-    }
-  }
-
-  const submitInfoRequest = () => {
-    if (currentSupplier) {
-      setShowInfoDialog(false)
-      toast({
-        title: c.success,
-        description: p.infoRequestSent,
-      })
     }
   }
 
@@ -483,12 +472,10 @@ export default function AdminSuppliersPage() {
                           <HelpCircle className="mr-2 h-4 w-4" />
                           {creatingSupport ? support.creatingSupport : support.createSupport}
                         </DropdownMenuItem>
-                        {/* 
                         <DropdownMenuItem onClick={() => openInfoRequest(supplier)}>
                           <FileQuestion className="mr-2 h-4 w-4 text-blue-600" />
-                          Request More Info
+                          {p.requestInfo}
                         </DropdownMenuItem>
-                        */}
                         <DropdownMenuItem onClick={() => openReject(supplier)}>
                           <X className="mr-2 h-4 w-4 text-red-600" />
                           {c.reject}
@@ -570,32 +557,14 @@ export default function AdminSuppliersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Request Info Dialog */}
-      <Dialog open={showInfoDialog} onOpenChange={setShowInfoDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{p.requestInfo}</DialogTitle>
-            <DialogDescription>
-              {p.requestInfoDesc}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>{c.message}</Label>
-              <Textarea 
-                placeholder={c.messagePlaceholder}
-                value={infoRequest}
-                onChange={(e) => setInfoRequest(e.target.value)}
-                className="mt-2 min-h-[120px]"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInfoDialog(false)}>{c.cancel}</Button>
-            <Button onClick={submitInfoRequest}>{p.sendRequest}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RequestAdditionalInfoDialog
+        open={showInfoDialog}
+        onOpenChange={(open) => {
+          setShowInfoDialog(open)
+          if (!open) setCurrentSupplier(null)
+        }}
+        manufacturer={currentSupplier}
+      />
 
       {/* Reject Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>

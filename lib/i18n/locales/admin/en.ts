@@ -1585,6 +1585,28 @@ const adminEn = {
       howItWorks2: "Camera captures are live only — gallery uploads are blocked",
       howItWorks3: "The verification code {code} will be overlaid during captures",
     },
+    requestAdditionalInfo: {
+      title: "Request Additional Information",
+      subtitle: "Ask the manufacturer to submit documents, photos, or a written response.",
+      messageLabel: "Message to manufacturer",
+      messagePlaceholder: "Describe what information or files you need...",
+      allowedTypesLabel: "Allowed response types",
+      messageRequired: "Please enter a message describing what you need.",
+      typesRequired: "Select at least one response type.",
+      manufacturerHint:
+        "The manufacturer will receive an email and can respond from their Review Center or /review page.",
+      sending: "Sending request...",
+      sendRequest: "Send Request",
+      requestSent: "Additional information request sent successfully.",
+      requestFailed: "Failed to send additional information request.",
+      responseTypes: {
+        text: "Text message",
+        image: "Image (live camera)",
+        video: "Video (live camera)",
+        audio: "Audio",
+        document: "Document upload",
+      },
+    },
     reviewSubmission: {
       title: "Review Submission",
       manufacturer: "Manufacturer",

@@ -47,6 +47,7 @@ import type { ManufacturerApplication, ManufacturerRegistrationResponse } from "
 import { fetchManufacturerRegistrations, deleteManufacturer, approveManufacturer, rejectManufacturer, createManufacturerSupportTicket } from "@/lib/api/admin-manufacturer-registrations"
 import { ManufacturerApplicationDetailDialog } from "@/components/admin/manufacturer-application-detail-dialog"
 import RequestReviewDialog from "@/components/admin/request-review-dialog"
+import RequestAdditionalInfoDialog from "@/components/admin/request-additional-info-dialog"
 import {
   Factory,
   Check,
@@ -109,7 +110,6 @@ export default function ManufacturerRegistrationsPage() {
   const [showSupportDialog, setShowSupportDialog] = useState(false)
   const [creatingSupport, setCreatingSupport] = useState(false)
   const [infoTarget, setInfoTarget] = useState<ManufacturerApplication | null>(null)
-  const [infoRequestText, setInfoRequestText] = useState("")
   const [showInfoDialog, setShowInfoDialog] = useState(false)
   const [rejectTarget, setRejectTarget] = useState<ManufacturerApplication | null>(null)
   const [rejectReason, setRejectReason] = useState("")
@@ -250,15 +250,7 @@ export default function ManufacturerRegistrationsPage() {
 
   const openInfoRequest = (row: ManufacturerApplication) => {
     setInfoTarget(row)
-    setInfoRequestText("")
     setShowInfoDialog(true)
-  }
-
-  const submitInfoRequest = () => {
-    if (!infoTarget) return
-    toast({ title: c.infoRequested, description: c.infoRequestedFrom.replace("{email}", infoTarget.email) })
-    setShowInfoDialog(false)
-    setInfoTarget(null)
   }
 
   const openReject = (row: ManufacturerApplication) => {
@@ -764,29 +756,14 @@ export default function ManufacturerRegistrationsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Request Info Dialog */}
-      <Dialog open={showInfoDialog} onOpenChange={setShowInfoDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{p.requestInfo}</DialogTitle>
-            <DialogDescription>
-              {c.requestInfoFrom.replace("{target}", infoTarget?.company_name || infoTarget?.email || "")}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Label>{c.message}</Label>
-            <Textarea
-              value={infoRequestText}
-              onChange={(e) => setInfoRequestText(e.target.value)}
-              className="mt-2 min-h-30"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInfoDialog(false)}>{c.cancel}</Button>
-            <Button onClick={submitInfoRequest}>{c.sendRequest}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RequestAdditionalInfoDialog
+        open={showInfoDialog}
+        onOpenChange={(open) => {
+          setShowInfoDialog(open)
+          if (!open) setInfoTarget(null)
+        }}
+        manufacturer={infoTarget}
+      />
 
       {/* Reject Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
