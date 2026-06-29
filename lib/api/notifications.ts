@@ -57,6 +57,9 @@ function toType(value: unknown): NotificationType {
   if (raw.startsWith("order.")) {
     return "order"
   }
+  if (raw.startsWith("support.ticket")) {
+    return "message"
+  }
 
   return "system"
 }

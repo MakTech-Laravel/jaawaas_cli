@@ -6,7 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -36,7 +44,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/lib/i18n"
 import type { ManufacturerApplication, ManufacturerRegistrationResponse } from "@/lib/api/admin-manufacturer-registrations"
-import { fetchManufacturerRegistrations, deleteManufacturer, approveManufacturer, rejectManufacturer } from "@/lib/api/admin-manufacturer-registrations"
+import { fetchManufacturerRegistrations, deleteManufacturer, approveManufacturer, rejectManufacturer, createManufacturerSupportTicket } from "@/lib/api/admin-manufacturer-registrations"
 import { ManufacturerApplicationDetailDialog } from "@/components/admin/manufacturer-application-detail-dialog"
 import RequestReviewDialog from "@/components/admin/request-review-dialog"
 import {
@@ -49,13 +57,13 @@ import {
   Mail,
   Building2,
   MoreVertical,
-  MessageSquare,
   FileQuestion,
   X,
   ChevronLeft,
   ChevronRight,
   Loader2,
   ScanEye,
+  HelpCircle,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -94,8 +102,12 @@ export default function ManufacturerRegistrationsPage() {
   const [deleteTarget, setDeleteTarget] = useState<ManufacturerApplication | null>(null)
   const [deletingId, setDeletingId] = useState<number | string | null>(null)
   const [messageTarget, setMessageTarget] = useState<ManufacturerApplication | null>(null)
-  const [messageText, setMessageText] = useState("")
-  const [showMessageDialog, setShowMessageDialog] = useState(false)
+  const [supportSubject, setSupportSubject] = useState("")
+  const [supportMessage, setSupportMessage] = useState("")
+  const [supportDepartment, setSupportDepartment] = useState("account")
+  const [supportPriority, setSupportPriority] = useState("medium")
+  const [showSupportDialog, setShowSupportDialog] = useState(false)
+  const [creatingSupport, setCreatingSupport] = useState(false)
   const [infoTarget, setInfoTarget] = useState<ManufacturerApplication | null>(null)
   const [infoRequestText, setInfoRequestText] = useState("")
   const [showInfoDialog, setShowInfoDialog] = useState(false)
@@ -182,17 +194,58 @@ export default function ManufacturerRegistrationsPage() {
     }
   }
 
-  const openMessage = (row: ManufacturerApplication) => {
+  const openSupport = (row: ManufacturerApplication) => {
     setMessageTarget(row)
-    setMessageText("")
-    setShowMessageDialog(true)
+    const company = displayCompany(row)
+    setSupportSubject(p.defaultSupportSubject.replace("{company}", company !== "—" ? company : displayName(row)))
+    setSupportMessage("")
+    setSupportDepartment("account")
+    setSupportPriority("medium")
+    setShowSupportDialog(true)
   }
 
-  const sendMessage = () => {
+  const submitSupportTicket = async () => {
     if (!messageTarget) return
-    toast({ title: c.messageSent, description: c.messageSentTo.replace("{email}", messageTarget.email) })
-    setShowMessageDialog(false)
-    setMessageTarget(null)
+
+    if (!supportSubject.trim() || !supportMessage.trim()) {
+      toast({
+        title: c.missingReason,
+        description: p.supportFieldsRequired,
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setCreatingSupport(true)
+      const response = await createManufacturerSupportTicket(messageTarget.id, {
+        subject: supportSubject.trim(),
+        message: supportMessage.trim(),
+        department_type: supportDepartment,
+        priority: supportPriority,
+      })
+
+      toast({
+        title: c.success,
+        description: response.message || p.supportTicketCreated,
+      })
+
+      setShowSupportDialog(false)
+      setMessageTarget(null)
+    } catch (error: unknown) {
+      const errorMsg =
+        error instanceof Error
+          ? error.message
+          : (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+            p.supportTicketFailed
+      toast({
+        title: c.error,
+        description: errorMsg,
+        variant: "destructive",
+      })
+    } finally {
+      setCreatingSupport(false)
+    }
   }
 
   const openInfoRequest = (row: ManufacturerApplication) => {
@@ -376,9 +429,9 @@ export default function ManufacturerRegistrationsPage() {
               <Eye className="mr-2 h-4 w-4" />
               {c.viewDetails}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => openMessage(row)}>
-              <MessageSquare className="mr-2 h-4 w-4" />
-              {p.sendMessage}
+            <DropdownMenuItem onClick={() => openSupport(row)}>
+              <HelpCircle className="mr-2 h-4 w-4" />
+              {p.createSupport}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => openInfoRequest(row)}>
               <FileQuestion className="mr-2 h-4 w-4" />
@@ -607,26 +660,106 @@ export default function ManufacturerRegistrationsPage() {
         />
       ) : null}
 
-      {/* Send Message Dialog */}
-      <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
-        <DialogContent>
+      {/* Create Support Dialog */}
+      <Dialog open={showSupportDialog} onOpenChange={setShowSupportDialog}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{p.sendMessage}</DialogTitle>
+            <DialogTitle>{p.createSupport}</DialogTitle>
             <DialogDescription>
-              {c.sendMessageTo.replace("{target}", messageTarget?.company_name || messageTarget?.email || "")}
+              {p.createSupportDescription}
             </DialogDescription>
           </DialogHeader>
+
+          {messageTarget && (
+            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2 text-sm">
+              <p className="font-medium text-foreground">{displayName(messageTarget)}</p>
+              <p className="text-muted-foreground break-all">{messageTarget.email}</p>
+              {displayCompany(messageTarget) !== "—" && (
+                <p className="text-muted-foreground">{displayCompany(messageTarget)}</p>
+              )}
+              {(messageTarget.country || messageTarget.company?.country) && (
+                <p className="text-muted-foreground">
+                  {messageTarget.country || messageTarget.company?.country}
+                </p>
+              )}
+              <Badge variant="secondary" className="capitalize">
+                {messageTarget.manufacture_status_label || messageTarget.status || c.pending}
+              </Badge>
+            </div>
+          )}
+
           <div className="space-y-4">
-            <Label>{c.message}</Label>
-            <Textarea
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              className="mt-2 min-h-30"
-            />
+            <div className="space-y-2">
+              <Label htmlFor="support-subject">{p.supportSubject}</Label>
+              <Input
+                id="support-subject"
+                value={supportSubject}
+                onChange={(e) => setSupportSubject(e.target.value)}
+                placeholder={p.supportSubjectPlaceholder}
+                disabled={creatingSupport}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>{p.supportDepartment}</Label>
+                <Select value={supportDepartment} onValueChange={setSupportDepartment} disabled={creatingSupport}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="account">{p.departments.account}</SelectItem>
+                    <SelectItem value="general">{p.departments.general}</SelectItem>
+                    <SelectItem value="sales">{p.departments.sales}</SelectItem>
+                    <SelectItem value="technical">{p.departments.technical}</SelectItem>
+                    <SelectItem value="billing">{p.departments.billing}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{p.supportPriority}</Label>
+                <Select value={supportPriority} onValueChange={setSupportPriority} disabled={creatingSupport}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">{p.priorities.low}</SelectItem>
+                    <SelectItem value="medium">{p.priorities.medium}</SelectItem>
+                    <SelectItem value="high">{p.priorities.high}</SelectItem>
+                    <SelectItem value="urgent">{p.priorities.urgent}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="support-message">{p.supportMessage}</Label>
+              <Textarea
+                id="support-message"
+                value={supportMessage}
+                onChange={(e) => setSupportMessage(e.target.value)}
+                placeholder={p.supportMessagePlaceholder}
+                className="min-h-30"
+                disabled={creatingSupport}
+              />
+            </div>
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowMessageDialog(false)}>{c.cancel}</Button>
-            <Button onClick={sendMessage}>{c.send}</Button>
+            <Button variant="outline" onClick={() => setShowSupportDialog(false)} disabled={creatingSupport}>
+              {c.cancel}
+            </Button>
+            <Button onClick={submitSupportTicket} disabled={creatingSupport}>
+              {creatingSupport ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {p.creatingSupport}
+                </>
+              ) : (
+                p.createSupportTicket
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

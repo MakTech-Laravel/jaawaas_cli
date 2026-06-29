@@ -4,14 +4,12 @@ import { useState, useEffect } from "react"
 import { ChatView, ChatConversation, ChatMessage, ChatParticipant } from "@/components/chat/chat-view"
 import { useAuth } from "@/lib/auth-context"
 import { Loader2 } from "lucide-react"
-import { getConversations, getMessages, sendMessage, markAsRead } from "@/lib/api/messages"
-import { getEcho } from "@/lib/echo"
+import { getAdminConversations, getAdminMessages } from "@/lib/api/admin-messages"
 import { useTranslation } from "@/lib/i18n"
 
 export default function AdminMessagesPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.messages
-  const c = t.admin.common
   const { user, isAuthenticated } = useAuth()
   const [selectedConvId, setSelectedConvId] = useState<string | undefined>()
   const [conversations, setConversations] = useState<ChatConversation[]>([])
@@ -19,52 +17,22 @@ export default function AdminMessagesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isMessagesLoading, setIsMessagesLoading] = useState(false)
 
-  const buildIncomingMessage = (data: any): ChatMessage | null => {
-    const msg = data?.message
-    if (!msg?.id) return null
-    return {
-      id: msg.id.toString(),
-      senderId: msg.sender_id?.toString() || "",
-      text: msg.body || msg.content || msg.message || "",
-      timestamp: c.justNow,
-      isRead: false,
-    }
-  }
-
-  // Fetch conversations on mount
   useEffect(() => {
     async function loadConversations() {
       if (!isAuthenticated) return
-      
+
       setIsLoading(true)
       try {
-        const data = await getConversations({ per_page: 50 })
-        
-        // Deduplicate conversations (keep the newest one per other participant name)
-        const uniqueConversations: ChatConversation[] = []
-        const seenOtherNames = new Set<string>()
-        const currentUserId = user?.id?.toString() || "admin-1"
-        
-        for (const conv of data) {
-          const other = conv.participants.find(p => p.id !== currentUserId) || conv.participants[0]
-          const otherName = other?.name || c.unknown.toLowerCase()
-          
-          if (!seenOtherNames.has(otherName)) {
-            seenOtherNames.add(otherName)
-            uniqueConversations.push(conv)
-          }
-        }
-        
-        setConversations(uniqueConversations)
-        
-        // Auto-select conversation from URL if provided
+        const data = await getAdminConversations({ per_page: 50 })
+        setConversations(data)
+
         const params = new URLSearchParams(window.location.search)
         const requestedConvId = params.get("conversation")
-        
+
         if (requestedConvId) {
           setSelectedConvId(requestedConvId)
-        } else if (uniqueConversations.length > 0 && !selectedConvId) {
-          setSelectedConvId(uniqueConversations[0].id)
+        } else if (data.length > 0 && !selectedConvId) {
+          setSelectedConvId(data[0].id)
         }
       } catch (error) {
         console.error("Failed to load admin conversations:", error)
@@ -74,16 +42,15 @@ export default function AdminMessagesPage() {
     }
 
     loadConversations()
-  }, [isAuthenticated, selectedConvId])
+  }, [isAuthenticated])
 
-  // Fetch messages when selected conversation changes
   useEffect(() => {
     async function loadMessages() {
       if (!selectedConvId) return
-      
+
       setIsMessagesLoading(true)
       try {
-        const data = await getMessages(selectedConvId)
+        const data = await getAdminMessages(selectedConvId)
         setMessages(data)
       } catch (error) {
         console.error("Failed to load messages:", error)
@@ -95,13 +62,12 @@ export default function AdminMessagesPage() {
     loadMessages()
   }, [selectedConvId])
 
-  // Fallback sync so admin inbox updates even if websocket misses.
   useEffect(() => {
     if (!selectedConvId) return
 
     const interval = setInterval(async () => {
       try {
-        const latest = await getMessages(selectedConvId)
+        const latest = await getAdminMessages(selectedConvId)
         setMessages((prev) => {
           if (prev.length === 0) return latest
           const existingIds = new Set(prev.map((m) => m.id))
@@ -111,106 +77,19 @@ export default function AdminMessagesPage() {
       } catch {
         // Silent retry on next tick
       }
-    }, 3000)
+    }, 5000)
 
     return () => clearInterval(interval)
   }, [selectedConvId])
 
-  // Real-time listener for new messages
-  useEffect(() => {
-    if (!selectedConvId) return
-    const echo = getEcho()
-    if (!echo) return
-
-    const channel = echo.private(`chat.room.${selectedConvId}`)
-    // Listen for incoming messages
-    channel.listen(".message.sent", (data: any) => {
-        // Echo prefix dot '.' means "don't add namespace" if the event is literal
-        // Or if it's "MessageSent" it might be namespaced. The user said "message.sent".
-        const newMsg = buildIncomingMessage(data)
-        if (!newMsg) return
-        
-        setMessages(prev => {
-          // Avoid duplicates (if we sent the message ourselves and it's already in state)
-          if (prev.some(m => m.id === newMsg.id)) return prev
-          return [...prev, newMsg]
-        })
-
-        // Update conversation list
-        setConversations(prev => prev.map((conv) => 
-          conv.id === selectedConvId 
-            ? { ...conv, lastMessage: newMsg, updatedAt: c.justNow } 
-            : conv
-        ))
-      })
-
-    // Diagnostic bindings to help debug live updates
-    try {
-      // Log subscription success / errors
-      if ((channel as any).bind) {
-        (channel as any).bind("pusher:subscription_succeeded", () => {
-          // eslint-disable-next-line no-console
-          console.log(`Subscribed to chat.room.${selectedConvId}`)
-        });
-        (channel as any).bind("pusher:subscription_error", (err: any) => {
-          // eslint-disable-next-line no-console
-          console.error(`Pusher subscription error for chat.room.${selectedConvId}:`, err)
-        });
-      }
-
-      // Log connection state changes
-      if ((echo as any).connector?.pusher?.connection) {
-        ;(echo as any).connector.pusher.connection.bind("state_change", (states: any) => {
-          // eslint-disable-next-line no-console
-          console.log("Pusher connection state:", states)
-        })
-      }
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn("Pusher diagnostics setup failed", e)
-    }
-
-    return () => {
-      echo.leave(`chat.room.${selectedConvId}`)
-    }
-  }, [selectedConvId])
-
   const currentUser: ChatParticipant = {
-    id: user?.id?.toString() || "admin-1",
+    id: user?.id?.toString() || "admin-observer",
     name: user?.name || p.adminFallback,
     role: "admin",
   }
 
-  const handleSelectConversation = async (conv: ChatConversation) => {
+  const handleSelectConversation = (conv: ChatConversation) => {
     setSelectedConvId(conv.id)
-    
-    // Mark as read on backend if it has unread messages
-    if (conv.unreadCount > 0) {
-      const success = await markAsRead(conv.id)
-      if (success) {
-        setConversations(prev => prev.map((item) => 
-          item.id === conv.id ? { ...item, unreadCount: 0 } : item
-        ))
-      }
-    }
-  }
-
-  const handleSendMessage = async (text: string, files?: File[]) => {
-    if (!selectedConvId) return false
-
-    const sentMsg = await sendMessage(selectedConvId, text, files)
-    if (sentMsg) {
-      setMessages(prev => [...prev, sentMsg])
-      
-      // Update last message in conversation list
-      setConversations(prev => prev.map((item) => 
-        item.id === selectedConvId 
-          ? { ...item, lastMessage: sentMsg, updatedAt: c.justNow } 
-          : item
-      ))
-      return true
-    }
-    return false
   }
 
   if (isLoading) {
@@ -239,9 +118,11 @@ export default function AdminMessagesPage() {
           messages={messages}
           currentUser={currentUser}
           onSelectConversation={handleSelectConversation}
-          onSendMessage={handleSendMessage}
+          onSendMessage={async () => false}
           selectedConversationId={selectedConvId}
           isLoading={isMessagesLoading}
+          readOnly
+          observerMode
         />
       </div>
     </div>
