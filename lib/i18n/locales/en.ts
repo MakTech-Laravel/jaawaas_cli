@@ -113,6 +113,17 @@ const en = {
     accountCreated: "Your account has been created",
     reviewPlans: "Review plans next, or go straight to your dashboard.",
     verifyEmail: "Please verify your email before continuing.",
+    verifyEmailTitle: "Verify your email",
+    verifyEmailSubtitle: "We've sent a 6-digit verification code to",
+    verifyEmailButton: "Verify Email",
+    verifyingEmail: "Verifying...",
+    verifyOtpRequired: "Please enter a 6-digit verification code.",
+    verifySessionExpired: "Session expired. Please try registering again.",
+    verifyResendPrompt: "Didn't receive the code?",
+    verifyResend: "Resend",
+    verifyResendWait: "Resend available in",
+    verifyResendSent: "A new verification code has been sent.",
+    backToDetails: "Back to registration",
     
     // Restore Account
     restoreTitle: "Restore your account",
