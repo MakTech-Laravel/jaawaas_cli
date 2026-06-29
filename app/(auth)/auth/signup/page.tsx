@@ -18,6 +18,7 @@ import {
 import { useAuth, type UserRole } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/i18n"
 import { REGISTER_SUCCESS_STORAGE_KEY } from "@/lib/register-success-storage"
+import { saveEmailVerificationChallenge } from "@/lib/email-verification-storage"
 import { countries } from "@/lib/data/countries"
 import { cn } from "@/lib/utils"
 import { Eye, EyeOff, Loader2, Users, Factory, Check, AlertCircle, Upload, FileText, X, Camera, Globe, Building2, Info } from "lucide-react"
@@ -94,20 +95,7 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-    setError("")
-    
-    if (formData.role === "buyer") {
-      // TODO (Backend): Integrate API call to send OTP to formData.email here
-      // For now, we simulate sending the OTP and move to the OTP route
-      setTimeout(() => {
-        setIsLoading(false)
-        sessionStorage.setItem("temp_signup_data", JSON.stringify(formData))
-        router.push(`/auth/verify-otp?email=${encodeURIComponent(formData.email)}`)
-      }, 1000)
-    } else {
-      await finalizeRegistration()
-    }
+    await finalizeRegistration()
   }
 
   const finalizeRegistration = async () => {
@@ -138,6 +126,30 @@ export default function SignUpPage() {
       })
       
       if (result.success) {
+        if ("requiresEmailVerification" in result && result.requiresEmailVerification) {
+          const search = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams()
+
+          saveEmailVerificationChallenge({
+            verificationToken: result.verificationToken,
+            codeExpiryTime: result.codeExpiryTime,
+            email: formData.email,
+            role: formData.role,
+            pendingReview: result.pendingReview,
+            message: result.message,
+            manufactureStatus: result.manufactureStatus ?? null,
+            transactionId: search.get("transactionId") || undefined,
+            planId: search.get("plan") || undefined,
+            promoId: search.get("promo") || undefined,
+          })
+
+          const params = new URLSearchParams({
+            email: formData.email,
+            role: formData.role,
+          })
+          router.push(`/auth/verify-otp?${params.toString()}`)
+          return
+        }
+
         // If the registration returned an active session (not pending review)
         // and the selected role is buyer, redirect straight to the dashboard.
         if (!result.pendingReview && formData.role === "buyer") {

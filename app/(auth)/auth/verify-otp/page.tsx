@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, Suspense } from "react"
+import { useState, Suspense, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { AlertCircle, Loader2 } from "lucide-react"
@@ -12,78 +12,89 @@ import {
 } from "@/components/ui/input-otp"
 import { useAuth } from "@/lib/auth-context"
 import { REGISTER_SUCCESS_STORAGE_KEY } from "@/lib/register-success-storage"
+import {
+  clearEmailVerificationChallenge,
+  readEmailVerificationChallenge,
+} from "@/lib/email-verification-storage"
 
 function VerifyOtpContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { t } = useTranslation()
-  const { signup } = useAuth()
-  
-  const email = searchParams.get("email") || ""
-  
+  const { verifyEmailSignup, resendEmailVerification } = useAuth()
+
+  const challenge = readEmailVerificationChallenge()
+  const email = searchParams.get("email") || challenge?.email || ""
+  const role = (searchParams.get("role") || challenge?.role || "buyer") as "buyer" | "manufacturer"
+
   const [otp, setOtp] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isResending, setIsResending] = useState(false)
   const [error, setError] = useState("")
+  const [info, setInfo] = useState("")
+  const [resendCooldown, setResendCooldown] = useState(0)
+
+  useEffect(() => {
+    if (resendCooldown <= 0) {
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      setResendCooldown((current) => (current > 0 ? current - 1 : 0))
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [resendCooldown])
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (otp.length < 6) {
-      setError("Please enter a 6-digit OTP.")
+
+    if (!challenge?.verificationToken) {
+      setError(t?.auth?.verifySessionExpired || "Session expired. Please try registering again.")
       return
     }
-    
+
+    if (otp.length < 6) {
+      setError(t?.auth?.verifyOtpRequired || "Please enter a 6-digit verification code.")
+      return
+    }
+
     setIsLoading(true)
     setError("")
-    
+    setInfo("")
+
     try {
-      // TODO (Backend): Integrate API call to verify the OTP here
-      // For now, we simulate by retrieving the stored formData and finishing the registration
-      const storedData = sessionStorage.getItem("temp_signup_data")
-      if (!storedData) {
-        setError("Session expired. Please try registering again.")
-        setIsLoading(false)
-        return
-      }
-      
-      const formData = JSON.parse(storedData)
       const deviceName = typeof window !== "undefined" ? navigator.userAgent : "web"
-      
-      const result = await signup({
-        ...formData,
+      const result = await verifyEmailSignup({
+        verificationToken: challenge.verificationToken,
+        otp,
         deviceName,
-        transactionId: searchParams.get("transactionId") || undefined,
-        planId: searchParams.get("plan") || undefined,
-        promoId: searchParams.get("promo") || undefined,
+        pendingReview: challenge.pendingReview,
+        manufactureStatus: challenge.manufactureStatus ?? null,
       })
 
-      if (result.success) {
-        sessionStorage.removeItem("temp_signup_data")
-        
-        if (!result.pendingReview && formData.role === "buyer") {
-          router.push(result.redirectTo)
-          return
+      if (!result.success) {
+        setError(result.message || (t?.auth?.errorOccurred || "An error occurred. Please try again."))
+        if (result.retryAfterSeconds) {
+          setResendCooldown(result.retryAfterSeconds)
         }
+        return
+      }
 
-        const payload = result.pendingReview
-          ? {
-              message: result.message,
-              manufactureStatus: result.manufactureStatus ?? null,
-              isLoggedIn: false as const,
-            }
-          : {
-              message:
-                result.message ||
-                (t?.auth?.reviewPlans || "Your account has been created. Review plans next, or go straight to your dashboard."),
-              manufactureStatus: null as string | null,
-              isLoggedIn: true as const,
-              dashboardPath: result.redirectTo,
-            }
+      clearEmailVerificationChallenge()
 
+      if (result.pendingReview) {
+        const payload = {
+          message: result.message || challenge.message || "",
+          manufactureStatus: result.manufactureStatus ?? challenge.manufactureStatus ?? null,
+          isLoggedIn: true as const,
+        }
         sessionStorage.setItem(REGISTER_SUCCESS_STORAGE_KEY, JSON.stringify(payload))
         router.push("/auth/register-success")
-      } else {
-        setError(result.message || (t?.auth?.registrationFailed || "Registration failed. Please try again."))
+        return
       }
+
+      router.push(result.redirectTo)
     } catch {
       setError(t?.auth?.errorOccurred || "An error occurred. Please try again.")
     } finally {
@@ -91,27 +102,91 @@ function VerifyOtpContent() {
     }
   }
 
+  const handleResend = async () => {
+    if (!challenge?.verificationToken || resendCooldown > 0 || isResending) {
+      return
+    }
+
+    setIsResending(true)
+    setError("")
+    setInfo("")
+
+    try {
+      const result = await resendEmailVerification(challenge.verificationToken)
+
+      if (!result.success) {
+        setError(result.message || (t?.auth?.errorOccurred || "An error occurred. Please try again."))
+        if (result.retryAfterSeconds) {
+          setResendCooldown(result.retryAfterSeconds)
+        }
+        return
+      }
+
+      setOtp("")
+      setInfo(result.message || (t?.auth?.verifyResendSent || "A new verification code has been sent."))
+    } catch {
+      setError(t?.auth?.errorOccurred || "An error occurred. Please try again.")
+    } finally {
+      setIsResending(false)
+    }
+  }
+
+  if (!challenge?.verificationToken) {
+    return (
+      <div className="lg:flex lg:min-h-[calc(100vh-6rem)] lg:flex-col lg:justify-center">
+        <div className="text-center lg:text-left">
+          <h1 className="font-serif text-3xl font-medium text-foreground">
+            {t?.auth?.verifyEmailTitle || "Verify your email"}
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            {t?.auth?.verifySessionExpired || "Session expired. Please try registering again."}
+          </p>
+          <Button
+            type="button"
+            className="mt-6"
+            onClick={() => router.push(`/auth/signup?role=${role}`)}
+          >
+            {t?.auth?.backToDetails || "Back to registration"}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="lg:flex lg:min-h-[calc(100vh-6rem)] lg:flex-col lg:justify-center">
       <div className="text-center lg:text-left">
         <button
-          onClick={() => router.push("/auth/signup?role=buyer")}
+          type="button"
+          onClick={() => router.push(`/auth/signup?role=${role}`)}
           className="mb-4 text-sm text-muted-foreground hover:text-foreground"
         >
           ← {t?.auth?.backToDetails || "Back to registration"}
         </button>
         <h1 className="font-serif text-3xl font-medium text-foreground">
-          Verify your email
+          {t?.auth?.verifyEmailTitle || "Verify your email"}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          We've sent a 6-digit verification code to <strong className="text-foreground">{email}</strong>
+          {t?.auth?.verifyEmailSubtitle || "We've sent a 6-digit verification code to"}{" "}
+          <strong className="text-foreground">{email}</strong>
         </p>
+        {challenge.codeExpiryTime > 0 && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Code expires in {challenge.codeExpiryTime} minutes.
+          </p>
+        )}
       </div>
 
       {error && (
         <div className="mt-4 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
+        </div>
+      )}
+
+      {info && (
+        <div className="mt-4 rounded-lg bg-secondary/10 p-3 text-sm text-foreground">
+          {info}
         </div>
       )}
 
@@ -138,25 +213,26 @@ function VerifyOtpContent() {
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Verifying...
+              {t?.auth?.verifyingEmail || "Verifying..."}
             </>
           ) : (
-            "Verify Email"
+            t?.auth?.verifyEmailButton || "Verify Email"
           )}
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
-          Didn't receive the code?{" "}
+          {t?.auth?.verifyResendPrompt || "Didn't receive the code?"}{" "}
           <button
             type="button"
-            className="font-medium text-secondary hover:underline"
-            onClick={() => {
-              // TODO (Backend): Integrate API call to resend OTP here
-              setOtp("")
-              alert("OTP resent to " + email)
-            }}
+            className="font-medium text-secondary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={handleResend}
+            disabled={isResending || resendCooldown > 0}
           >
-            Resend
+            {isResending
+              ? (t?.auth?.verifyingEmail || "Verifying...")
+              : resendCooldown > 0
+                ? `${t?.auth?.verifyResendWait || "Resend available in"} ${resendCooldown}s`
+                : (t?.auth?.verifyResend || "Resend")}
           </button>
         </p>
       </form>
