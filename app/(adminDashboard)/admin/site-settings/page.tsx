@@ -469,32 +469,15 @@ export default function SiteSettingsPage() {
         <TabsContent value="social" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Share2 className="h-5 w-5" />
-                    {c.socialMediaLinks}
-                  </CardTitle>
-                  <CardDescription>
-                    {p.socialMediaDesc}
-                  </CardDescription>
-                </div>
-                <Button
-                  onClick={() => void handleSaveSocialLinks()}
-                  disabled={isSaving || socialLinksLoading}
-                  className="gap-2 shrink-0"
-                >
-                  <Save className="h-4 w-4" />
-                  {isSaving ? c.saving : p.saveSocialLinks}
-                </Button>
-              </div>
+              <CardTitle className="flex items-center gap-2">
+                <Share2 className="h-5 w-5" />
+                {c.socialMediaLinks}
+              </CardTitle>
+              <CardDescription>
+                {p.socialMediaDesc}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {!socialLinksApiConnected && !socialLinksLoading ? (
-                <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                  {p.socialLinksNotConnected}
-                </p>
-              ) : null}
               <div className="space-y-3">
                 {socialLinks.sort((a, b) => a.order - b.order).map((link) => {
                   const IconComponent = getIconComponent(link.icon, iconOptions)
