@@ -78,9 +78,6 @@ const getIconComponent = (iconName: string, iconOptions: { value: string; icon: 
   return option?.icon || Share2
 }
 
-
-
-
 export default function SiteSettingsPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.siteSettings
@@ -110,6 +107,105 @@ export default function SiteSettingsPage() {
   const [newSocialPlatform, setNewSocialPlatform] = useState("")
   const [newSocialUrl, setNewSocialUrl] = useState("")
   const [newSocialIcon, setNewSocialIcon] = useState("Linkedin")
+
+  useEffect(() => {
+    const loadLegalPages = async () => {
+      try {
+        setLegalPagesLoading(true)
+        const pages = await fetchAdminLegalPages()
+        if (pages.length > 0) {
+          setLegalPages(pages.map(mapAdminLegalPageToUi))
+          setSelectedLegalPage(pages[0]?.slug || "privacy")
+        }
+      } catch (error) {
+        toast({
+          title: c.error,
+          description: error instanceof Error ? error.message : p.legalPagesLoadFailed,
+          variant: "destructive",
+        })
+      } finally {
+        setLegalPagesLoading(false)
+      }
+    }
+
+    void loadLegalPages()
+  }, [])
+
+  useEffect(() => {
+    const loadAboutPage = async () => {
+      try {
+        setAboutPageLoading(true)
+        const page = await fetchAdminAboutPage()
+        if (page) {
+          setAboutPage(mapAdminAboutPageToUi(page))
+          setAboutPageApiConnected(true)
+        } else {
+          setAboutPageApiConnected(false)
+        }
+      } catch (error) {
+        setAboutPageApiConnected(false)
+        toast({
+          title: c.error,
+          description: error instanceof Error ? error.message : p.aboutPageLoadFailed,
+          variant: "destructive",
+        })
+      } finally {
+        setAboutPageLoading(false)
+      }
+    }
+
+    void loadAboutPage()
+  }, [])
+
+  useEffect(() => {
+    const loadSocialLinks = async () => {
+      try {
+        setSocialLinksLoading(true)
+        const links = await fetchAdminSocialMediaLinks()
+        if (links.length > 0) {
+          setSocialLinks(links.map(mapAdminSocialLinkToUi))
+          setSocialLinksApiConnected(true)
+        } else {
+          setSocialLinksApiConnected(false)
+        }
+      } catch (error) {
+        setSocialLinksApiConnected(false)
+        toast({
+          title: c.error,
+          description: error instanceof Error ? error.message : p.socialLinksLoadFailed,
+          variant: "destructive",
+        })
+      } finally {
+        setSocialLinksLoading(false)
+      }
+    }
+
+    void loadSocialLinks()
+  }, [])
+
+  const saveLegalPagesToApi = async (pages: LegalPage[]) => {
+    const pagesToSave = pages.filter((page) => page.apiId)
+
+    if (pagesToSave.length === 0) {
+      throw new Error(
+        "Legal pages are not connected to the API yet. Refresh the page or run: php artisan db:seed --class=LegalPageSeeder"
+      )
+    }
+
+    for (const page of pagesToSave) {
+      const response = await updateAdminLegalPageContent(
+        page.apiId!,
+        mapUiLegalPageToSave(page)
+      )
+
+      if (response.data) {
+        const updated = mapAdminLegalPageToUi(response.data)
+        setLegalPages((prev) =>
+          prev.map((item) => (item.slug === updated.slug ? updated : item))
+        )
+      }
+    }
+  }
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -333,27 +429,6 @@ export default function SiteSettingsPage() {
     )
   }
 
-  // Help Center functions
-  const updateHelpSettings = (field: string, value: string) => {
-    const [section, key] = field.split('.')
-    if (section === 'hero') {
-      setHelpCenter({
-        ...helpCenter,
-        settings: {
-          ...helpCenter.settings,
-          hero: { ...helpCenter.settings.hero, [key]: value }
-        }
-      })
-    } else if (section === 'contactSupport') {
-      setHelpCenter({
-        ...helpCenter,
-        settings: {
-          ...helpCenter.settings,
-          contactSupport: { ...helpCenter.settings.contactSupport, [key]: value }
-        }
-      })
-    }
-  }
 
   const currentLegalPage = legalPages.find(p => p.id === selectedLegalPage)
 
@@ -389,118 +464,6 @@ export default function SiteSettingsPage() {
           </TabsTrigger>
         </TabsList>
 
-
-        {/* Social Media Tab */}
-        <TabsContent value="social" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Share2 className="h-5 w-5" />
-                    {c.socialMediaLinks}
-                  </CardTitle>
-                  <CardDescription>
-                    {p.socialMediaDesc}
-                  </CardDescription>
-                </div>
-                <Button
-                  onClick={() => void handleSaveSocialLinks()}
-                  disabled={isSaving || socialLinksLoading}
-                  className="gap-2 shrink-0"
-                >
-                  <Save className="h-4 w-4" />
-                  {isSaving ? c.saving : p.saveSocialLinks}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Hero Section */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">{p.heroSection}</h3>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div>
-                    <Label>{c.title}</Label>
-                    <Input
-                      value={helpCenter.settings.hero.title}
-                      onChange={(e) => updateHelpSettings('hero.title', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>{p.subtitle_label}</Label>
-                    <Input
-                      value={helpCenter.settings.hero.subtitle}
-                      onChange={(e) => updateHelpSettings('hero.subtitle', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>{p.searchPlaceholder}</Label>
-                    <Input
-                      value={helpCenter.settings.hero.searchPlaceholder}
-                      onChange={(e) => updateHelpSettings('hero.searchPlaceholder', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Support Section */}
-              <div className="space-y-4 pt-4 border-t">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-foreground">{p.contactSupport}</h3>
-                  <Switch
-                    checked={helpCenter.settings.contactSupport.enabled}
-                    onCheckedChange={(checked) => setHelpCenter({
-                      ...helpCenter,
-                      settings: {
-                        ...helpCenter.settings,
-                        contactSupport: { ...helpCenter.settings.contactSupport, enabled: checked }
-                      }
-                    })}
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label>{c.title}</Label>
-                    <Input
-                      value={helpCenter.settings.contactSupport.title}
-                      onChange={(e) => updateHelpSettings('contactSupport.title', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>{p.subtitle_label}</Label>
-                    <Input
-                      value={helpCenter.settings.contactSupport.subtitle}
-                      onChange={(e) => updateHelpSettings('contactSupport.subtitle', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>{p.contactButton}</Label>
-                    <Input
-                      value={helpCenter.settings.contactSupport.contactButtonText}
-                      onChange={(e) => updateHelpSettings('contactSupport.contactButtonText', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>{p.faqButton}</Label>
-                    <Input
-                      value={helpCenter.settings.contactSupport.faqButtonText}
-                      onChange={(e) => updateHelpSettings('contactSupport.faqButtonText', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-
-        </TabsContent>
 
         {/* Social Media Tab */}
         <TabsContent value="social" className="space-y-6">
