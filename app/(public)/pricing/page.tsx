@@ -15,7 +15,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
-import { Check, X, ArrowRight, Shield, HelpCircle, Sparkles, Users, CheckCircle, AlertCircle, X as XIcon, Loader2 } from "lucide-react"
+import { Check, X, ArrowRight, Shield, HelpCircle, Sparkles, Users, CheckCircle, AlertCircle, Loader2, XIcon } from "lucide-react"
 import { fetchPublicPlans, type PublicPlan } from "@/lib/api/public-plans"
 import { fetchActivePromotion, enrollInPromotion, type ActivePromotion } from "@/lib/api/public-promotions"
 import { useAuth } from "@/lib/auth-context"
