@@ -29,11 +29,13 @@ import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n"
 import type { ManufacturerApplication } from "@/lib/api/admin-manufacturer-registrations"
 import {
-  createReviewRequest,
   generateReviewCode,
   DEFAULT_FACTORY_AREAS,
   type ReviewType,
 } from "@/lib/api/admin-reviews"
+import { createManufacturerAdditionalInformationRequest } from "@/lib/api/admin-manufacturer-additional-information"
+import type { AdditionalInformationResponseType } from "@/lib/api/manufacturer-additional-information"
+import { getApiErrorMessage } from "@/lib/api/errors"
 
 const FACTORY_AREA_KEY_MAP: Record<string, "factoryEntrance" | "warehouse" | "machinery" | "productionLine" | "qualityControl" | "packagingArea" | "loadingDock"> = {
   "Factory Entrance": "factoryEntrance",
@@ -43,6 +45,42 @@ const FACTORY_AREA_KEY_MAP: Record<string, "factoryEntrance" | "warehouse" | "ma
   "Quality Control Area": "qualityControl",
   "Packaging Area": "packagingArea",
   "Loading Dock": "loadingDock",
+}
+
+function reviewTypeToAllowedTypes(reviewType: ReviewType): AdditionalInformationResponseType[] {
+  if (reviewType === "additional_document_review") {
+    return ["document", "text"]
+  }
+
+  return ["image", "video"]
+}
+
+function buildReviewMessage(params: {
+  reviewTypeLabel: string
+  reviewCode: string
+  requestedAreas: string[]
+  instructions?: string
+}): string {
+  const lines = [
+    `Review Type: ${params.reviewTypeLabel}`,
+    `Verification Code: ${params.reviewCode}`,
+  ]
+
+  if (params.requestedAreas.length > 0) {
+    lines.push(`Requested Areas: ${params.requestedAreas.join(", ")}`)
+  }
+
+  if (params.instructions?.trim()) {
+    lines.push("", "Additional Instructions:", params.instructions.trim())
+  }
+
+  lines.push(
+    "",
+    "Please use the live camera only. Gallery uploads are blocked.",
+    `Overlay verification code ${params.reviewCode} during captures.`
+  )
+
+  return lines.join("\n")
 }
 
 interface RequestReviewDialogProps {
@@ -136,28 +174,28 @@ export default function RequestReviewDialog({
 
     try {
       setSubmitting(true)
-      await createReviewRequest(manufacturer.id, {
-        review_type: reviewType,
-        requested_areas: selectedAreas,
-        additional_instructions: instructions || undefined,
-        review_code: reviewCode,
-        _manufacturer_name: [manufacturer.first_name, manufacturer.last_name].filter(Boolean).join(" ") || undefined,
-        _manufacturer_email: manufacturer.email,
-        _company_name: manufacturer.company_name || undefined,
+      const selectedType = reviewTypeOptions.find((option) => option.value === reviewType)
+      const response = await createManufacturerAdditionalInformationRequest(manufacturer.id, {
+        message: buildReviewMessage({
+          reviewTypeLabel: selectedType?.label ?? reviewType,
+          reviewCode,
+          requestedAreas: selectedAreas,
+          instructions: instructions || undefined,
+        }),
+        allowed_types: reviewTypeToAllowedTypes(reviewType),
       })
 
       const name = manufacturer.company_name || manufacturer.email
       toast({
         title: c.reviewRequested,
-        description: c.reviewRequestedDesc.replace("{code}", reviewCode).replace("{name}", name),
+        description: response.message || c.reviewRequestedDesc.replace("{code}", reviewCode).replace("{name}", name),
       })
 
       onOpenChange(false)
     } catch (error) {
-      const msg = error instanceof Error ? error.message : c.createFailed
       toast({
         title: common.error,
-        description: msg,
+        description: getApiErrorMessage(error, c.createFailed),
         variant: "destructive",
       })
     } finally {

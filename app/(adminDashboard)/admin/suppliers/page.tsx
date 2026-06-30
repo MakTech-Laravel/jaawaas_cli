@@ -30,10 +30,8 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { fetchSuppliers, deleteManufacturer, rejectManufacturer } from "@/lib/api/admin-manufacturer-registrations"
+import { fetchSuppliers, deleteManufacturer, rejectManufacturer, createManufacturerSupportTicket } from "@/lib/api/admin-manufacturer-registrations"
 import type { ManufacturerApplication, ManufacturerRegistrationResponse } from "@/lib/api/admin-manufacturer-registrations"
-import { getConversations } from "@/lib/api/messages"
-import { apiClient } from "@/lib/api/client"
 import { 
   Search,
   Factory,
@@ -44,7 +42,7 @@ import {
   Star,
   MapPin,
   Ban,
-  MessageSquare,
+  HelpCircle,
   AlertTriangle,
   Trash2,
   RefreshCw,
@@ -58,10 +56,9 @@ import {
   Loader2
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/i18n"
 import { AdminPagination } from "@/components/admin/admin-pagination"
+import RequestAdditionalInfoDialog from "@/components/admin/request-additional-info-dialog"
 import type { PaginationMeta } from "@/lib/api/admin-manufacturer-registrations"
 
 type SupplierStatus = "draft" | "pending" | "approved" | "rejected" | "suspended" | "needs_info" | "active" | "deactivated"
@@ -108,6 +105,7 @@ const PER_PAGE = 10
 export default function AdminSuppliersPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.suppliers
+  const support = t.admin.pages.mfgRegistrations
   const c = t.admin.common
   const supplierStatus = t.admin.supplierStatus
 
@@ -119,9 +117,7 @@ export default function AdminSuppliersPage() {
       color: statusColors[statusKey] ?? statusColors.draft,
     }
   }
-  const { user } = useAuth()
   const { toast } = useToast()
-  const router = useRouter()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -130,12 +126,17 @@ export default function AdminSuppliersPage() {
   const [showInfoDialog, setShowInfoDialog] = useState(false)
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [currentSupplier, setCurrentSupplier] = useState<Supplier | null>(null)
-  const [infoRequest, setInfoRequest] = useState("")
   const [rejectReason, setRejectReason] = useState("")
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<(string | number) | null>(null)
   const [rejecting, setRejecting] = useState<boolean>(false)
-  const [sendingMessage, setSendingMessage] = useState(false)
+  const [showSupportDialog, setShowSupportDialog] = useState(false)
+  const [supportTarget, setSupportTarget] = useState<Supplier | null>(null)
+  const [supportSubject, setSupportSubject] = useState("")
+  const [supportMessage, setSupportMessage] = useState("")
+  const [supportDepartment, setSupportDepartment] = useState("account")
+  const [supportPriority, setSupportPriority] = useState("medium")
+  const [creatingSupport, setCreatingSupport] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [meta, setMeta] = useState<PaginationMeta | null>(null)
   const [debouncedSearch, setDebouncedSearch] = useState("")
@@ -231,7 +232,6 @@ export default function AdminSuppliersPage() {
 
   const openInfoRequest = (supplier: Supplier) => {
     setCurrentSupplier(supplier)
-    setInfoRequest("")
     setShowInfoDialog(true)
   }
 
@@ -241,55 +241,68 @@ export default function AdminSuppliersPage() {
     setShowRejectDialog(true)
   }
 
-  const handleSendMessageAction = async (supplier: Supplier) => {
-    setSendingMessage(true)
-    try {
-      toast({
-        title: p.openingConversation,
-        description: p.settingUpChat,
-      })
-      const adminId = user?.id || 1
-      
-      // First, check if a conversation already exists with this supplier
-      const existingConvs = await getConversations()
-      const existingConv = existingConvs.find(c => 
-        c.participants.some(p => String(p.id) === String(supplier.id))
-      )
-      
-      if (existingConv) {
-        router.push(`/admin/messages?conversation=${existingConv.id}`)
-        return
-      }
+  const supplierDisplayName = (supplier: Supplier) =>
+    [supplier.first_name, supplier.last_name].filter(Boolean).join(" ").trim() || "—"
 
-      // If not, create a new one
-      const response = await apiClient.post("/conversations", {
-        participant_ids: [Number(adminId), Number(supplier.id)]
-      })
-      const apiData = response.data?.data || response.data
-      
-      if (apiData && apiData.id) {
-        router.push(`/admin/messages?conversation=${apiData.id}`)
-      } else {
-        throw new Error(`Unexpected response: ${JSON.stringify(response.data)}`)
-      }
-    } catch (error: any) {
-      toast({
-        title: c.error,
-        description: (error.response?.data?.message || JSON.stringify(error.response?.data)) || error.message || p.openConversationFailed,
-        variant: "destructive",
-      })
-      setSendingMessage(false)
-    }
+  const supplierCompanyName = (supplier: Supplier) =>
+    supplier.company_name?.trim() || supplier.company?.company_name?.trim() || "—"
+
+  const openSupport = (supplier: Supplier) => {
+    setSupportTarget(supplier)
+    const company = supplierCompanyName(supplier)
+    setSupportSubject(
+      support.defaultSupportSubject.replace(
+        "{company}",
+        company !== "—" ? company : supplierDisplayName(supplier),
+      ),
+    )
+    setSupportMessage("")
+    setSupportDepartment("account")
+    setSupportPriority("medium")
+    setShowSupportDialog(true)
   }
 
-  const submitInfoRequest = () => {
-    if (currentSupplier) {
-      // Mark as needs_info (would need API call in real implementation)
-      setShowInfoDialog(false)
+  const submitSupportTicket = async () => {
+    if (!supportTarget) return
+
+    if (!supportSubject.trim() || !supportMessage.trim()) {
+      toast({
+        title: support.missingReason,
+        description: support.supportFieldsRequired,
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setCreatingSupport(true)
+      const response = await createManufacturerSupportTicket(supportTarget.id, {
+        subject: supportSubject.trim(),
+        message: supportMessage.trim(),
+        department_type: supportDepartment,
+        priority: supportPriority,
+      })
+
       toast({
         title: c.success,
-        description: p.infoRequestSent,
+        description: response.message || support.supportTicketCreated,
       })
+
+      setShowSupportDialog(false)
+      setSupportTarget(null)
+    } catch (error: unknown) {
+      const errorMsg =
+        error instanceof Error
+          ? error.message
+          : (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+            support.supportTicketFailed
+      toast({
+        title: c.error,
+        description: errorMsg,
+        variant: "destructive",
+      })
+    } finally {
+      setCreatingSupport(false)
     }
   }
 
@@ -455,16 +468,14 @@ export default function AdminSuppliersPage() {
                           <Eye className="mr-2 h-4 w-4" />
                           {c.viewDetails}
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleSendMessageAction(supplier)} disabled={sendingMessage}>
-                          <MessageSquare className="mr-2 h-4 w-4" />
-                          {sendingMessage ? c.opening : p.sendMessage}
+                        <DropdownMenuItem onClick={() => openSupport(supplier)} disabled={creatingSupport}>
+                          <HelpCircle className="mr-2 h-4 w-4" />
+                          {creatingSupport ? support.creatingSupport : support.createSupport}
                         </DropdownMenuItem>
-                        {/* 
                         <DropdownMenuItem onClick={() => openInfoRequest(supplier)}>
                           <FileQuestion className="mr-2 h-4 w-4 text-blue-600" />
-                          Request More Info
+                          {p.requestInfo}
                         </DropdownMenuItem>
-                        */}
                         <DropdownMenuItem onClick={() => openReject(supplier)}>
                           <X className="mr-2 h-4 w-4 text-red-600" />
                           {c.reject}
@@ -546,32 +557,14 @@ export default function AdminSuppliersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Request Info Dialog */}
-      <Dialog open={showInfoDialog} onOpenChange={setShowInfoDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{p.requestInfo}</DialogTitle>
-            <DialogDescription>
-              {p.requestInfoDesc}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>{c.message}</Label>
-              <Textarea 
-                placeholder={c.messagePlaceholder}
-                value={infoRequest}
-                onChange={(e) => setInfoRequest(e.target.value)}
-                className="mt-2 min-h-[120px]"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInfoDialog(false)}>{c.cancel}</Button>
-            <Button onClick={submitInfoRequest}>{p.sendRequest}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RequestAdditionalInfoDialog
+        open={showInfoDialog}
+        onOpenChange={(open) => {
+          setShowInfoDialog(open)
+          if (!open) setCurrentSupplier(null)
+        }}
+        manufacturer={currentSupplier}
+      />
 
       {/* Reject Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
@@ -606,6 +599,110 @@ export default function AdminSuppliersPage() {
                 </>
               ) : (
                 p.rejectSupplierButton
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Support Dialog */}
+      <Dialog open={showSupportDialog} onOpenChange={setShowSupportDialog}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{support.createSupport}</DialogTitle>
+            <DialogDescription>
+              {support.createSupportDescription}
+            </DialogDescription>
+          </DialogHeader>
+
+          {supportTarget && (
+            <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2 text-sm">
+              <p className="font-medium text-foreground">{supplierDisplayName(supportTarget)}</p>
+              <p className="text-muted-foreground break-all">{supportTarget.email}</p>
+              {supplierCompanyName(supportTarget) !== "—" && (
+                <p className="text-muted-foreground">{supplierCompanyName(supportTarget)}</p>
+              )}
+              {(supportTarget.country || supportTarget.company?.country) && (
+                <p className="text-muted-foreground">
+                  {supportTarget.country || supportTarget.company?.country}
+                </p>
+              )}
+              <Badge className={getStatusConfig((supportTarget.manufacture_status || supportTarget.status || "draft").toLowerCase()).color}>
+                {getStatusConfig((supportTarget.manufacture_status || supportTarget.status || "draft").toLowerCase()).label}
+              </Badge>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="supplier-support-subject">{support.supportSubject}</Label>
+              <Input
+                id="supplier-support-subject"
+                value={supportSubject}
+                onChange={(e) => setSupportSubject(e.target.value)}
+                placeholder={support.supportSubjectPlaceholder}
+                disabled={creatingSupport}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>{support.supportDepartment}</Label>
+                <Select value={supportDepartment} onValueChange={setSupportDepartment} disabled={creatingSupport}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="account">{support.departments.account}</SelectItem>
+                    <SelectItem value="general">{support.departments.general}</SelectItem>
+                    <SelectItem value="sales">{support.departments.sales}</SelectItem>
+                    <SelectItem value="technical">{support.departments.technical}</SelectItem>
+                    <SelectItem value="billing">{support.departments.billing}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{support.supportPriority}</Label>
+                <Select value={supportPriority} onValueChange={setSupportPriority} disabled={creatingSupport}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">{support.priorities.low}</SelectItem>
+                    <SelectItem value="medium">{support.priorities.medium}</SelectItem>
+                    <SelectItem value="high">{support.priorities.high}</SelectItem>
+                    <SelectItem value="urgent">{support.priorities.urgent}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="supplier-support-message">{support.supportMessage}</Label>
+              <Textarea
+                id="supplier-support-message"
+                value={supportMessage}
+                onChange={(e) => setSupportMessage(e.target.value)}
+                placeholder={support.supportMessagePlaceholder}
+                className="min-h-30"
+                disabled={creatingSupport}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSupportDialog(false)} disabled={creatingSupport}>
+              {c.cancel}
+            </Button>
+            <Button onClick={submitSupportTicket} disabled={creatingSupport}>
+              {creatingSupport ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {support.creatingSupport}
+                </>
+              ) : (
+                support.createSupportTicket
               )}
             </Button>
           </DialogFooter>

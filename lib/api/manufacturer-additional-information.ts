@@ -1,4 +1,4 @@
-import { apiClient } from "./client"
+import { apiClient, publicApiClient } from "./client"
 
 export type AdditionalInformationResponseType =
   | "text"
@@ -48,6 +48,23 @@ export interface SubmitAdditionalInformationResponse {
   success: boolean
   message: string
   data?: unknown
+}
+
+export async function fetchAdditionalInformationByToken(
+  requestToken: string
+): Promise<AdditionalInformationRequest | null> {
+  try {
+    const response = await publicApiClient.get(
+      `/manufacturer/additional-information/${requestToken}`
+    )
+    const data = (response.data as { data?: unknown })?.data ?? response.data
+    if (!data || typeof data !== "object") {
+      return null
+    }
+    return data as AdditionalInformationRequest
+  } catch {
+    return null
+  }
 }
 
 export async function submitAdditionalInformation(

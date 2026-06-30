@@ -57,6 +57,8 @@ interface ChatViewProps {
   isLoading?: boolean
   initialMessage?: string
   initialProductRef?: ChatProductReference | null
+  readOnly?: boolean
+  observerMode?: boolean
 }
 
 export function ChatView({
@@ -68,7 +70,9 @@ export function ChatView({
   selectedConversationId,
   isLoading = false,
   initialMessage = "",
-  initialProductRef = null
+  initialProductRef = null,
+  readOnly = false,
+  observerMode = false,
 }: ChatViewProps) {
   const [showSidebar, setShowSidebar] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -94,6 +98,18 @@ export function ChatView({
   const selectedConversation = conversations.find(c => c.id === selectedConversationId)
   const otherParticipant = selectedConversation?.participants.find(p => p.id !== currentUser.id)
 
+  const formatObserverTitle = (participants: ChatParticipant[]) => {
+    const buyer = participants.find(p => p.role === "buyer")
+    const manufacturer = participants.find(p => p.role === "manufacturer")
+    if (buyer && manufacturer) {
+      return `${buyer.name} ↔ ${manufacturer.name}`
+    }
+    return participants.map(p => p.name).join(" ↔ ")
+  }
+
+  const getParticipantById = (senderId: string) =>
+    selectedConversation?.participants.find(p => p.id === senderId)
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -101,6 +117,15 @@ export function ChatView({
   }, [messages])
 
   const filteredConversations = conversations.filter(c => {
+    if (observerMode) {
+      const title = formatObserverTitle(c.participants).toLowerCase()
+      const participantMatch = c.participants.some(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.company?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      return title.includes(searchQuery.toLowerCase()) || participantMatch
+    }
+
     const other = c.participants.find(p => p.id !== currentUser.id)
     return other?.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
            other?.company?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -160,6 +185,13 @@ export function ChatView({
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1">
           {filteredConversations.map((conv) => {
             const other = conv.participants.find(p => p.id !== currentUser.id)
+            const observerTitle = observerMode ? formatObserverTitle(conv.participants) : other?.name
+            const observerSubtitle = observerMode
+              ? conv.participants
+                  .map(p => p.company)
+                  .filter(Boolean)
+                  .join(" • ")
+              : other?.company
             const isActive = conv.id === selectedConversationId
             return (
               <button
@@ -192,14 +224,14 @@ export function ChatView({
                       "text-sm font-semibold truncate",
                       conv.unreadCount > 0 ? "text-foreground" : "text-muted-foreground"
                     )}>
-                      {other?.name}
+                      {observerTitle}
                     </span>
                     <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                       {conv.updatedAt}
                     </span>
                   </div>
-                  {other?.company && (
-                    <p className="text-xs text-muted-foreground truncate">{other.company}</p>
+                  {observerSubtitle && (
+                    <p className="text-xs text-muted-foreground truncate">{observerSubtitle}</p>
                   )}
                   <p className={cn(
                     "mt-1 text-xs truncate",
@@ -240,8 +272,12 @@ export function ChatView({
                 </Avatar>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground truncate">{otherParticipant?.name}</span>
-                    {otherParticipant?.role === "manufacturer" && (
+                    <span className="font-semibold text-foreground truncate">
+                      {observerMode
+                        ? formatObserverTitle(selectedConversation.participants)
+                        : otherParticipant?.name}
+                    </span>
+                    {!observerMode && otherParticipant?.role === "manufacturer" && (
                       <Badge variant="secondary" className="h-5 px-1 text-[10px] bg-emerald-100 text-emerald-700">
                         <CheckCircle className="mr-0.5 h-3 w-3" />
                         {t.mfg.inquiries.accepted || "Approved"}
@@ -249,14 +285,22 @@ export function ChatView({
                     )}
                   </div>
                   <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                    {otherParticipant?.company && <span className="truncate">{otherParticipant.company}</span>}
-                    {otherParticipant?.country && (
+                    {observerMode ? (
+                      <span className="truncate">
+                        {selectedConversation.participants.map(p => `${p.name} (${p.role})`).join(" • ")}
+                      </span>
+                    ) : (
                       <>
-                        <span className="shrink-0">•</span>
-                        <span className="flex items-center gap-0.5 truncate">
-                          <Globe className="h-3 w-3" />
-                          {otherParticipant.country}
-                        </span>
+                        {otherParticipant?.company && <span className="truncate">{otherParticipant.company}</span>}
+                        {otherParticipant?.country && (
+                          <>
+                            <span className="shrink-0">•</span>
+                            <span className="flex items-center gap-0.5 truncate">
+                              <Globe className="h-3 w-3" />
+                              {otherParticipant.country}
+                            </span>
+                          </>
+                        )}
                       </>
                     )}
                   </div>
@@ -270,7 +314,8 @@ export function ChatView({
               className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/5 scroll-smooth"
             >
               {messages.map((msg, index) => {
-                const isMine = msg.senderId === currentUser.id
+                const isMine = !observerMode && msg.senderId === currentUser.id
+                const sender = getParticipantById(msg.senderId)
                 
                 // Parse Product Reference
                 let productRefMatch = null;
@@ -299,6 +344,11 @@ export function ChatView({
                       isMine ? "items-end" : "items-start"
                     )}
                   >
+                    {observerMode && sender && (
+                      <span className="mb-1 px-1 text-[10px] font-medium text-muted-foreground">
+                        {sender.name} ({sender.role})
+                      </span>
+                    )}
                     <div className={cn(
                       "max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-sm",
                       isMine 
@@ -348,6 +398,7 @@ export function ChatView({
             </div>
 
             {/* Input Area */}
+            {!readOnly && (
             <div className="border-t border-border p-4 bg-card">
               <div className="flex flex-col rounded-md border border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary overflow-hidden transition-colors">
                 {productRef && (
@@ -459,6 +510,12 @@ export function ChatView({
                 </div>
               </div>
             </div>
+            )}
+            {readOnly && (
+              <div className="border-t border-border bg-muted/30 px-4 py-3 text-center text-xs text-muted-foreground">
+                {t.admin.pages.messages.readOnlyNotice}
+              </div>
+            )}
           </>
         ) : (
           <div className="flex h-full flex-col items-center justify-center p-8 text-center bg-muted/5">
