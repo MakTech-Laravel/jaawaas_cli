@@ -44,21 +44,11 @@ export default function BuyerMessagesPage() {
       setIsLoading(true)
       try {
         const data = await getConversations()
-        
-        let finalConversations = data;
-        const hasAdmin = data.some(c => c.participants.some(p => p.id === "1" || p.role === "admin"));
-        
-        if (!hasAdmin && user.id) {
-          const newConv = await createConversation([1, user.id], "Admin Support");
-          if (newConv) {
-            finalConversations = [newConv, ...data];
-          }
-        }
 
         if (isMounted) {
-          setConversations(finalConversations)
-          if (finalConversations.length > 0 && !selectedConvId) {
-            setSelectedConvId(finalConversations[0].id)
+          setConversations(data)
+          if (data.length > 0 && !selectedConvId) {
+            setSelectedConvId(data[0].id)
           }
         }
       } catch (error) {
