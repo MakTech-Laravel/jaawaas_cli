@@ -2,7 +2,7 @@ import type { TranslationKeys } from "./en";
 import adminZh from "./admin/zh";
 import buyerZh from "./buyer/zh";
 
-const zh: TranslationKeys = {
+const zh = {
   common: {
     save: "保存更改",
     cancel: "取消",
@@ -134,7 +134,7 @@ const zh: TranslationKeys = {
     emailMissing: "电子邮件丢失。请重新请求重置代码。",
   },
 
-  // ── Auth Layout ──────────────────────────────────────────────────────
+  // ── Auth Layout ──
   authLayout: {
     connectManufacturers: "与全球经过审查的制造商建立联系",
     joinBusinesses: "成千上万的企业通过我们的策划网络寻找可靠的制造合作伙伴。",
