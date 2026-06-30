@@ -416,7 +416,7 @@ const adminZh = {
       missingReason: "缺少原因",
       noPending: "无待处理申请",
       sendMessage: "发送消息",
-      createSupport: "创建支持",
+      createSupport: "开启支持",
       createSupportDescription: "为该制造商创建支持工单，他们将收到电子邮件通知。",
       createSupportTicket: "创建工单",
       creatingSupport: "创建中...",

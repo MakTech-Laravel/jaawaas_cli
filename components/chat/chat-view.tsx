@@ -314,8 +314,10 @@ export function ChatView({
               className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/5 scroll-smooth"
             >
               {messages.map((msg, index) => {
-                const isMine = !observerMode && msg.senderId === currentUser.id
                 const sender = getParticipantById(msg.senderId)
+                const isMine = observerMode
+                  ? sender?.role === "manufacturer"
+                  : msg.senderId === currentUser.id
                 
                 // Parse Product Reference
                 let productRefMatch = null;

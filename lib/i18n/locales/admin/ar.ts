@@ -416,7 +416,7 @@ const adminAr = {
       missingReason: "السبب مفقود",
       noPending: "لا توجد طلبات معلقة",
       sendMessage: "إرسال رسالة",
-      createSupport: "إنشاء دعم",
+      createSupport: "فتح دعم",
       createSupportDescription: "افتح تذكرة دعم لهذا المصنع. سيتلقى إشعارًا بالبريد الإلكتروني.",
       createSupportTicket: "إنشاء تذكرة",
       creatingSupport: "جارٍ الإنشاء...",

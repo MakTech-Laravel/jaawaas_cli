@@ -928,7 +928,7 @@ const adminEn = {
       missingReason: "Missing reason",
       noPending: "No pending applications",
       sendMessage: "Send Message",
-      createSupport: "Create Support",
+      createSupport: "Open Support",
       createSupportDescription: "Open a support ticket for this manufacturer. They will receive an email notification.",
       createSupportTicket: "Create Ticket",
       creatingSupport: "Creating...",
