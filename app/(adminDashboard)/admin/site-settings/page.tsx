@@ -1,6 +1,6 @@
-"use client"
+﻿"use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,17 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { 
-  Settings,
   Save,
   Plus,
   X,
@@ -41,7 +31,6 @@ import {
   FileText,
   Share2,
   Info,
-  HelpCircle,
   Linkedin,
   Twitter,
   Facebook,
@@ -54,14 +43,27 @@ import {
   ArrowDown,
   Trash2,
   ChevronRight,
-  Pencil,
-  Users,
-  Factory,
-  CreditCard,
-  Shield,
-  BookOpen
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n"
+import { useToast } from "@/hooks/use-toast"
+import {
+  fetchAdminLegalPages,
+  mapAdminLegalPageToUi,
+  mapUiLegalPageToSave,
+  updateAdminLegalPageContent,
+} from "@/lib/api/admin-legal-pages"
+import {
+  fetchAdminAboutPage,
+  mapAdminAboutPageToUi,
+  mapUiAboutPageToSave,
+  updateAdminAboutPage,
+} from "@/lib/api/admin-about-page"
+import {
+  fetchAdminSocialMediaLinks,
+  mapAdminSocialLinkToUi,
+  mapUiSocialLinksToSync,
+  syncAdminSocialMediaLinks,
+} from "@/lib/api/admin-social-media-links"
 import {
   defaultSocialLinks,
   defaultLegalPages,
@@ -70,30 +72,18 @@ import {
   type LegalPage,
   type AboutPageData
 } from "@/lib/data/site-settings"
-import {
-  defaultHelpCenterData,
-  type HelpCenterData,
-  type HelpCategory,
-  type HelpArticle,
-  type PopularArticle
-} from "@/lib/data/help-center"
 
 const getIconComponent = (iconName: string, iconOptions: { value: string; icon: typeof Linkedin }[]) => {
   const option = iconOptions.find(o => o.value === iconName)
   return option?.icon || Share2
 }
 
-const getCategoryIconComponent = (iconName: string, categoryIconOptions: { value: string; icon: typeof Users }[]) => {
-  const option = categoryIconOptions.find(o => o.value === iconName)
-  return option?.icon || HelpCircle
-}
-
 export default function SiteSettingsPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.siteSettings
   const c = t.admin.common
-  const hc = t.admin.pages.helpCenter
   const ic = t.admin.pages.industries
+  const { toast } = useToast()
 
   const iconOptions = [
     { value: "Linkedin", label: p.iconLinkedIn, icon: Linkedin },
@@ -104,38 +94,224 @@ export default function SiteSettingsPage() {
     { value: "Music2", label: p.iconTikTok, icon: Music2 },
   ]
 
-  const categoryIconOptions = [
-    { value: "Users", label: p.iconUsers, icon: Users },
-    { value: "Factory", label: p.iconFactory, icon: Factory },
-    { value: "CreditCard", label: p.iconCreditCard, icon: CreditCard },
-    { value: "Shield", label: p.iconShield, icon: Shield },
-    { value: "Settings", label: p.iconSettings, icon: Settings },
-    { value: "HelpCircle", label: p.iconHelpCircle, icon: HelpCircle },
-    { value: "BookOpen", label: p.iconBook, icon: BookOpen },
-  ]
-
   const [socialLinks, setSocialLinks] = useState<SocialMediaLink[]>(defaultSocialLinks)
+  const [socialLinksLoading, setSocialLinksLoading] = useState(true)
+  const [socialLinksApiConnected, setSocialLinksApiConnected] = useState(false)
   const [legalPages, setLegalPages] = useState<LegalPage[]>(defaultLegalPages)
+  const [legalPagesLoading, setLegalPagesLoading] = useState(true)
   const [aboutPage, setAboutPage] = useState<AboutPageData>(defaultAboutPage)
-  const [helpCenter, setHelpCenter] = useState<HelpCenterData>(defaultHelpCenterData)
+  const [aboutPageLoading, setAboutPageLoading] = useState(true)
+  const [aboutPageApiConnected, setAboutPageApiConnected] = useState(false)
   const [selectedLegalPage, setSelectedLegalPage] = useState<string>("privacy")
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(helpCenter.categories[0]?.id || null)
-  const [selectedArticle, setSelectedArticle] = useState<{ categoryId: string; articleId: string } | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [newSocialPlatform, setNewSocialPlatform] = useState("")
   const [newSocialUrl, setNewSocialUrl] = useState("")
   const [newSocialIcon, setNewSocialIcon] = useState("Linkedin")
-  
-  // New category/article dialog state
-  const [newCategoryDialog, setNewCategoryDialog] = useState(false)
-  const [newArticleDialog, setNewArticleDialog] = useState(false)
-  const [newCategoryData, setNewCategoryData] = useState({ title: "", description: "", icon: "Users" })
-  const [newArticleData, setNewArticleData] = useState({ title: "", content: "" })
+
+  useEffect(() => {
+    const loadLegalPages = async () => {
+      try {
+        setLegalPagesLoading(true)
+        const pages = await fetchAdminLegalPages()
+        if (pages.length > 0) {
+          setLegalPages(pages.map(mapAdminLegalPageToUi))
+          setSelectedLegalPage(pages[0]?.slug || "privacy")
+        }
+      } catch (error) {
+        toast({
+          title: c.error,
+          description: error instanceof Error ? error.message : p.legalPagesLoadFailed,
+          variant: "destructive",
+        })
+      } finally {
+        setLegalPagesLoading(false)
+      }
+    }
+
+    void loadLegalPages()
+  }, [])
+
+  useEffect(() => {
+    const loadAboutPage = async () => {
+      try {
+        setAboutPageLoading(true)
+        const page = await fetchAdminAboutPage()
+        if (page) {
+          setAboutPage(mapAdminAboutPageToUi(page))
+          setAboutPageApiConnected(true)
+        } else {
+          setAboutPageApiConnected(false)
+        }
+      } catch (error) {
+        setAboutPageApiConnected(false)
+        toast({
+          title: c.error,
+          description: error instanceof Error ? error.message : p.aboutPageLoadFailed,
+          variant: "destructive",
+        })
+      } finally {
+        setAboutPageLoading(false)
+      }
+    }
+
+    void loadAboutPage()
+  }, [])
+
+  useEffect(() => {
+    const loadSocialLinks = async () => {
+      try {
+        setSocialLinksLoading(true)
+        const links = await fetchAdminSocialMediaLinks()
+        if (links.length > 0) {
+          setSocialLinks(links.map(mapAdminSocialLinkToUi))
+          setSocialLinksApiConnected(true)
+        } else {
+          setSocialLinksApiConnected(false)
+        }
+      } catch (error) {
+        setSocialLinksApiConnected(false)
+        toast({
+          title: c.error,
+          description: error instanceof Error ? error.message : p.socialLinksLoadFailed,
+          variant: "destructive",
+        })
+      } finally {
+        setSocialLinksLoading(false)
+      }
+    }
+
+    void loadSocialLinks()
+  }, [])
+
+  const saveLegalPagesToApi = async (pages: LegalPage[]) => {
+    const pagesToSave = pages.filter((page) => page.apiId)
+
+    if (pagesToSave.length === 0) {
+      throw new Error(
+        "Legal pages are not connected to the API yet. Refresh the page or run: php artisan db:seed --class=LegalPageSeeder"
+      )
+    }
+
+    for (const page of pagesToSave) {
+      const response = await updateAdminLegalPageContent(
+        page.apiId!,
+        mapUiLegalPageToSave(page)
+      )
+
+      if (response.data) {
+        const updated = mapAdminLegalPageToUi(response.data)
+        setLegalPages((prev) =>
+          prev.map((item) => (item.slug === updated.slug ? updated : item))
+        )
+      }
+    }
+  }
 
   const handleSave = async () => {
     setIsSaving(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setIsSaving(false)
+    try {
+      await saveLegalPagesToApi(legalPages)
+
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      toast({
+        title: c.success,
+        description: p.legalPagesSaved,
+      })
+    } catch (error) {
+      toast({
+        title: c.error,
+        description: error instanceof Error ? error.message : p.legalPagesSaveFailed,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveCurrentLegalPage = async () => {
+    const current = legalPages.find((page) => page.id === selectedLegalPage)
+    if (!current) return
+
+    setIsSaving(true)
+    try {
+      await saveLegalPagesToApi([current])
+      toast({
+        title: c.success,
+        description: p.legalPagesSaved,
+      })
+    } catch (error) {
+      toast({
+        title: c.error,
+        description: error instanceof Error ? error.message : p.legalPagesSaveFailed,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveAboutPage = async () => {
+    if (!aboutPage.apiId) {
+      toast({
+        title: c.error,
+        description: p.aboutPageNotConnected,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const response = await updateAdminAboutPage(mapUiAboutPageToSave(aboutPage))
+      if (response.data) {
+        setAboutPage(mapAdminAboutPageToUi(response.data))
+      }
+
+      toast({
+        title: c.success,
+        description: p.aboutPageSaved,
+      })
+    } catch (error) {
+      toast({
+        title: c.error,
+        description: error instanceof Error ? error.message : p.aboutPageSaveFailed,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveSocialLinks = async () => {
+    if (!socialLinksApiConnected && socialLinks.length === 0) {
+      toast({
+        title: c.error,
+        description: p.socialLinksNotConnected,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const synced = await syncAdminSocialMediaLinks(mapUiSocialLinksToSync(socialLinks))
+      setSocialLinks(synced.map(mapAdminSocialLinkToUi))
+      setSocialLinksApiConnected(true)
+
+      toast({
+        title: c.success,
+        description: p.socialLinksSaved,
+      })
+    } catch (error) {
+      toast({
+        title: c.error,
+        description: error instanceof Error ? error.message : p.socialLinksSaveFailed,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   // Social Links functions
@@ -212,6 +388,7 @@ export default function SiteSettingsPage() {
                 ...page.sections,
                 {
                   id: `section-${Date.now()}`,
+                  sectionKey: `section-${Date.now()}`,
                   title: p.newSectionTitle.replace("{n}", String(page.sections.length + 1)),
                   content: c.sectionContentPlaceholder,
                   order: page.sections.length + 1
@@ -252,240 +429,8 @@ export default function SiteSettingsPage() {
     )
   }
 
-  // Help Center functions
-  const updateHelpSettings = (field: string, value: string) => {
-    const [section, key] = field.split('.')
-    if (section === 'hero') {
-      setHelpCenter({
-        ...helpCenter,
-        settings: {
-          ...helpCenter.settings,
-          hero: { ...helpCenter.settings.hero, [key]: value }
-        }
-      })
-    } else if (section === 'contactSupport') {
-      setHelpCenter({
-        ...helpCenter,
-        settings: {
-          ...helpCenter.settings,
-          contactSupport: { ...helpCenter.settings.contactSupport, [key]: value }
-        }
-      })
-    }
-  }
-
-  const toggleCategory = (categoryId: string) => {
-    setHelpCenter({
-      ...helpCenter,
-      categories: helpCenter.categories.map(cat =>
-        cat.id === categoryId ? { ...cat, enabled: !cat.enabled } : cat
-      )
-    })
-  }
-
-  const updateCategory = (categoryId: string, field: keyof HelpCategory, value: string) => {
-    setHelpCenter({
-      ...helpCenter,
-      categories: helpCenter.categories.map(cat =>
-        cat.id === categoryId ? { ...cat, [field]: value } : cat
-      )
-    })
-  }
-
-  const moveCategory = (categoryId: string, direction: "up" | "down") => {
-    const categories = [...helpCenter.categories].sort((a, b) => a.order - b.order)
-    const index = categories.findIndex(c => c.id === categoryId)
-    if ((direction === "up" && index === 0) || (direction === "down" && index === categories.length - 1)) {
-      return
-    }
-    const swapIndex = direction === "up" ? index - 1 : index + 1
-    ;[categories[index], categories[swapIndex]] = [categories[swapIndex], categories[index]]
-    categories.forEach((cat, i) => cat.order = i + 1)
-    setHelpCenter({ ...helpCenter, categories })
-  }
-
-  const deleteCategory = (categoryId: string) => {
-    setHelpCenter({
-      ...helpCenter,
-      categories: helpCenter.categories.filter(c => c.id !== categoryId),
-      popularArticles: helpCenter.popularArticles.filter(a => a.categoryId !== categoryId)
-    })
-    if (selectedCategory === categoryId) {
-      setSelectedCategory(helpCenter.categories.find(c => c.id !== categoryId)?.id || null)
-    }
-  }
-
-  const addCategory = () => {
-    if (!newCategoryData.title.trim()) return
-    const slug = newCategoryData.title.toLowerCase().replace(/\s+/g, '-')
-    const newCategory: HelpCategory = {
-      id: `cat-${Date.now()}`,
-      slug,
-      icon: newCategoryData.icon,
-      title: newCategoryData.title,
-      description: newCategoryData.description,
-      enabled: true,
-      order: helpCenter.categories.length + 1,
-      articles: []
-    }
-    setHelpCenter({
-      ...helpCenter,
-      categories: [...helpCenter.categories, newCategory]
-    })
-    setNewCategoryData({ title: "", description: "", icon: "Users" })
-    setNewCategoryDialog(false)
-    setSelectedCategory(newCategory.id)
-  }
-
-  const toggleArticle = (categoryId: string, articleId: string) => {
-    setHelpCenter({
-      ...helpCenter,
-      categories: helpCenter.categories.map(cat =>
-        cat.id === categoryId
-          ? {
-              ...cat,
-              articles: cat.articles.map(art =>
-                art.id === articleId ? { ...art, enabled: !art.enabled } : art
-              )
-            }
-          : cat
-      )
-    })
-  }
-
-  const updateArticle = (categoryId: string, articleId: string, field: keyof HelpArticle, value: string | string[]) => {
-    setHelpCenter({
-      ...helpCenter,
-      categories: helpCenter.categories.map(cat =>
-        cat.id === categoryId
-          ? {
-              ...cat,
-              articles: cat.articles.map(art =>
-                art.id === articleId ? { ...art, [field]: value } : art
-              )
-            }
-          : cat
-      )
-    })
-  }
-
-  const deleteArticle = (categoryId: string, articleId: string) => {
-    setHelpCenter({
-      ...helpCenter,
-      categories: helpCenter.categories.map(cat =>
-        cat.id === categoryId
-          ? { ...cat, articles: cat.articles.filter(a => a.id !== articleId) }
-          : cat
-      ),
-      popularArticles: helpCenter.popularArticles.filter(a => !(a.categoryId === categoryId && a.articleSlug === helpCenter.categories.find(c => c.id === categoryId)?.articles.find(ar => ar.id === articleId)?.slug))
-    })
-    if (selectedArticle?.articleId === articleId) {
-      setSelectedArticle(null)
-    }
-  }
-
-  const addArticle = (categoryId: string) => {
-    if (!newArticleData.title.trim()) return
-    const category = helpCenter.categories.find(c => c.id === categoryId)
-    if (!category) return
-    
-    const slug = newArticleData.title.toLowerCase().replace(/\s+/g, '-')
-    const newArticle: HelpArticle = {
-      id: `art-${Date.now()}`,
-      slug,
-      title: newArticleData.title,
-      content: newArticleData.content || c.sectionContentPlaceholder,
-      steps: [],
-      enabled: true,
-      order: category.articles.length + 1
-    }
-    
-    setHelpCenter({
-      ...helpCenter,
-      categories: helpCenter.categories.map(cat =>
-        cat.id === categoryId
-          ? { ...cat, articles: [...cat.articles, newArticle] }
-          : cat
-      )
-    })
-    setNewArticleData({ title: "", content: "" })
-    setNewArticleDialog(false)
-  }
-
-  const addArticleStep = (categoryId: string, articleId: string) => {
-    const category = helpCenter.categories.find(c => c.id === categoryId)
-    const article = category?.articles.find(a => a.id === articleId)
-    if (!article) return
-    
-    updateArticle(categoryId, articleId, 'steps', [...(article.steps || []), ""])
-  }
-
-  const updateArticleStep = (categoryId: string, articleId: string, stepIndex: number, value: string) => {
-    const category = helpCenter.categories.find(c => c.id === categoryId)
-    const article = category?.articles.find(a => a.id === articleId)
-    if (!article?.steps) return
-    
-    const newSteps = [...article.steps]
-    newSteps[stepIndex] = value
-    updateArticle(categoryId, articleId, 'steps', newSteps)
-  }
-
-  const deleteArticleStep = (categoryId: string, articleId: string, stepIndex: number) => {
-    const category = helpCenter.categories.find(c => c.id === categoryId)
-    const article = category?.articles.find(a => a.id === articleId)
-    if (!article?.steps) return
-    
-    const newSteps = article.steps.filter((_, i) => i !== stepIndex)
-    updateArticle(categoryId, articleId, 'steps', newSteps)
-  }
-
-  const togglePopularArticle = (articleId: string) => {
-    setHelpCenter({
-      ...helpCenter,
-      popularArticles: helpCenter.popularArticles.map(art =>
-        art.id === articleId ? { ...art, enabled: !art.enabled } : art
-      )
-    })
-  }
-
-  const addToPopularArticles = (categoryId: string, article: HelpArticle) => {
-    const category = helpCenter.categories.find(c => c.id === categoryId)
-    if (!category) return
-    
-    // Check if already in popular
-    const exists = helpCenter.popularArticles.some(
-      pa => pa.categoryId === categoryId && pa.articleSlug === article.slug
-    )
-    if (exists) return
-    
-    const newPopular: PopularArticle = {
-      id: `pop-${Date.now()}`,
-      title: article.title,
-      categoryId,
-      categorySlug: category.slug,
-      articleSlug: article.slug,
-      enabled: true,
-      order: helpCenter.popularArticles.length + 1
-    }
-    
-    setHelpCenter({
-      ...helpCenter,
-      popularArticles: [...helpCenter.popularArticles, newPopular]
-    })
-  }
-
-  const removeFromPopularArticles = (popularId: string) => {
-    setHelpCenter({
-      ...helpCenter,
-      popularArticles: helpCenter.popularArticles.filter(a => a.id !== popularId)
-    })
-  }
 
   const currentLegalPage = legalPages.find(p => p.id === selectedLegalPage)
-  const currentCategory = helpCenter.categories.find(c => c.id === selectedCategory)
-  const currentArticle = selectedArticle 
-    ? helpCenter.categories.find(c => c.id === selectedArticle.categoryId)?.articles.find(a => a.id === selectedArticle.articleId)
-    : null
 
   return (
     <div className="space-y-6">
@@ -503,12 +448,8 @@ export default function SiteSettingsPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="help" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="help" className="gap-2">
-            <HelpCircle className="h-4 w-4" />
-            {p.helpCenter}
-          </TabsTrigger>
+      <Tabs defaultValue="social" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="social" className="gap-2">
             <Share2 className="h-4 w-4" />
             {p.socialMedia}
@@ -523,665 +464,37 @@ export default function SiteSettingsPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Help Center Tab */}
-        <TabsContent value="help" className="space-y-6">
-          {/* Help Center Settings Card */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <HelpCircle className="h-5 w-5" />
-                    {c.helpCenterSettings}
-                  </CardTitle>
-                  <CardDescription>
-                    {p.helpCenterSettingsDesc}
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-3">
-                  <a
-                    href="/help"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-                  >
-                    {c.previewLabel} <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Hero Section */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">{p.heroSection}</h3>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div>
-                    <Label>{c.title}</Label>
-                    <Input
-                      value={helpCenter.settings.hero.title}
-                      onChange={(e) => updateHelpSettings('hero.title', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>{p.subtitle_label}</Label>
-                    <Input
-                      value={helpCenter.settings.hero.subtitle}
-                      onChange={(e) => updateHelpSettings('hero.subtitle', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>{p.searchPlaceholder}</Label>
-                    <Input
-                      value={helpCenter.settings.hero.searchPlaceholder}
-                      onChange={(e) => updateHelpSettings('hero.searchPlaceholder', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Support Section */}
-              <div className="space-y-4 pt-4 border-t">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-foreground">{p.contactSupport}</h3>
-                  <Switch
-                    checked={helpCenter.settings.contactSupport.enabled}
-                    onCheckedChange={(checked) => setHelpCenter({
-                      ...helpCenter,
-                      settings: {
-                        ...helpCenter.settings,
-                        contactSupport: { ...helpCenter.settings.contactSupport, enabled: checked }
-                      }
-                    })}
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label>{c.title}</Label>
-                    <Input
-                      value={helpCenter.settings.contactSupport.title}
-                      onChange={(e) => updateHelpSettings('contactSupport.title', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>{p.subtitle_label}</Label>
-                    <Input
-                      value={helpCenter.settings.contactSupport.subtitle}
-                      onChange={(e) => updateHelpSettings('contactSupport.subtitle', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>{p.contactButton}</Label>
-                    <Input
-                      value={helpCenter.settings.contactSupport.contactButtonText}
-                      onChange={(e) => updateHelpSettings('contactSupport.contactButtonText', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>{p.faqButton}</Label>
-                    <Input
-                      value={helpCenter.settings.contactSupport.faqButtonText}
-                      onChange={(e) => updateHelpSettings('contactSupport.faqButtonText', e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Categories & Articles Management */}
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Categories List */}
-            <Card className="lg:col-span-1">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">{p.categories}</CardTitle>
-                  <Dialog open={newCategoryDialog} onOpenChange={setNewCategoryDialog}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline" className="gap-1">
-                        <Plus className="h-3 w-3" />
-                        {c.add}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>{p.addCategory}</DialogTitle>
-                        <DialogDescription>
-                          {p.createCategoryDesc}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div>
-                          <Label>{p.categoryTitle}</Label>
-                          <Input
-                            value={newCategoryData.title}
-                            onChange={(e) => setNewCategoryData({ ...newCategoryData, title: e.target.value })}
-                            placeholder={hc.namePlaceholder}
-                            className="mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label>{c.description}</Label>
-                          <Input
-                            value={newCategoryData.description}
-                            onChange={(e) => setNewCategoryData({ ...newCategoryData, description: e.target.value })}
-                            placeholder={hc.articleDescPlaceholder}
-                            className="mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label>{ic.icon}</Label>
-                          <Select value={newCategoryData.icon} onValueChange={(v) => setNewCategoryData({ ...newCategoryData, icon: v })}>
-                            <SelectTrigger className="mt-1">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {categoryIconOptions.map(opt => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  <div className="flex items-center gap-2">
-                                    <opt.icon className="h-4 w-4" />
-                                    {opt.label}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setNewCategoryDialog(false)}>{c.cancel}</Button>
-                        <Button onClick={addCategory}>{c.addCategoryBtn}</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="space-y-1 p-2">
-                  {helpCenter.categories.sort((a, b) => a.order - b.order).map((category) => {
-                    const IconComp = getCategoryIconComponent(category.icon, categoryIconOptions)
-                    return (
-                      <div
-                        key={category.id}
-                        className={`flex items-center justify-between rounded-lg px-3 py-2 cursor-pointer transition-colors ${
-                          selectedCategory === category.id
-                            ? "bg-primary text-primary-foreground"
-                            : "hover:bg-muted"
-                        }`}
-                        onClick={() => {
-                          setSelectedCategory(category.id)
-                          setSelectedArticle(null)
-                        }}
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <IconComp className="h-4 w-4 shrink-0" />
-                          <span className="text-sm truncate">{category.title}</span>
-                          <Badge variant="secondary" className={`text-xs ${selectedCategory === category.id ? 'bg-primary-foreground/20' : ''}`}>
-                            {category.articles.length}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {category.enabled ? (
-                            <Eye className="h-3 w-3 opacity-60" />
-                          ) : (
-                            <EyeOff className="h-3 w-3 opacity-40" />
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Category Details & Articles */}
-            <Card className="lg:col-span-2">
-              {currentCategory ? (
-                <>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-base">{currentCategory.title}</CardTitle>
-                        <CardDescription>{c.articlesCount.replace("{count}", String(currentCategory.articles.length))}</CardDescription>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => moveCategory(currentCategory.id, "up")}
-                          disabled={helpCenter.categories.findIndex(c => c.id === currentCategory.id) === 0}
-                        >
-                          <ArrowUp className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => moveCategory(currentCategory.id, "down")}
-                          disabled={helpCenter.categories.findIndex(c => c.id === currentCategory.id) === helpCenter.categories.length - 1}
-                        >
-                          <ArrowDown className="h-4 w-4" />
-                        </Button>
-                        <Switch
-                          checked={currentCategory.enabled}
-                          onCheckedChange={() => toggleCategory(currentCategory.id)}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => deleteCategory(currentCategory.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Category Settings */}
-                    <div className="grid gap-4 sm:grid-cols-3 pb-4 border-b">
-                      <div>
-                        <Label className="text-xs">{c.title}</Label>
-                        <Input
-                          value={currentCategory.title}
-                          onChange={(e) => updateCategory(currentCategory.id, 'title', e.target.value)}
-                          className="mt-1 h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">{c.description}</Label>
-                        <Input
-                          value={currentCategory.description}
-                          onChange={(e) => updateCategory(currentCategory.id, 'description', e.target.value)}
-                          className="mt-1 h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">{ic.icon}</Label>
-                        <Select value={currentCategory.icon} onValueChange={(v) => updateCategory(currentCategory.id, 'icon', v)}>
-                          <SelectTrigger className="mt-1 h-8 text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categoryIconOptions.map(opt => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                <div className="flex items-center gap-2">
-                                  <opt.icon className="h-4 w-4" />
-                                  {opt.label}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    {/* Articles List */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <Label className="text-sm font-medium">{t.admin.pages.insights.articles}</Label>
-                        <Dialog open={newArticleDialog} onOpenChange={setNewArticleDialog}>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="gap-1">
-                              <Plus className="h-3 w-3" />
-                              {c.addArticleName}
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>{p.addArticle}</DialogTitle>
-                              <DialogDescription>
-                                {p.createArticleIn.replace("{name}", currentCategory.title)}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div>
-                                <Label>{p.articleTitle}</Label>
-                                <Input
-                                  value={newArticleData.title}
-                                  onChange={(e) => setNewArticleData({ ...newArticleData, title: e.target.value })}
-                                  placeholder={p.articleTitleExample}
-                                  className="mt-1"
-                                />
-                              </div>
-                              <div>
-                                <Label>{p.initialContentOptional}</Label>
-                                <Textarea
-                                  value={newArticleData.content}
-                                  onChange={(e) => setNewArticleData({ ...newArticleData, content: e.target.value })}
-                                  placeholder={p.articleIntroPlaceholder}
-                                  className="mt-1"
-                                  rows={3}
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => setNewArticleDialog(false)}>{c.cancel}</Button>
-                              <Button onClick={() => addArticle(currentCategory.id)}>{c.addArticleName}</Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-
-                      <p className="text-xs text-muted-foreground mb-2">
-                        {p.clickArticleToEdit}
-                      </p>
-                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                        {currentCategory.articles.sort((a, b) => a.order - b.order).map((article) => (
-                          <div
-                            key={article.id}
-                            className={`flex items-center justify-between rounded-lg border p-3 cursor-pointer transition-colors ${
-                              selectedArticle?.articleId === article.id
-                                ? "border-primary bg-primary/5"
-                                : "hover:bg-muted/50"
-                            } ${!article.enabled ? "opacity-50" : ""}`}
-                            onClick={() => setSelectedArticle({ categoryId: currentCategory.id, articleId: article.id })}
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium truncate">{article.title}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {p.stepsCount.replace("{count}", String(article.steps?.length || 0))} | {article.content.length > 50 ? article.content.substring(0, 50) + '...' : article.content}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 w-7 p-0"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setSelectedArticle({ categoryId: currentCategory.id, articleId: article.id })
-                                }}
-                                title={p.editArticleContent}
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                              {!helpCenter.popularArticles.some(pa => pa.categoryId === currentCategory.id && pa.articleSlug === article.slug) && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-xs h-7"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    addToPopularArticles(currentCategory.id, article)
-                                  }}
-                                >
-                                  {c.popularBadge}
-                                </Button>
-                              )}
-                              <Switch
-                                checked={article.enabled}
-                                onCheckedChange={() => toggleArticle(currentCategory.id, article.id)}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-destructive hover:text-destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  deleteArticle(currentCategory.id, article.id)
-                                }}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                        {currentCategory.articles.length === 0 && (
-                          <p className="text-sm text-muted-foreground text-center py-6">
-                            {p.noArticlesYet}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </>
-              ) : (
-                <CardContent className="flex items-center justify-center h-[400px]">
-                  <p className="text-muted-foreground">{p.selectCategory}</p>
-                </CardContent>
-              )}
-            </Card>
-          </div>
-
-          {/* Article Editor */}
-          {selectedArticle && currentArticle ? (
-            <Card className="border-primary">
-              <CardHeader className="bg-primary/5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Pencil className="h-4 w-4" />
-                      {c.editArticleContent}
-                    </CardTitle>
-                    <CardDescription>
-                      {helpCenter.categories.find(c => c.id === selectedArticle.categoryId)?.title} / {currentArticle.title}
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={`/help/${helpCenter.categories.find(c => c.id === selectedArticle.categoryId)?.slug}/${currentArticle.slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-                    >
-                      {c.previewLabel} <ExternalLink className="h-3 w-3" />
-                    </a>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedArticle(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6 pt-6">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label>{p.articleTitle}</Label>
-                    <Input
-                      value={currentArticle.title}
-                      onChange={(e) => updateArticle(selectedArticle.categoryId, selectedArticle.articleId, 'title', e.target.value)}
-                      className="mt-1"
-                      placeholder={p.articleTitleExample}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">{p.articleTitleHint}</p>
-                  </div>
-                  <div>
-                    <Label>{p.urlSlug}</Label>
-                    <Input
-                      value={currentArticle.slug}
-                      onChange={(e) => updateArticle(selectedArticle.categoryId, selectedArticle.articleId, 'slug', e.target.value)}
-                      className="mt-1"
-                      placeholder={hc.slugPlaceholder}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">{p.urlSlugHint}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <Label>{p.articleIntro}</Label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {p.articleIntroDesc}
-                  </p>
-                  <Textarea
-                    value={currentArticle.content}
-                    onChange={(e) => updateArticle(selectedArticle.categoryId, selectedArticle.articleId, 'content', e.target.value)}
-                    className="mt-1"
-                    rows={5}
-                    placeholder={p.articleIntroPlaceholderLong}
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <Label>{p.stepGuide}</Label>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {p.stepGuideDesc}
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1"
-                      onClick={() => addArticleStep(selectedArticle.categoryId, selectedArticle.articleId)}
-                    >
-                      <Plus className="h-3 w-3" />
-                      {c.addStep}
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    {currentArticle.steps?.map((step, index) => (
-                      <div key={index} className="flex items-start gap-2">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground mt-2">
-                          {index + 1}
-                        </span>
-                        <Textarea
-                          value={step}
-                          onChange={(e) => updateArticleStep(selectedArticle.categoryId, selectedArticle.articleId, index, e.target.value)}
-                          placeholder={p.stepPlaceholder.replace("{n}", String(index + 1))}
-                          className="flex-1 min-h-[60px]"
-                          rows={2}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive shrink-0 mt-1"
-                          onClick={() => deleteArticleStep(selectedArticle.categoryId, selectedArticle.articleId, index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    {(!currentArticle.steps || currentArticle.steps.length === 0) && (
-                      <div className="text-center py-6 border rounded-lg bg-muted/50">
-                        <p className="text-sm text-muted-foreground">
-                          {p.noStepsYet}
-                        </p>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="gap-1 mt-3"
-                          onClick={() => addArticleStep(selectedArticle.categoryId, selectedArticle.articleId)}
-                        >
-                          <Plus className="h-3 w-3" />
-                          {p.addFirstStep}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Pencil className="h-8 w-8 text-muted-foreground mb-3" />
-                <p className="text-muted-foreground text-center">
-                  {p.selectArticleToEdit}
-                </p>
-                <p className="text-xs text-muted-foreground text-center mt-1">
-                  {p.editArticleContentHint}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Popular Articles Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{p.popularArticles}</CardTitle>
-              <CardDescription>
-                {p.popularArticlesDesc}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {helpCenter.popularArticles.sort((a, b) => a.order - b.order).map((article, index) => {
-                  const category = helpCenter.categories.find(c => c.id === article.categoryId)
-                  return (
-                    <div
-                      key={article.id}
-                      className={`flex items-center justify-between rounded-lg border p-3 ${
-                        article.enabled ? "" : "opacity-50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="h-6 w-6 flex items-center justify-center p-0 text-xs">
-                          {index + 1}
-                        </Badge>
-                        <div>
-                          <p className="text-sm font-medium">{article.title}</p>
-                          <p className="text-xs text-muted-foreground">{category?.title || article.categorySlug}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 gap-1 text-xs"
-                          onClick={() => {
-                            const cat = helpCenter.categories.find(c => c.id === article.categoryId)
-                            const art = cat?.articles.find(a => a.slug === article.articleSlug)
-                            if (cat && art) {
-                              setSelectedArticle({ categoryId: cat.id, articleId: art.id })
-                              setSelectedCategory(cat.id)
-                            }
-                          }}
-                        >
-                          <Pencil className="h-3 w-3" />
-                          {c.edit}
-                        </Button>
-                        <Switch
-                          checked={article.enabled}
-                          onCheckedChange={() => togglePopularArticle(article.id)}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => removeFromPopularArticles(article.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  )
-                })}
-                {helpCenter.popularArticles.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-6">
-                    {p.noPopularArticles}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Social Media Tab */}
         <TabsContent value="social" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Share2 className="h-5 w-5" />
-                {c.socialMediaLinks}
-              </CardTitle>
-              <CardDescription>
-                {p.socialMediaDesc}
-              </CardDescription>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Share2 className="h-5 w-5" />
+                    {c.socialMediaLinks}
+                  </CardTitle>
+                  <CardDescription>
+                    {p.socialMediaDesc}
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={() => void handleSaveSocialLinks()}
+                  disabled={isSaving || socialLinksLoading}
+                  className="gap-2 shrink-0"
+                >
+                  <Save className="h-4 w-4" />
+                  {isSaving ? c.saving : p.saveSocialLinks}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
+              {!socialLinksApiConnected && !socialLinksLoading ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  {p.socialLinksNotConnected}
+                </p>
+              ) : null}
               <div className="space-y-3">
                 {socialLinks.sort((a, b) => a.order - b.order).map((link) => {
                   const IconComponent = getIconComponent(link.icon, iconOptions)
@@ -1277,6 +590,21 @@ export default function SiteSettingsPage() {
 
         {/* Legal Pages Tab */}
         <TabsContent value="legal" className="space-y-6">
+          {legalPagesLoading ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-16 text-muted-foreground">
+                {c.loading}
+              </CardContent>
+            </Card>
+          ) : (
+          <div className="space-y-6">
+            {!legalPages.some((page) => page.apiId) && (
+              <Card className="border-amber-300 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10">
+                <CardContent className="p-4 text-sm text-amber-900 dark:text-amber-200">
+                  {p.legalPagesNotConnected}
+                </CardContent>
+              </Card>
+            )}
           <div className="grid gap-6 lg:grid-cols-4">
             <Card className="lg:col-span-1">
               <CardHeader><CardTitle className="text-base">{p.legalPages}</CardTitle></CardHeader>
@@ -1312,6 +640,14 @@ export default function SiteSettingsPage() {
                     <a href={`/${currentLegalPage?.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
                       {c.previewLabel} <ExternalLink className="h-3 w-3" />
                     </a>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void handleSaveCurrentLegalPage()}
+                      disabled={isSaving || !currentLegalPage?.apiId}
+                    >
+                      {isSaving ? c.saving : p.saveLegalPage}
+                    </Button>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="page-enabled" className="text-sm">{p.pageEnabled}</Label>
                       <Switch id="page-enabled" checked={currentLegalPage?.enabled} onCheckedChange={() => currentLegalPage && toggleLegalPage(currentLegalPage.id)} />
@@ -1370,6 +706,8 @@ export default function SiteSettingsPage() {
               </CardContent>
             </Card>
           </div>
+          </div>
+          )}
         </TabsContent>
 
         {/* About Us Tab */}
@@ -1385,6 +723,14 @@ export default function SiteSettingsPage() {
                   <a href="/about" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
                     {c.previewLabel} <ExternalLink className="h-3 w-3" />
                   </a>
+                  <Button
+                    onClick={() => void handleSaveAboutPage()}
+                    disabled={isSaving || aboutPageLoading || !aboutPageApiConnected}
+                    className="gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    {isSaving ? c.saving : p.saveAboutPage}
+                  </Button>
                   <div className="flex items-center gap-2">
                     <Label htmlFor="about-enabled" className="text-sm">{p.pageEnabled}</Label>
                     <Switch id="about-enabled" checked={aboutPage.enabled} onCheckedChange={(checked) => setAboutPage({ ...aboutPage, enabled: checked })} />
@@ -1393,6 +739,11 @@ export default function SiteSettingsPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-8">
+              {!aboutPageApiConnected && !aboutPageLoading ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  {p.aboutPageNotConnected}
+                </p>
+              ) : null}
               {/* Hero Section */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-foreground">{p.heroSection}</h3>
@@ -1427,23 +778,6 @@ export default function SiteSettingsPage() {
                 </div>
               </div>
 
-              {/* Stats */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">{p.statistics}</h3>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {aboutPage.stats.map((stat, index) => (
-                    <div key={index} className="rounded-lg border p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs">{c.statNumber.replace("{n}", String(index + 1))}</Label>
-                        <Switch checked={stat.enabled} onCheckedChange={(checked) => { const newStats = [...aboutPage.stats]; newStats[index] = { ...stat, enabled: checked }; setAboutPage({ ...aboutPage, stats: newStats }) }} />
-                      </div>
-                      <Input value={stat.value} onChange={(e) => { const newStats = [...aboutPage.stats]; newStats[index] = { ...stat, value: e.target.value }; setAboutPage({ ...aboutPage, stats: newStats }) }} placeholder={c.valuePlaceholder} />
-                      <Input value={stat.label} onChange={(e) => { const newStats = [...aboutPage.stats]; newStats[index] = { ...stat, label: e.target.value }; setAboutPage({ ...aboutPage, stats: newStats }) }} placeholder={c.labelPlaceholder} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* Mission & Vision */}
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-4">
@@ -1462,14 +796,43 @@ export default function SiteSettingsPage() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-foreground">{p.companyValues}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {aboutPage.values.map((value, index) => (
+                  <div className="sm:col-span-2">
+                    <Label>{c.title}</Label>
+                    <Input value={aboutPage.values.title} onChange={(e) => setAboutPage({ ...aboutPage, values: { ...aboutPage.values, title: e.target.value } })} className="mt-1" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>{p.subtitle_label}</Label>
+                    <Input value={aboutPage.values.subtitle} onChange={(e) => setAboutPage({ ...aboutPage, values: { ...aboutPage.values, subtitle: e.target.value } })} className="mt-1" />
+                  </div>
+                  {aboutPage.values.items.map((value, index) => (
                     <div key={value.id} className="rounded-lg border p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <Label className="text-sm font-medium">{value.title}</Label>
-                        <Switch checked={value.enabled} onCheckedChange={(checked) => { const newValues = [...aboutPage.values]; newValues[index] = { ...value, enabled: checked }; setAboutPage({ ...aboutPage, values: newValues }) }} />
+                        <Switch checked={value.enabled} onCheckedChange={(checked) => { const newItems = [...aboutPage.values.items]; newItems[index] = { ...value, enabled: checked }; setAboutPage({ ...aboutPage, values: { ...aboutPage.values, items: newItems } }) }} />
                       </div>
-                      <Input value={value.title} onChange={(e) => { const newValues = [...aboutPage.values]; newValues[index] = { ...value, title: e.target.value }; setAboutPage({ ...aboutPage, values: newValues }) }} placeholder={p.valueTitlePlaceholder} />
-                      <Textarea value={value.description} onChange={(e) => { const newValues = [...aboutPage.values]; newValues[index] = { ...value, description: e.target.value }; setAboutPage({ ...aboutPage, values: newValues }) }} placeholder={p.descriptionPlaceholder} rows={2} />
+                      <Input value={value.title} onChange={(e) => { const newItems = [...aboutPage.values.items]; newItems[index] = { ...value, title: e.target.value }; setAboutPage({ ...aboutPage, values: { ...aboutPage.values, items: newItems } }) }} placeholder={p.valueTitlePlaceholder} />
+                      <Textarea value={value.description} onChange={(e) => { const newItems = [...aboutPage.values.items]; newItems[index] = { ...value, description: e.target.value }; setAboutPage({ ...aboutPage, values: { ...aboutPage.values, items: newItems } }) }} placeholder={p.descriptionPlaceholder} rows={2} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Why Different */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-foreground">{p.whyDifferent}</h3>
+                <div>
+                  <Label>{p.sectionTitleLabel}</Label>
+                  <Input value={aboutPage.whyDifferent.title} onChange={(e) => setAboutPage({ ...aboutPage, whyDifferent: { ...aboutPage.whyDifferent, title: e.target.value } })} className="mt-1" />
+                </div>
+                <div className="grid gap-4">
+                  {aboutPage.whyDifferent.points.map((point, index) => (
+                    <div key={point.id} className="rounded-lg border p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">{point.title}</Label>
+                        <Switch checked={point.enabled} onCheckedChange={(checked) => { const newPoints = [...aboutPage.whyDifferent.points]; newPoints[index] = { ...point, enabled: checked }; setAboutPage({ ...aboutPage, whyDifferent: { ...aboutPage.whyDifferent, points: newPoints } }) }} />
+                      </div>
+                      <Input value={point.title} onChange={(e) => { const newPoints = [...aboutPage.whyDifferent.points]; newPoints[index] = { ...point, title: e.target.value }; setAboutPage({ ...aboutPage, whyDifferent: { ...aboutPage.whyDifferent, points: newPoints } }) }} placeholder={c.title} />
+                      <Textarea value={point.description} onChange={(e) => { const newPoints = [...aboutPage.whyDifferent.points]; newPoints[index] = { ...point, description: e.target.value }; setAboutPage({ ...aboutPage, whyDifferent: { ...aboutPage.whyDifferent, points: newPoints } }) }} placeholder={p.descriptionPlaceholder} rows={3} />
                     </div>
                   ))}
                 </div>

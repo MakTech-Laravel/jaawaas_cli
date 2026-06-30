@@ -3,13 +3,25 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Instagram } from "lucide-react"
+import { Instagram, Linkedin, Twitter, Facebook, Youtube, Music2, Share2, type LucideIcon } from "lucide-react"
 import { useTranslation } from "@/lib/i18n"
 import { getPublicCategories, type BackendCategory } from "@/lib/api/categories"
+import { fetchSocialMediaLinks, type SocialMediaLinkItem } from "@/lib/api/social-media-links"
+
+const socialIconMap: Record<string, LucideIcon> = {
+  Linkedin,
+  Twitter,
+  Facebook,
+  Youtube,
+  Instagram,
+  Music2,
+  Share2,
+}
 
 export function Footer() {
   const { t } = useTranslation()
   const [popularIndustries, setPopularIndustries] = useState<BackendCategory[]>([])
+  const [socialLinks, setSocialLinks] = useState<SocialMediaLinkItem[]>([])
 
   useEffect(() => {
     let mounted = true
@@ -22,6 +34,23 @@ export function Footer() {
       setPopularIndustries(list)
     }
     void loadIndustries()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+
+    async function loadSocialLinks() {
+      const links = await fetchSocialMediaLinks()
+      if (mounted) {
+        setSocialLinks(links)
+      }
+    }
+
+    void loadSocialLinks()
+
     return () => {
       mounted = false
     }
@@ -119,15 +148,22 @@ export function Footer() {
             </p>
             {/* Social Links */}
             <div className="mt-6 flex gap-4">
-              <a
-                href="https://www.instagram.com/sourcenest1/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-foreground/60 transition-colors hover:text-primary-foreground"
-                aria-label="Instagram"
-              >
-                <Instagram className="h-5 w-5" />
-              </a>
+              {socialLinks.map((link) => {
+                const Icon = socialIconMap[link.icon] ?? Share2
+
+                return (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-foreground/60 transition-colors hover:text-primary-foreground"
+                    aria-label={link.platform}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </a>
+                )
+              })}
             </div>
           </div>
 

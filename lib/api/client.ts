@@ -3,7 +3,7 @@ import axios from "axios";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const AUTH_STORAGE_KEYS = ["sourcenest_token", "access_token", "token", "TOKEN"] as const;
 
-function readPreferredLanguage(): string {
+export function readPreferredLanguage(): string {
   if (typeof window === "undefined") {
     return "en";
   }
