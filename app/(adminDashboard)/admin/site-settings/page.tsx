@@ -1,6 +1,6 @@
-"use client"
+﻿"use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,17 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { 
-  Settings,
   Save,
   Plus,
   X,
@@ -41,7 +31,6 @@ import {
   FileText,
   Share2,
   Info,
-  HelpCircle,
   Linkedin,
   Twitter,
   Facebook,
@@ -54,14 +43,27 @@ import {
   ArrowDown,
   Trash2,
   ChevronRight,
-  Pencil,
-  Users,
-  Factory,
-  CreditCard,
-  Shield,
-  BookOpen
 } from "lucide-react"
 import { useTranslation } from "@/lib/i18n"
+import { useToast } from "@/hooks/use-toast"
+import {
+  fetchAdminLegalPages,
+  mapAdminLegalPageToUi,
+  mapUiLegalPageToSave,
+  updateAdminLegalPageContent,
+} from "@/lib/api/admin-legal-pages"
+import {
+  fetchAdminAboutPage,
+  mapAdminAboutPageToUi,
+  mapUiAboutPageToSave,
+  updateAdminAboutPage,
+} from "@/lib/api/admin-about-page"
+import {
+  fetchAdminSocialMediaLinks,
+  mapAdminSocialLinkToUi,
+  mapUiSocialLinksToSync,
+  syncAdminSocialMediaLinks,
+} from "@/lib/api/admin-social-media-links"
 import {
   defaultSocialLinks,
   defaultLegalPages,
@@ -70,13 +72,6 @@ import {
   type LegalPage,
   type AboutPageData
 } from "@/lib/data/site-settings"
-import {
-  defaultHelpCenterData,
-  type HelpCenterData,
-  type HelpCategory,
-  type HelpArticle,
-  type PopularArticle
-} from "@/lib/data/help-center"
 
 const getIconComponent = (iconName: string, iconOptions: { value: string; icon: typeof Linkedin }[]) => {
   const option = iconOptions.find(o => o.value === iconName)
@@ -90,8 +85,8 @@ export default function SiteSettingsPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.siteSettings
   const c = t.admin.common
-  const hc = t.admin.pages.helpCenter
   const ic = t.admin.pages.industries
+  const { toast } = useToast()
 
   const iconOptions = [
     { value: "Linkedin", label: p.iconLinkedIn, icon: Linkedin },
@@ -103,9 +98,13 @@ export default function SiteSettingsPage() {
   ]
 
   const [socialLinks, setSocialLinks] = useState<SocialMediaLink[]>(defaultSocialLinks)
+  const [socialLinksLoading, setSocialLinksLoading] = useState(true)
+  const [socialLinksApiConnected, setSocialLinksApiConnected] = useState(false)
   const [legalPages, setLegalPages] = useState<LegalPage[]>(defaultLegalPages)
+  const [legalPagesLoading, setLegalPagesLoading] = useState(true)
   const [aboutPage, setAboutPage] = useState<AboutPageData>(defaultAboutPage)
-  const [helpCenter, setHelpCenter] = useState<HelpCenterData>(defaultHelpCenterData)
+  const [aboutPageLoading, setAboutPageLoading] = useState(true)
+  const [aboutPageApiConnected, setAboutPageApiConnected] = useState(false)
   const [selectedLegalPage, setSelectedLegalPage] = useState<string>("privacy")
   const [isSaving, setIsSaving] = useState(false)
   const [newSocialPlatform, setNewSocialPlatform] = useState("")
@@ -114,8 +113,109 @@ export default function SiteSettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setIsSaving(false)
+    try {
+      await saveLegalPagesToApi(legalPages)
+
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
+      toast({
+        title: c.success,
+        description: p.legalPagesSaved,
+      })
+    } catch (error) {
+      toast({
+        title: c.error,
+        description: error instanceof Error ? error.message : p.legalPagesSaveFailed,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveCurrentLegalPage = async () => {
+    const current = legalPages.find((page) => page.id === selectedLegalPage)
+    if (!current) return
+
+    setIsSaving(true)
+    try {
+      await saveLegalPagesToApi([current])
+      toast({
+        title: c.success,
+        description: p.legalPagesSaved,
+      })
+    } catch (error) {
+      toast({
+        title: c.error,
+        description: error instanceof Error ? error.message : p.legalPagesSaveFailed,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveAboutPage = async () => {
+    if (!aboutPage.apiId) {
+      toast({
+        title: c.error,
+        description: p.aboutPageNotConnected,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const response = await updateAdminAboutPage(mapUiAboutPageToSave(aboutPage))
+      if (response.data) {
+        setAboutPage(mapAdminAboutPageToUi(response.data))
+      }
+
+      toast({
+        title: c.success,
+        description: p.aboutPageSaved,
+      })
+    } catch (error) {
+      toast({
+        title: c.error,
+        description: error instanceof Error ? error.message : p.aboutPageSaveFailed,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveSocialLinks = async () => {
+    if (!socialLinksApiConnected && socialLinks.length === 0) {
+      toast({
+        title: c.error,
+        description: p.socialLinksNotConnected,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const synced = await syncAdminSocialMediaLinks(mapUiSocialLinksToSync(socialLinks))
+      setSocialLinks(synced.map(mapAdminSocialLinkToUi))
+      setSocialLinksApiConnected(true)
+
+      toast({
+        title: c.success,
+        description: p.socialLinksSaved,
+      })
+    } catch (error) {
+      toast({
+        title: c.error,
+        description: error instanceof Error ? error.message : p.socialLinksSaveFailed,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   // Social Links functions
@@ -192,6 +292,7 @@ export default function SiteSettingsPage() {
                 ...page.sections,
                 {
                   id: `section-${Date.now()}`,
+                  sectionKey: `section-${Date.now()}`,
                   title: p.newSectionTitle.replace("{n}", String(page.sections.length + 1)),
                   content: c.sectionContentPlaceholder,
                   order: page.sections.length + 1
@@ -272,12 +373,8 @@ export default function SiteSettingsPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="help" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="help" className="gap-2">
-            <HelpCircle className="h-4 w-4" />
-            {p.helpCenter}
-          </TabsTrigger>
+      <Tabs defaultValue="social" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="social" className="gap-2">
             <Share2 className="h-4 w-4" />
             {p.socialMedia}
@@ -292,31 +389,29 @@ export default function SiteSettingsPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Help Center Tab */}
-        <TabsContent value="help" className="space-y-6">
-          {/* Help Center Settings Card */}
+
+        {/* Social Media Tab */}
+        <TabsContent value="social" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    <HelpCircle className="h-5 w-5" />
-                    {c.helpCenterSettings}
+                    <Share2 className="h-5 w-5" />
+                    {c.socialMediaLinks}
                   </CardTitle>
                   <CardDescription>
-                    {p.helpCenterSettingsDesc}
+                    {p.socialMediaDesc}
                   </CardDescription>
                 </div>
-                <div className="flex items-center gap-3">
-                  <a
-                    href="/help"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-                  >
-                    {c.previewLabel} <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
+                <Button
+                  onClick={() => void handleSaveSocialLinks()}
+                  disabled={isSaving || socialLinksLoading}
+                  className="gap-2 shrink-0"
+                >
+                  <Save className="h-4 w-4" />
+                  {isSaving ? c.saving : p.saveSocialLinks}
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -515,6 +610,21 @@ export default function SiteSettingsPage() {
 
         {/* Legal Pages Tab */}
         <TabsContent value="legal" className="space-y-6">
+          {legalPagesLoading ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-16 text-muted-foreground">
+                {c.loading}
+              </CardContent>
+            </Card>
+          ) : (
+          <div className="space-y-6">
+            {!legalPages.some((page) => page.apiId) && (
+              <Card className="border-amber-300 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10">
+                <CardContent className="p-4 text-sm text-amber-900 dark:text-amber-200">
+                  {p.legalPagesNotConnected}
+                </CardContent>
+              </Card>
+            )}
           <div className="grid gap-6 lg:grid-cols-4">
             <Card className="lg:col-span-1">
               <CardHeader><CardTitle className="text-base">{p.legalPages}</CardTitle></CardHeader>
@@ -550,6 +660,14 @@ export default function SiteSettingsPage() {
                     <a href={`/${currentLegalPage?.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
                       {c.previewLabel} <ExternalLink className="h-3 w-3" />
                     </a>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void handleSaveCurrentLegalPage()}
+                      disabled={isSaving || !currentLegalPage?.apiId}
+                    >
+                      {isSaving ? c.saving : p.saveLegalPage}
+                    </Button>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="page-enabled" className="text-sm">{p.pageEnabled}</Label>
                       <Switch id="page-enabled" checked={currentLegalPage?.enabled} onCheckedChange={() => currentLegalPage && toggleLegalPage(currentLegalPage.id)} />
@@ -608,6 +726,8 @@ export default function SiteSettingsPage() {
               </CardContent>
             </Card>
           </div>
+          </div>
+          )}
         </TabsContent>
 
         {/* About Us Tab */}
@@ -623,6 +743,14 @@ export default function SiteSettingsPage() {
                   <a href="/about" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
                     {c.previewLabel} <ExternalLink className="h-3 w-3" />
                   </a>
+                  <Button
+                    onClick={() => void handleSaveAboutPage()}
+                    disabled={isSaving || aboutPageLoading || !aboutPageApiConnected}
+                    className="gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    {isSaving ? c.saving : p.saveAboutPage}
+                  </Button>
                   <div className="flex items-center gap-2">
                     <Label htmlFor="about-enabled" className="text-sm">{p.pageEnabled}</Label>
                     <Switch id="about-enabled" checked={aboutPage.enabled} onCheckedChange={(checked) => setAboutPage({ ...aboutPage, enabled: checked })} />
@@ -631,6 +759,11 @@ export default function SiteSettingsPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-8">
+              {!aboutPageApiConnected && !aboutPageLoading ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  {p.aboutPageNotConnected}
+                </p>
+              ) : null}
               {/* Hero Section */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-foreground">{p.heroSection}</h3>
@@ -665,23 +798,6 @@ export default function SiteSettingsPage() {
                 </div>
               </div>
 
-              {/* Stats */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-foreground">{p.statistics}</h3>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {aboutPage.stats.map((stat, index) => (
-                    <div key={index} className="rounded-lg border p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs">{c.statNumber.replace("{n}", String(index + 1))}</Label>
-                        <Switch checked={stat.enabled} onCheckedChange={(checked) => { const newStats = [...aboutPage.stats]; newStats[index] = { ...stat, enabled: checked }; setAboutPage({ ...aboutPage, stats: newStats }) }} />
-                      </div>
-                      <Input value={stat.value} onChange={(e) => { const newStats = [...aboutPage.stats]; newStats[index] = { ...stat, value: e.target.value }; setAboutPage({ ...aboutPage, stats: newStats }) }} placeholder={c.valuePlaceholder} />
-                      <Input value={stat.label} onChange={(e) => { const newStats = [...aboutPage.stats]; newStats[index] = { ...stat, label: e.target.value }; setAboutPage({ ...aboutPage, stats: newStats }) }} placeholder={c.labelPlaceholder} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* Mission & Vision */}
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-4">
@@ -700,14 +816,43 @@ export default function SiteSettingsPage() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-foreground">{p.companyValues}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {aboutPage.values.map((value, index) => (
+                  <div className="sm:col-span-2">
+                    <Label>{c.title}</Label>
+                    <Input value={aboutPage.values.title} onChange={(e) => setAboutPage({ ...aboutPage, values: { ...aboutPage.values, title: e.target.value } })} className="mt-1" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>{p.subtitle_label}</Label>
+                    <Input value={aboutPage.values.subtitle} onChange={(e) => setAboutPage({ ...aboutPage, values: { ...aboutPage.values, subtitle: e.target.value } })} className="mt-1" />
+                  </div>
+                  {aboutPage.values.items.map((value, index) => (
                     <div key={value.id} className="rounded-lg border p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <Label className="text-sm font-medium">{value.title}</Label>
-                        <Switch checked={value.enabled} onCheckedChange={(checked) => { const newValues = [...aboutPage.values]; newValues[index] = { ...value, enabled: checked }; setAboutPage({ ...aboutPage, values: newValues }) }} />
+                        <Switch checked={value.enabled} onCheckedChange={(checked) => { const newItems = [...aboutPage.values.items]; newItems[index] = { ...value, enabled: checked }; setAboutPage({ ...aboutPage, values: { ...aboutPage.values, items: newItems } }) }} />
                       </div>
-                      <Input value={value.title} onChange={(e) => { const newValues = [...aboutPage.values]; newValues[index] = { ...value, title: e.target.value }; setAboutPage({ ...aboutPage, values: newValues }) }} placeholder={p.valueTitlePlaceholder} />
-                      <Textarea value={value.description} onChange={(e) => { const newValues = [...aboutPage.values]; newValues[index] = { ...value, description: e.target.value }; setAboutPage({ ...aboutPage, values: newValues }) }} placeholder={p.descriptionPlaceholder} rows={2} />
+                      <Input value={value.title} onChange={(e) => { const newItems = [...aboutPage.values.items]; newItems[index] = { ...value, title: e.target.value }; setAboutPage({ ...aboutPage, values: { ...aboutPage.values, items: newItems } }) }} placeholder={p.valueTitlePlaceholder} />
+                      <Textarea value={value.description} onChange={(e) => { const newItems = [...aboutPage.values.items]; newItems[index] = { ...value, description: e.target.value }; setAboutPage({ ...aboutPage, values: { ...aboutPage.values, items: newItems } }) }} placeholder={p.descriptionPlaceholder} rows={2} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Why Different */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-foreground">{p.whyDifferent}</h3>
+                <div>
+                  <Label>{p.sectionTitleLabel}</Label>
+                  <Input value={aboutPage.whyDifferent.title} onChange={(e) => setAboutPage({ ...aboutPage, whyDifferent: { ...aboutPage.whyDifferent, title: e.target.value } })} className="mt-1" />
+                </div>
+                <div className="grid gap-4">
+                  {aboutPage.whyDifferent.points.map((point, index) => (
+                    <div key={point.id} className="rounded-lg border p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">{point.title}</Label>
+                        <Switch checked={point.enabled} onCheckedChange={(checked) => { const newPoints = [...aboutPage.whyDifferent.points]; newPoints[index] = { ...point, enabled: checked }; setAboutPage({ ...aboutPage, whyDifferent: { ...aboutPage.whyDifferent, points: newPoints } }) }} />
+                      </div>
+                      <Input value={point.title} onChange={(e) => { const newPoints = [...aboutPage.whyDifferent.points]; newPoints[index] = { ...point, title: e.target.value }; setAboutPage({ ...aboutPage, whyDifferent: { ...aboutPage.whyDifferent, points: newPoints } }) }} placeholder={c.title} />
+                      <Textarea value={point.description} onChange={(e) => { const newPoints = [...aboutPage.whyDifferent.points]; newPoints[index] = { ...point, description: e.target.value }; setAboutPage({ ...aboutPage, whyDifferent: { ...aboutPage.whyDifferent, points: newPoints } }) }} placeholder={p.descriptionPlaceholder} rows={3} />
                     </div>
                   ))}
                 </div>
