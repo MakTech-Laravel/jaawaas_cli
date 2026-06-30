@@ -416,7 +416,7 @@ const adminHe = {
       missingReason: "סיבה חסרה",
       noPending: "אין בקשות ממתינות",
       sendMessage: "שלח הודעה",
-      createSupport: "צור תמיכה",
+      createSupport: "פתח תמיכה",
       createSupportDescription: "פתח כרטיס תמיכה עבור יצרן זה. הוא יקבל הודעת אימייל.",
       createSupportTicket: "צור כרטיס",
       creatingSupport: "יוצר...",
