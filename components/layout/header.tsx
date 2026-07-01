@@ -337,14 +337,6 @@ export function Header() {
                       )}
                     </div>
                   )}
-                  <div className="border-t p-2">
-                    <Button variant="ghost" size="sm" className="w-full justify-center gap-2 text-primary" asChild>
-                      <Link href="/dashboard/buyer/saved">
-                        {t?.nav?.viewAllSavedSuppliers || "View All Saved Suppliers"}
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
-                    </Button>
-                  </div>
                 </TabsContent>
                 
                 {/* Saved Products Tab */}
@@ -397,14 +389,6 @@ export function Header() {
                       )}
                     </div>
                   )}
-                  <div className="border-t p-2">
-                    <Button variant="ghost" size="sm" className="w-full justify-center gap-2 text-primary" asChild>
-                      <Link href="/dashboard/buyer/saved">
-                        {t?.nav?.viewAllSavedProducts || "View All Saved Products"}
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
-                    </Button>
-                  </div>
                 </TabsContent>
               </Tabs>
             </DropdownMenuContent>
