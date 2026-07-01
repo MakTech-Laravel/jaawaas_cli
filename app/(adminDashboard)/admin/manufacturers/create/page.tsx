@@ -22,6 +22,9 @@ import { countries as allCountries } from "@/lib/data/countries"
 import { apiClient } from "@/lib/api/client"
 import { useToast } from "@/hooks/use-toast"
 import { getApiErrorMessage } from "@/lib/api/errors"
+import { getAdminCategories } from "@/lib/api/categories"
+import { getAdminCertificateTypes } from "@/lib/api/admin-certificate-types"
+import { getAdminQuickFilterOptions } from "@/lib/api/admin-quick-filters"
 import { 
   Factory,
   Mail,
@@ -118,19 +121,31 @@ export default function AdminCreateManufacturerPage() {
         
         // Fetch categories (Industries)
         try {
-          const catRes = await apiClient.get("/admin/categories")
-          if (catRes.data?.data) {
-            setCategories(catRes.data.data.map((cat: any) => ({ id: cat.id, name: cat.name })))
+          const catRes = await getAdminCategories({ perPage: 100 })
+          if (catRes.success && catRes.data) {
+            setCategories(catRes.data.map(cat => ({ id: Number(cat.id), name: cat.name })))
+          } else {
+            // Fallback direct request
+            const rawCatRes = await apiClient.get("/admin/categories")
+            const rawData = rawCatRes.data?.data || rawCatRes.data || []
+            if (Array.isArray(rawData)) {
+              setCategories(rawData.map((cat: any) => ({ id: cat.id, name: cat.name })))
+            }
           }
         } catch (err) {
-          console.log("Categories endpoint not available, using defaults")
+          console.log("Categories endpoint not available, using empty list")
         }
 
         // Fetch certifications
         try {
-          const certRes = await apiClient.get("/api/certifications")
-          if (certRes.data?.data) {
-            setCertificationTypes(certRes.data.data)
+          const certRes = await getAdminCertificateTypes("", 1, 100)
+          if (certRes.success && certRes.data && certRes.data.length > 0) {
+            setCertificationTypes(certRes.data.filter(c => c.status === "active").map(c => c.name))
+          } else {
+            const qfRes = await getAdminQuickFilterOptions("certifications")
+            if (qfRes.success && qfRes.data && qfRes.data.length > 0) {
+              setCertificationTypes(qfRes.data.filter(o => o.isEnabled).map(o => o.displayLabel || o.value))
+            }
           }
         } catch (err) {
           console.log("Certifications endpoint not available, using defaults")
@@ -139,8 +154,14 @@ export default function AdminCreateManufacturerPage() {
         // Fetch business types
         try {
           const bizRes = await apiClient.get("/api/business-types")
-          if (bizRes.data?.data) {
-            setBusinessTypes(bizRes.data.data)
+          const bizData = bizRes.data?.data || bizRes.data
+          if (Array.isArray(bizData)) {
+            setBusinessTypes(bizData)
+          } else {
+            const qfRes = await getAdminQuickFilterOptions("business_types")
+            if (qfRes.success && qfRes.data && qfRes.data.length > 0) {
+              setBusinessTypes(qfRes.data.filter(o => o.isEnabled).map(o => o.displayLabel || o.value))
+            }
           }
         } catch (err) {
           console.log("Business types endpoint not available, using defaults")
@@ -149,8 +170,14 @@ export default function AdminCreateManufacturerPage() {
         // Fetch capabilities
         try {
           const capRes = await apiClient.get("/api/capabilities")
-          if (capRes.data?.data) {
-            setCapabilities(capRes.data.data)
+          const capData = capRes.data?.data || capRes.data
+          if (Array.isArray(capData)) {
+            setCapabilities(capData)
+          } else {
+            const qfRes = await getAdminQuickFilterOptions("capabilities")
+            if (qfRes.success && qfRes.data && qfRes.data.length > 0) {
+              setCapabilities(qfRes.data.filter(o => o.isEnabled).map(o => o.displayLabel || o.value))
+            }
           }
         } catch (err) {
           console.log("Capabilities endpoint not available, using defaults")
@@ -159,8 +186,14 @@ export default function AdminCreateManufacturerPage() {
         // Fetch export markets
         try {
           const mkRes = await apiClient.get("/api/export-markets")
-          if (mkRes.data?.data) {
-            setExportMarkets(mkRes.data.data)
+          const mkData = mkRes.data?.data || mkRes.data
+          if (Array.isArray(mkData)) {
+            setExportMarkets(mkData)
+          } else {
+            const qfRes = await getAdminQuickFilterOptions("export_markets")
+            if (qfRes.success && qfRes.data && qfRes.data.length > 0) {
+              setExportMarkets(qfRes.data.filter(o => o.isEnabled).map(o => o.displayLabel || o.value))
+            }
           }
         } catch (err) {
           console.log("Export markets endpoint not available, using defaults")
@@ -813,7 +846,7 @@ export default function AdminCreateManufacturerPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {[
+                {(exportMarkets.length > 0 ? exportMarkets : [
                   c.northAmerica,
                   c.southAmerica,
                   c.westernEurope,
@@ -824,7 +857,7 @@ export default function AdminCreateManufacturerPage() {
                   c.eastAsia,
                   c.southAsia,
                   c.oceania,
-                ].map(market => (
+                ]).map(market => (
                   <Badge
                     key={market}
                     variant={selectedExportMarkets.includes(market) ? "default" : "outline"}
