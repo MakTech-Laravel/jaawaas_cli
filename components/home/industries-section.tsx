@@ -10,6 +10,19 @@ import DynamicIcon from "@/components/dynamic-icon"
 
 const industryIconClass = "h-6 w-6"
 
+// Default card color presets matching jawasmiavai's 8 featured industry cards.
+// Used as fallback when the backend does not send color values.
+const DEFAULT_CARD_COLORS = [
+  { gradient: "from-blue-500/10 to-blue-600/5 group-hover:from-blue-500/20 group-hover:to-blue-600/10", iconColor: "#2563eb" },
+  { gradient: "from-slate-500/10 to-slate-600/5 group-hover:from-slate-500/20 group-hover:to-slate-600/10", iconColor: "#475569" },
+  { gradient: "from-rose-500/10 to-rose-600/5 group-hover:from-rose-500/20 group-hover:to-rose-600/10", iconColor: "#e11d48" },
+  { gradient: "from-emerald-500/10 to-emerald-600/5 group-hover:from-emerald-500/20 group-hover:to-emerald-600/10", iconColor: "#059669" },
+  { gradient: "from-pink-500/10 to-pink-600/5 group-hover:from-pink-500/20 group-hover:to-pink-600/10", iconColor: "#db2777" },
+  { gradient: "from-red-500/10 to-red-600/5 group-hover:from-red-500/20 group-hover:to-red-600/10", iconColor: "#dc2626" },
+  { gradient: "from-amber-500/10 to-amber-600/5 group-hover:from-amber-500/20 group-hover:to-amber-600/10", iconColor: "#d97706" },
+  { gradient: "from-yellow-500/10 to-yellow-600/5 group-hover:from-yellow-500/20 group-hover:to-yellow-600/10", iconColor: "#ca8a04" },
+]
+
 // Map industry icons
 const industryIcons: Record<string, React.ReactNode> = {
   "electronics-electrical": <Cpu className={industryIconClass} />,
@@ -73,8 +86,9 @@ export function IndustriesSection() {
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
-          {categories.map((industry) => {
-            const industryColor = industry.color || "#f8fafc"
+          {categories.map((industry, index) => {
+            const hasBackendColor = Boolean(industry.color)
+            const defaultPreset = DEFAULT_CARD_COLORS[index % DEFAULT_CARD_COLORS.length]
             
             // Detect if icon is a file URL (has file extension) or lucide icon name
             const isFileUrl = industry.icon && (
@@ -90,13 +104,21 @@ export function IndustriesSection() {
                   : `${process.env.NEXT_PUBLIC_API_URL || ""}${industry.icon.startsWith('/') ? '' : '/'}${industry.icon}`)
               : null;
 
+            // Icon color: use backend value if provided, otherwise use default preset color
+            const effectiveIconColor = (industry.icon_color && industry.icon_color.trim()) || defaultPreset.iconColor
+
             return (
               <Link
                 key={industry.slug || industry.id}
                 href={`/industries/${industry.slug || industry.id}`}
                 className="group relative overflow-hidden rounded-xl border border-border bg-card transition-all duration-300 hover:border-secondary/50 hover:shadow-lg sm:rounded-2xl sm:hover:shadow-2xl sm:hover:-translate-y-2"
-                style={{ backgroundColor: industryColor }}
+                {...(hasBackendColor ? { style: { backgroundColor: industry.color! } } : {})}
               >
+                {/* Gradient background overlay — uses backend color or default jawasmiavai preset */}
+                {!hasBackendColor && (
+                  <div className={`absolute inset-0 bg-linear-to-br transition-all duration-300 ${defaultPreset.gradient}`} />
+                )}
+
                 <div className="relative p-3 sm:p-6 lg:p-8">
                   <div 
                     className="flex h-11 w-11 items-center justify-center rounded-xl bg-card shadow-sm transition-transform duration-300 group-hover:scale-110 sm:h-12 sm:w-12 sm:rounded-2xl sm:shadow-md lg:h-14 lg:w-14"
@@ -109,10 +131,10 @@ export function IndustriesSection() {
                       <DynamicIcon 
                         name={industry.icon} 
                         className={industryIconClass}
-                        color={industry.icon_color || undefined}
+                        color={effectiveIconColor}
                       />
                     ) : (
-                      <div style={{ color: industry.icon_color || "#64748b" }}>
+                      <div style={{ color: effectiveIconColor }}>
                         {industryIcons[industry.slug || ""] || <Package className={industryIconClass} />}
                       </div>
                     )}
