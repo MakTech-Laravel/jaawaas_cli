@@ -60,6 +60,9 @@ function toType(value: unknown): NotificationType {
   if (raw.startsWith("support.ticket")) {
     return "message"
   }
+  if (raw.startsWith("manufacturer.")) {
+    return "supplier"
+  }
 
   return "system"
 }
