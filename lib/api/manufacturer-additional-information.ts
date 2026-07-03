@@ -13,6 +13,15 @@ export interface AdditionalInformationRequestedBy {
   email: string
 }
 
+export interface AdditionalInformationManufacturerSummary {
+  id: number
+  name?: string | null
+  email: string
+  company_name?: string | null
+  manufacture_status: string
+  manufacture_status_label: string
+}
+
 export interface AdditionalInformationRequest {
   id: number
   token: string
@@ -23,18 +32,31 @@ export interface AdditionalInformationRequest {
   status_label: string
   expires_at: string | null
   submitted_at: string | null
+  reviewed_at?: string | null
+  review_notes?: string | null
   created_at: string
+  reference_id?: string
+  ticket_id?: number | null
+  response_count?: number
   submit_url?: string
+  review_url?: string
   test_url?: string
-  requested_by: AdditionalInformationRequestedBy
+  requested_by?: AdditionalInformationRequestedBy
+  reviewed_by?: AdditionalInformationRequestedBy
+  manufacturer?: AdditionalInformationManufacturerSummary
   responses: AdditionalInformationSubmittedResponse[]
 }
 
 export interface AdditionalInformationSubmittedResponse {
   id?: number
   type: AdditionalInformationResponseType
+  type_label?: string
   message?: string | null
   file_url?: string | null
+  video_url?: string | null
+  is_video?: boolean
+  original_name?: string | null
+  mime_type?: string | null
   url?: string | null
   created_at?: string | null
 }
