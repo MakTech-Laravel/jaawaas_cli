@@ -12,7 +12,7 @@ export interface SaveSocialMediaLinkInput {
 }
 
 export interface SyncSocialMediaLinkInput {
-  id?: number
+  id: number
   platform: string
   icon: string
   url: string
@@ -120,6 +120,9 @@ export function mapUiSocialLinksToSync(
   links: import("@/lib/data/site-settings").SocialMediaLink[]
 ): SyncSocialMediaLinkInput[] {
   return [...links]
+    .filter((link): link is import("@/lib/data/site-settings").SocialMediaLink & { apiId: number } =>
+      typeof link.apiId === "number"
+    )
     .sort((a, b) => a.order - b.order)
     .map((link, index) => ({
       id: link.apiId,

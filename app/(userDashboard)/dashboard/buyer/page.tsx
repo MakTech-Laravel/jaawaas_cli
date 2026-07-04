@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/i18n"
 import { getBuyerDashboard, BuyerDashboardData } from "@/lib/api/buyer-dashboard"
+import { BuyerActivityList } from "@/components/buyer/buyer-activity-list"
 import { 
   MessageSquare, 
   FileText, 
@@ -40,6 +41,10 @@ export default function BuyerDashboardPage() {
   }, [])
   
   const userDisplayName = data?.welcome?.first_name || data?.welcome?.name || user?.firstName || user?.name || t.buyer.layout.buyer
+
+  const getActivityLabel = (type: string) => {
+    return t.buyer.activity.labels[type as keyof typeof t.buyer.activity.labels] || type
+  }
   
   if (loading) {
     return (
@@ -202,6 +207,24 @@ export default function BuyerDashboardPage() {
             </Button>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card min-w-0">
+        <div className="flex items-center justify-between border-b border-border p-4 sm:p-5">
+          <h2 className="font-semibold text-foreground">{t.buyer.dashboard.recentActivity.title}</h2>
+          <Button variant="ghost" size="sm" className="gap-1 text-secondary" asChild>
+            <Link href="/dashboard/buyer/activity">
+              {t.buyer.dashboard.recentActivity.viewAll}
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+            </Link>
+          </Button>
+        </div>
+        <BuyerActivityList
+          activities={data.recent_activity}
+          emptyMessage={t.buyer.dashboard.recentActivity.noActivity}
+          getLabel={getActivityLabel}
+          compact
+        />
       </div>
 
       {/* RFQ Status */}

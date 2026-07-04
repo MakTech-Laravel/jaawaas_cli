@@ -56,6 +56,11 @@ const buyerEn = {
       exploreAll: "Explore all",
       products: "{count} products",
       noSuppliers: "No recommended suppliers right now."
+    },
+    recentActivity: {
+      title: "Recent Activity",
+      viewAll: "View all",
+      noActivity: "No recent activity."
     }
   },
   rfqs: {

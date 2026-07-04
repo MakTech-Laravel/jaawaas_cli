@@ -58,6 +58,11 @@ const buyerAr = {
       exploreAll: "استكشاف الكل",
       products: "{count} منتج",
       noSuppliers: "لا يوجد موردون موصى بهم في الوقت الحالي."
+    },
+    recentActivity: {
+      title: "النشاط الأخير",
+      viewAll: "عرض الكل",
+      noActivity: "لا يوجد نشاط حديث."
     }
   },
   rfqs: {
