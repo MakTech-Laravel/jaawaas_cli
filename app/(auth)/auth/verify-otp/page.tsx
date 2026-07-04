@@ -26,6 +26,8 @@ function VerifyOtpContent() {
   const challenge = readEmailVerificationChallenge()
   const email = searchParams.get("email") || challenge?.email || ""
   const role = (searchParams.get("role") || challenge?.role || "buyer") as "buyer" | "manufacturer"
+  const urlToken = searchParams.get("token") || searchParams.get("verification_token")
+  const verificationToken = urlToken || challenge?.verificationToken
 
   const [otp, setOtp] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -49,7 +51,7 @@ function VerifyOtpContent() {
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!challenge?.verificationToken) {
+    if (!verificationToken) {
       setError(t?.auth?.verifySessionExpired || "Session expired. Please try registering again.")
       return
     }
@@ -66,11 +68,11 @@ function VerifyOtpContent() {
     try {
       const deviceName = typeof window !== "undefined" ? navigator.userAgent : "web"
       const result = await verifyEmailSignup({
-        verificationToken: challenge.verificationToken,
+        verificationToken,
         otp,
         deviceName,
-        pendingReview: challenge.pendingReview,
-        manufactureStatus: challenge.manufactureStatus ?? null,
+        pendingReview: challenge?.pendingReview,
+        manufactureStatus: challenge?.manufactureStatus ?? null,
       })
 
       if (!result.success) {
@@ -85,8 +87,8 @@ function VerifyOtpContent() {
 
       if (result.pendingReview) {
         const payload = {
-          message: result.message || challenge.message || "",
-          manufactureStatus: result.manufactureStatus ?? challenge.manufactureStatus ?? null,
+          message: result.message || challenge?.message || "",
+          manufactureStatus: result.manufactureStatus ?? challenge?.manufactureStatus ?? null,
           isLoggedIn: true as const,
         }
         sessionStorage.setItem(REGISTER_SUCCESS_STORAGE_KEY, JSON.stringify(payload))
@@ -103,7 +105,7 @@ function VerifyOtpContent() {
   }
 
   const handleResend = async () => {
-    if (!challenge?.verificationToken || resendCooldown > 0 || isResending) {
+    if (!verificationToken || resendCooldown > 0 || isResending) {
       return
     }
 
@@ -112,7 +114,7 @@ function VerifyOtpContent() {
     setInfo("")
 
     try {
-      const result = await resendEmailVerification(challenge.verificationToken)
+      const result = await resendEmailVerification(verificationToken)
 
       if (!result.success) {
         setError(result.message || (t?.auth?.errorOccurred || "An error occurred. Please try again."))
@@ -131,7 +133,7 @@ function VerifyOtpContent() {
     }
   }
 
-  if (!challenge?.verificationToken) {
+  if (!verificationToken) {
     return (
       <div className="lg:flex lg:min-h-[calc(100vh-6rem)] lg:flex-col lg:justify-center">
         <div className="text-center lg:text-left">
@@ -170,11 +172,11 @@ function VerifyOtpContent() {
           {t?.auth?.verifyEmailSubtitle || "We've sent a 6-digit verification code to"}{" "}
           <strong className="text-foreground">{email}</strong>
         </p>
-        {challenge.codeExpiryTime > 0 && (
+        {challenge?.codeExpiryTime ? (
           <p className="mt-1 text-xs text-muted-foreground">
             Code expires in {challenge.codeExpiryTime} minutes.
           </p>
-        )}
+        ) : null}
       </div>
 
       {error && (
