@@ -58,6 +58,11 @@ const buyerHe = {
       exploreAll: "חקור הכל",
       products: "{count} מוצרים",
       noSuppliers: "אין ספקים מומלצים כרגע."
+    },
+    recentActivity: {
+      title: "פעילות אחרונה",
+      viewAll: "הצג הכל",
+      noActivity: "אין פעילות אחרונה."
     }
   },
   rfqs: {

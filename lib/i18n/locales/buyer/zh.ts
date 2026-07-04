@@ -56,6 +56,11 @@ const buyerZh = {
       exploreAll: "探索全部",
       products: "{count} 个产品",
       noSuppliers: "目前没有推荐的供应商。"
+    },
+    recentActivity: {
+      title: "近期动态",
+      viewAll: "查看全部",
+      noActivity: "暂无近期动态。"
     }
   },
   rfqs: {

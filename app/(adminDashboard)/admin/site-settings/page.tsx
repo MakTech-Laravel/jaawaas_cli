@@ -104,9 +104,7 @@ export default function SiteSettingsPage() {
   const [aboutPageApiConnected, setAboutPageApiConnected] = useState(false)
   const [selectedLegalPage, setSelectedLegalPage] = useState<string>("privacy")
   const [isSaving, setIsSaving] = useState(false)
-  const [newSocialPlatform, setNewSocialPlatform] = useState("")
-  const [newSocialUrl, setNewSocialUrl] = useState("")
-  const [newSocialIcon, setNewSocialIcon] = useState("Linkedin")
+  const [isSavingSocial, setIsSavingSocial] = useState(false)
 
   useEffect(() => {
     const loadLegalPages = async () => {
@@ -284,7 +282,9 @@ export default function SiteSettingsPage() {
   }
 
   const handleSaveSocialLinks = async () => {
-    if (!socialLinksApiConnected && socialLinks.length === 0) {
+    const payload = mapUiSocialLinksToSync(socialLinks)
+
+    if (payload.length === 0) {
       toast({
         title: c.error,
         description: p.socialLinksNotConnected,
@@ -293,9 +293,21 @@ export default function SiteSettingsPage() {
       return
     }
 
-    setIsSaving(true)
+    const invalidEnabled = socialLinks.find(
+      (link) => link.enabled && (!link.url.trim() || !/^https?:\/\//i.test(link.url.trim()))
+    )
+    if (invalidEnabled) {
+      toast({
+        title: c.error,
+        description: `${invalidEnabled.platform}: enter a valid URL before enabling.`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSavingSocial(true)
     try {
-      const synced = await syncAdminSocialMediaLinks(mapUiSocialLinksToSync(socialLinks))
+      const synced = await syncAdminSocialMediaLinks(payload)
       setSocialLinks(synced.map(mapAdminSocialLinkToUi))
       setSocialLinksApiConnected(true)
 
@@ -310,7 +322,7 @@ export default function SiteSettingsPage() {
         variant: "destructive",
       })
     } finally {
-      setIsSaving(false)
+      setIsSavingSocial(false)
     }
   }
 
@@ -339,27 +351,8 @@ export default function SiteSettingsPage() {
     const newLinks = [...socialLinks]
     const swapIndex = direction === "up" ? index - 1 : index + 1
     ;[newLinks[index], newLinks[swapIndex]] = [newLinks[swapIndex], newLinks[index]]
-    newLinks.forEach((link, i) => link.order = i + 1)
+    newLinks.forEach((link, i) => { link.order = i + 1 })
     setSocialLinks(newLinks)
-  }
-
-  const addSocialLink = () => {
-    if (!newSocialPlatform.trim() || !newSocialUrl.trim()) return
-    const newLink: SocialMediaLink = {
-      id: `custom-${Date.now()}`,
-      platform: newSocialPlatform,
-      icon: newSocialIcon,
-      url: newSocialUrl,
-      enabled: true,
-      order: socialLinks.length + 1
-    }
-    setSocialLinks([...socialLinks, newLink])
-    setNewSocialPlatform("")
-    setNewSocialUrl("")
-  }
-
-  const deleteSocialLink = (id: string) => {
-    setSocialLinks(links => links.filter(l => l.id !== id))
   }
 
   // Legal Pages functions
@@ -441,6 +434,7 @@ export default function SiteSettingsPage() {
           <p className="text-muted-foreground">
             {p.subtitle}
           </p>
+          <p className="text-muted-foreground">{p.contentTranslationHint}</p>
         </div>
         <Button onClick={handleSave} disabled={isSaving} className="gap-2">
           <Save className="h-4 w-4" />
@@ -469,15 +463,34 @@ export default function SiteSettingsPage() {
         <TabsContent value="social" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Share2 className="h-5 w-5" />
-                {c.socialMediaLinks}
-              </CardTitle>
-              <CardDescription>
-                {p.socialMediaDesc}
-              </CardDescription>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Share2 className="h-5 w-5" />
+                    {c.socialMediaLinks}
+                  </CardTitle>
+                  <CardDescription>
+                    {p.socialMediaDesc}
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={() => void handleSaveSocialLinks()}
+                  disabled={isSavingSocial || socialLinksLoading}
+                  className="gap-2 shrink-0"
+                >
+                  <Save className="h-4 w-4" />
+                  {isSavingSocial ? c.saving : c.saveChanges}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
+              {socialLinksLoading ? (
+                <div className="py-12 text-center text-muted-foreground">{c.loading}</div>
+              ) : !socialLinksApiConnected && socialLinks.every((link) => !link.apiId) ? (
+                <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  {p.socialLinksNotConnected}
+                </div>
+              ) : (
               <div className="space-y-3">
                 {socialLinks.sort((a, b) => a.order - b.order).map((link) => {
                   const IconComponent = getIconComponent(link.icon, iconOptions)
@@ -504,6 +517,8 @@ export default function SiteSettingsPage() {
                         <Input
                           value={link.url}
                           onChange={(e) => updateSocialUrl(link.id, e.target.value)}
+                          placeholder={c.urlPlaceholder}
+                          disabled={!link.enabled}
                           className="mt-2 text-sm"
                         />
                       </div>
@@ -515,49 +530,17 @@ export default function SiteSettingsPage() {
                           <ArrowDown className="h-4 w-4" />
                         </Button>
                         <Switch checked={link.enabled} onCheckedChange={() => toggleSocialLink(link.id)} />
-                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteSocialLink(link.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                     </div>
                   )
                 })}
               </div>
-
-              <div className="rounded-lg border border-dashed p-4">
-                <h4 className="font-medium text-foreground mb-3">{p.addSocial}</h4>
-                <div className="grid gap-4 sm:grid-cols-4">
-                  <div>
-                    <Label className="text-xs">{p.platformName}</Label>
-                    <Input value={newSocialPlatform} onChange={(e) => setNewSocialPlatform(e.target.value)} placeholder={c.platformPlaceholder} className="mt-1" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">{ic.icon}</Label>
-                    <Select value={newSocialIcon} onValueChange={setNewSocialIcon}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {iconOptions.map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            <div className="flex items-center gap-2"><option.icon className="h-4 w-4" />{option.label}</div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label className="text-xs">{c.urlLabel}</Label>
-                    <div className="flex gap-2 mt-1">
-                      <Input value={newSocialUrl} onChange={(e) => setNewSocialUrl(e.target.value)} placeholder={c.urlPlaceholder} />
-                      <Button onClick={addSocialLink}><Plus className="h-4 w-4" /></Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
 
               <div className="rounded-lg bg-primary p-6">
                 <p className="text-sm text-primary-foreground/60 mb-3">{p.footerPreview}</p>
                 <div className="flex gap-4">
-                  {socialLinks.filter(l => l.enabled).sort((a, b) => a.order - b.order).map(link => {
+                  {socialLinks.filter(l => l.enabled && l.url.trim()).sort((a, b) => a.order - b.order).map(link => {
                     const IconComponent = getIconComponent(link.icon, iconOptions)
                     return (
                       <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary-foreground/60 hover:text-primary-foreground">
