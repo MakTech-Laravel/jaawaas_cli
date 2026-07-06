@@ -1,8 +1,10 @@
 import type { TranslationKeys } from "./en";
+import en from "./en";
 import adminZh from "./admin/zh";
 import buyerZh from "./buyer/zh";
+import { deepMerge } from "../deep-merge";
 
-const zh = {
+const zhPartial = {
   common: {
     save: "保存更改",
     cancel: "取消",
@@ -2020,4 +2022,9 @@ const zh = {
   buyer: buyerZh,
 };
 
-export default zh as unknown as TranslationKeys;
+const zh = deepMerge(
+  en as unknown as Record<string, unknown>,
+  zhPartial as unknown as Record<string, unknown>
+);
+
+export default zh as TranslationKeys;
