@@ -1,33 +1,32 @@
 /**
- * Recursively merge locale overrides onto a base locale.
- * Missing keys in `overrides` inherit from `base` (English fallback).
+ * Deep-merge `overrides` onto `base`. Override leaf values win; nested objects merge recursively.
  */
 export function deepMerge<T extends Record<string, unknown>>(
   base: T,
   overrides: Record<string, unknown>
 ): T {
-  const result: Record<string, unknown> = { ...base };
+  const result = { ...base } as Record<string, unknown>
 
   for (const key of Object.keys(overrides)) {
-    const overrideVal = overrides[key];
-    const baseVal = result[key];
+    const override = overrides[key]
+    const baseValue = base[key]
 
     if (
-      overrideVal !== null &&
-      typeof overrideVal === "object" &&
-      !Array.isArray(overrideVal) &&
-      baseVal !== null &&
-      typeof baseVal === "object" &&
-      !Array.isArray(baseVal)
+      override !== null &&
+      typeof override === "object" &&
+      !Array.isArray(override) &&
+      baseValue !== null &&
+      typeof baseValue === "object" &&
+      !Array.isArray(baseValue)
     ) {
       result[key] = deepMerge(
-        baseVal as Record<string, unknown>,
-        overrideVal as Record<string, unknown>
-      );
-    } else if (overrideVal !== undefined) {
-      result[key] = overrideVal;
+        baseValue as Record<string, unknown>,
+        override as Record<string, unknown>
+      )
+    } else if (override !== undefined) {
+      result[key] = override
     }
   }
 
-  return result as T;
+  return result as T
 }
