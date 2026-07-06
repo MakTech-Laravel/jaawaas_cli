@@ -1,3 +1,7 @@
+import adminEn from "./en";
+import { deepMerge } from "../../deep-merge";
+import { adminHeSupplement } from "./supplements/he";
+
 const adminHe = {
   layout: {
     panelTitle: "פאנל ניהול",
@@ -238,6 +242,8 @@ const adminHe = {
     searchRfqPlaceholder: "חפש לפי מוצר, מזהה או חברה...",
     allStatuses: "כל הסטטוסים",
     submitRfq: "שלח בקשת הצעה",
+    socialMediaLinks: "קישורי מדיה חברתית",
+    urlPlaceholder: "https://...",
   },
   roles: {
     buyer: "קונה",
@@ -788,6 +794,56 @@ const adminHe = {
       callToAction: "קריאה לפעולה",
       buyerButton: "טקסט כפתור קונה",
       manufacturerButton: "טקסט כפתור יצרן",
+      helpCenterSettingsDesc: "הגדר את אזור הגיבור, החיפוש והגדרות יצירת קשר עם התמיכה",
+      categoriesArticles: "קטגוריות ומאמרים",
+      createCategoryDesc: "צור קטגוריית מרכז עזרה חדשה",
+      createArticleIn: "צור מאמר חדש ב-{name}",
+      initialContentOptional: "תוכן ראשוני (אופציונלי)",
+      articleIntroPlaceholder: "מבוא למאמר...",
+      clickArticleToEdit: "לחץ על מאמר לעריכת התוכן שלו, או השתמש בסמל העיפרון.",
+      noArticlesYet: "אין מאמרים עדיין. הוסף את המאמר הראשון שלך.",
+      selectArticleToEdit: "בחר מאמר מהרשימה למעלה לעריכת התוכן שלו",
+      editArticleContentHint: "ניתן לערוך את הכותרת, המבוא וההוראות שלב אחר שלב",
+      popularArticlesDesc: "מאמרים אלה מופיעים בקטע \"מאמרים פופולריים\" בדף מרכז העזרה. סדר אותם מחדש כדי לשנות את מיקום התצוגה.",
+      noPopularArticles: "לא נבחרו מאמרים פופולריים. לחץ \"+ פופולרי\" על כל מאמר למעלה כדי להוסיף אותו כאן.",
+      popularReorderTip: "טיפ: השתמש בחצים למעלה/למטה כדי לסדר מאמרים מחדש. הסדר כאן תואם לאופן שבו הם מופיעים בדף מרכז העזרה.",
+      articleTitleHint: "הכותרת הראשית המוצגת בדף המאמר",
+      urlSlugHint: "משמש בכתובת URL של המאמר (ללא רווחים)",
+      articleIntroDesc: "טקסט זה מופיע בראש המאמר, לפני המדריך שלב אחר שלב.",
+      articleIntroPlaceholderLong: "כתוב מבוא או סקירה של נושא זה. הסבר מה המשתמש ילמד ומדוע זה חשוב...",
+      stepGuideDesc: "הוסף שלבים ממוספרים שמנחים את המשתמשים בתהליך",
+      stepPlaceholder: "שלב {n}: תאר מה המשתמש צריך לעשות...",
+      noStepsYet: "לא נוספו שלבים עדיין. לחץ \"הוסף שלב\" כדי ליצור מדריך שלב אחר שלב.",
+      addFirstStep: "הוסף שלב ראשון",
+      stepsCount: "{count} שלבים",
+      editArticleContent: "ערוך תוכן מאמר",
+      socialMediaDesc: "נהל קישורי מדיה חברתית בכותרת התחתונה (כתובות URL ונראות). שמות הפלטפורמות קבועים.",
+      contentTranslationHint: "הטקסט שאתה עורך נשמר בשפתך הנוכחית ומתורגם אוטומטית לכל השפות הנתמכות בעת השמירה.",
+      active: "פעיל",
+      hidden: "מוסתר",
+      editLegalDesc: "ערוך את קטעי התוכן של דף זה. שמירה מפעילה תרגום אוטומטי.",
+      legalPagesLoadFailed: "טעינת הדפים המשפטיים נכשלה.",
+      legalPagesSaveFailed: "שמירת הדפים המשפטיים נכשלה.",
+      legalPagesSaved: "הדף המשפטי נשמר. התרגומים לכל השפות נוצרים.",
+      saveLegalPage: "שמור דף",
+      legalPagesNotConnected: "הדפים המשפטיים לא נטענו מממשק ה-API. רענן או אתחל את מסד הנתונים.",
+      aboutPageLoadFailed: "טעינת דף אודותינו נכשלה.",
+      aboutPageSaveFailed: "שמירת דף אודותינו נכשלה.",
+      aboutPageSaved: "דף אודותינו נשמר. התרגומים לכל השפות נוצרים.",
+      saveAboutPage: "שמור דף",
+      aboutPageNotConnected: "דף אודותינו אינו מחובר ל-API. רענן או הרץ: php artisan db:seed --class=AboutPageSeeder",
+      socialLinksLoadFailed: "טעינת קישורי מדיה חברתית נכשלה.",
+      socialLinksSaveFailed: "שמירת קישורי מדיה חברתית נכשלה.",
+      socialLinksSaved: "קישורי מדיה חברתית נשמרו בהצלחה.",
+      saveSocialLinks: "שמור קישורים",
+      socialLinksNotConnected: "קישורי מדיה חברתית אינם מחוברים ל-API. רענן או הרץ: php artisan db:seed --class=SocialMediaLinkSeeder",
+      whyDifferent: "למה אנחנו שונים",
+      newSectionTitle: "{n}. קטע חדש",
+      aboutUsDesc: "התאם אישית את תוכן דף אודותינו. שמירה מפעילה תרגום אוטומטי.",
+      sectionTitleLabel: "כותרת קטע",
+      valueTitlePlaceholder: "כותרת ערך",
+      descriptionPlaceholder: "תיאור",
+      articleTitleExample: "לדוגמה: כיצד לחפש ספקים",
       iconLinkedIn: "LinkedIn",
       iconTwitter: "X (Twitter)",
       iconFacebook: "Facebook",
@@ -984,6 +1040,6 @@ const adminHe = {
     allStatus: "כל הסטטוסים",
     noRfqs: "לא נמצאו בקשות הצעות",
   },
-} as const;
+};
 
-export default adminHe;
+export default deepMerge(adminEn, deepMerge(adminHe, adminHeSupplement));
