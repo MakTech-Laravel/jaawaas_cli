@@ -34,10 +34,10 @@ import {
   Loader2
 } from "lucide-react"
 import { toast } from "sonner"
-import { exportMarketRegions } from "@/lib/data/countries"
 import { 
   getManufacturerMarkets, 
   getExportCountries, 
+  syncExportCountries,
   createRegionCountries, 
   updateRegionCountries,
   deleteRegion,
@@ -47,6 +47,8 @@ import {
   type MarketStats 
 } from "@/lib/api/manufacturer-markets"
 import { useTranslation } from "@/lib/i18n"
+
+const SUPPLIER_MAP_GROUPS = ["Africa", "Americas", "Asia", "Europe", "Oceania"] as const
 
 export default function ExportMarketsPage() {
   const { t } = useTranslation()
@@ -58,11 +60,12 @@ export default function ExportMarketsPage() {
   const [suggestions, setSuggestions] = useState<SuggestionMarket[]>([])
   const [availableCountries, setAvailableCountries] = useState<ExportCountry[]>([])
   const [metaRegions, setMetaRegions] = useState<string[]>([])
+  const [mapGroups, setMapGroups] = useState<string[]>([])
   
   const [initialSelectedCountries, setInitialSelectedCountries] = useState<string[]>([])
   const [selectedCountries, setSelectedCountries] = useState<string[]>([])
 
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
+  const [selectedMapGroup, setSelectedMapGroup] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showManageDialog, setShowManageDialog] = useState(false)
@@ -74,7 +77,7 @@ export default function ExportMarketsPage() {
       setLoading(true)
       const [marketsRes, countriesRes] = await Promise.all([
         getManufacturerMarkets(),
-        getExportCountries({ per_page: 100 })
+        getExportCountries({ per_page: 250 })
       ])
       
       if (marketsRes.success && marketsRes.data) {
@@ -82,6 +85,11 @@ export default function ExportMarketsPage() {
         setActiveRegions(marketsRes.data.active_regions || [])
         setSuggestions(marketsRes.data.suggestions || [])
         setMetaRegions(marketsRes.data.meta?.regions || [])
+        setMapGroups(
+          marketsRes.data.meta?.geographic_regions?.length
+            ? marketsRes.data.meta.geographic_regions
+            : [...SUPPLIER_MAP_GROUPS]
+        )
       }
       
       if (countriesRes.success && countriesRes.data) {
@@ -102,73 +110,25 @@ export default function ExportMarketsPage() {
   }, [])
 
   const handleSaveChanges = async () => {
+    const hasChanged =
+      initialSelectedCountries.length !== selectedCountries.length ||
+      initialSelectedCountries.some((code) => !selectedCountries.includes(code))
+
+    if (!hasChanged) {
+      toast.info(m.noChanges)
+      return
+    }
+
     try {
       setSaving(true)
-      
-      // Group available countries by region
-      const countriesByRegion: Record<string, ExportCountry[]> = {}
-      availableCountries.forEach(c => {
-        if (!countriesByRegion[c.export_market_region]) {
-          countriesByRegion[c.export_market_region] = []
-        }
-        countriesByRegion[c.export_market_region].push(c)
-      })
+      const res = await syncExportCountries(selectedCountries)
 
-      const regionsToCreate: Array<{ region: string; codes: string[] }> = []
-      const regionsToUpdate: Array<{ id: number; codes: string[] }> = []
-      const regionsToDelete: number[] = []
-
-      Object.entries(countriesByRegion).forEach(([region, regionCountries]) => {
-        const initialCodesInRegion = regionCountries
-          .filter(c => initialSelectedCountries.includes(c.code))
-          .map(c => c.code)
-          .sort()
-
-        const currentCodesInRegion = regionCountries
-          .filter(c => selectedCountries.includes(c.code))
-          .map(c => c.code)
-          .sort()
-
-        const hasChanged = 
-          initialCodesInRegion.length !== currentCodesInRegion.length ||
-          initialCodesInRegion.some((val, index) => val !== currentCodesInRegion[index])
-
-        if (hasChanged) {
-          const existingActiveRegion = activeRegions.find(r => r.region === region)
-          if (existingActiveRegion) {
-            if (currentCodesInRegion.length === 0) {
-              regionsToDelete.push(existingActiveRegion.id)
-            } else {
-              regionsToUpdate.push({ id: existingActiveRegion.id, codes: currentCodesInRegion })
-            }
-          } else {
-            if (currentCodesInRegion.length > 0) {
-              regionsToCreate.push({ region, codes: currentCodesInRegion })
-            }
-          }
-        }
-      })
-
-      if (regionsToCreate.length === 0 && regionsToUpdate.length === 0 && regionsToDelete.length === 0) {
-        toast.info(m.noChanges)
-        return
-      }
-
-      // Execute all modifications in parallel
-      const results = await Promise.all([
-        ...regionsToCreate.map(({ region, codes }) => createRegionCountries(region, codes)),
-        ...regionsToUpdate.map(({ id, codes }) => updateRegionCountries(id, codes)),
-        ...regionsToDelete.map(id => deleteRegion(id))
-      ])
-
-      const failures = results.filter(r => !r.success)
-      if (failures.length > 0) {
-        toast.error(m.saveFailed)
-      } else {
+      if (res.success) {
         toast.success(m.successUpdate)
+        await loadData()
+      } else {
+        toast.error(m.saveFailed)
       }
-      
-      await loadData()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : m.updateFailed)
     } finally {
@@ -239,14 +199,19 @@ export default function ExportMarketsPage() {
     )
   }
 
-  const regionOptions = metaRegions.length > 0 ? metaRegions : exportMarketRegions
+  const exportRegionOptions = metaRegions
+
+  const mapGroupOptions =
+    mapGroups.length > 0
+      ? mapGroups
+      : [...SUPPLIER_MAP_GROUPS]
 
   const filteredCountries = availableCountries.filter(c => {
-    const matchesRegion = selectedRegion ? c.export_market_region === selectedRegion : true
+    const matchesMapGroup = selectedMapGroup ? c.geographic_region === selectedMapGroup : true
     const matchesQuery = 
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
       c.code.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesRegion && matchesQuery
+    return matchesMapGroup && matchesQuery
   })
 
   if (loading) {
@@ -480,20 +445,20 @@ export default function ExportMarketsPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button 
-                variant={selectedRegion === null ? "default" : "outline"} 
+                variant={selectedMapGroup === null ? "default" : "outline"} 
                 size="sm"
-                onClick={() => setSelectedRegion(null)}
+                onClick={() => setSelectedMapGroup(null)}
               >
                 All
               </Button>
-              {regionOptions.map((region) => (
+              {mapGroupOptions.map((group) => (
                 <Button 
-                  key={region}
-                  variant={selectedRegion === region ? "default" : "outline"} 
+                  key={group}
+                  variant={selectedMapGroup === group ? "default" : "outline"} 
                   size="sm"
-                  onClick={() => setSelectedRegion(region)}
+                  onClick={() => setSelectedMapGroup(group)}
                 >
-                  {region}
+                  {group}
                 </Button>
               ))}
             </div>
@@ -551,7 +516,7 @@ export default function ExportMarketsPage() {
                   <SelectValue placeholder={m.selectRegion} />
                 </SelectTrigger>
                 <SelectContent>
-                  {regionOptions.map((region) => (
+                  {exportRegionOptions.map((region) => (
                     <SelectItem key={region} value={region}>{region}</SelectItem>
                   ))}
                 </SelectContent>
