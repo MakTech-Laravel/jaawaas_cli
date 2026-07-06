@@ -35,6 +35,7 @@ import {
   RefreshCw,
 } from "lucide-react"
 import { LOCALES, useTranslation } from "@/lib/i18n"
+import { LanguageSelector } from "@/components/settings/language-selector"
 import { useToast } from "@/hooks/use-toast"
 import { fetchCurrencies, type Currency } from "@/lib/api/currencies"
 import {
@@ -128,7 +129,7 @@ export default function AdminSettingsPage() {
     } else {
       toast({
         title: t.settings.title,
-        description: result.message || "Failed to load settings.",
+        description: result.message || t.settings.failedToLoadSettings,
         variant: "destructive",
       })
     }
@@ -190,12 +191,12 @@ export default function AdminSettingsPage() {
       setSettings(result.data)
       toast({
         title: t.common.save,
-        description: result.message || "Settings saved successfully.",
+        description: result.message || t.settings.settingsSavedSuccess,
       })
     } else {
       toast({
         title: t.common.save,
-        description: result.message || "Failed to save settings.",
+        description: result.message || t.settings.failedToSaveSettings,
         variant: "destructive",
       })
     }
@@ -209,13 +210,13 @@ export default function AdminSettingsPage() {
     if (result.success) {
       toast({
         title: t.settings.createBackup,
-        description: result.message || "Backup queued successfully.",
+        description: result.message || t.settings.backupQueuedSuccess,
       })
       void loadDatabaseInfo()
     } else {
       toast({
         title: t.settings.createBackup,
-        description: result.message || "Failed to queue backup.",
+        description: result.message || t.settings.failedToQueueBackup,
         variant: "destructive",
       })
     }
@@ -233,7 +234,7 @@ export default function AdminSettingsPage() {
     } else {
       toast({
         title: t.settings.exportData,
-        description: result.message || "Failed to load tables.",
+        description: result.message || t.settings.failedToLoadTables,
         variant: "destructive",
       })
     }
@@ -249,7 +250,7 @@ export default function AdminSettingsPage() {
     if (exportScope === "tables" && selectedTables.length === 0) {
       toast({
         title: t.settings.exportData,
-        description: "Select at least one table to export.",
+        description: t.settings.selectAtLeastOneTable,
         variant: "destructive",
       })
       return
@@ -266,14 +267,14 @@ export default function AdminSettingsPage() {
     if (result.success) {
       toast({
         title: t.settings.exportData,
-        description: result.message || "Export queued successfully.",
+        description: result.message || t.settings.exportQueuedSuccess,
       })
       setExportDialogOpen(false)
       void loadDatabaseInfo()
     } else {
       toast({
         title: t.settings.exportData,
-        description: result.message || "Failed to queue export.",
+        description: result.message || t.settings.failedToQueueExport,
         variant: "destructive",
       })
     }
@@ -287,7 +288,7 @@ export default function AdminSettingsPage() {
     if (!result.success) {
       toast({
         title: t.settings.exportData,
-        description: result.message || "Download failed.",
+        description: result.message || t.settings.downloadFailed,
         variant: "destructive",
       })
     }
@@ -446,6 +447,13 @@ export default function AdminSettingsPage() {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-foreground">
+                  {t.settings.language}
+                </label>
+                <p className="text-sm text-muted-foreground">{t.settings.languageRegionDesc}</p>
+                <LanguageSelector />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">
                   {t.settings.defaultLanguage}
                 </label>
                 <Select
@@ -531,7 +539,7 @@ export default function AdminSettingsPage() {
                   ) : lastBackupAt ? (
                     lastBackupAt
                   ) : (
-                    "No backups yet"
+                    t.settings.noBackupsYet
                   )}
                 </p>
               </div>
@@ -567,7 +575,7 @@ export default function AdminSettingsPage() {
 
               {exports.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-foreground">Recent exports</p>
+                  <p className="text-sm font-medium text-foreground">{t.settings.recentExports}</p>
                   <ul className="divide-y divide-border rounded-lg border border-border">
                     {exports.map((item) => (
                       <li
@@ -630,11 +638,11 @@ export default function AdminSettingsPage() {
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="full" id="export-full" />
-                <Label htmlFor="export-full">Full database</Label>
+                <Label htmlFor="export-full">{t.settings.exportFullDatabase}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="tables" id="export-tables" />
-                <Label htmlFor="export-tables">Select tables</Label>
+                <Label htmlFor="export-tables">{t.settings.exportSelectTables}</Label>
               </div>
             </RadioGroup>
 
@@ -646,7 +654,7 @@ export default function AdminSettingsPage() {
                     {t.nav.loading}
                   </div>
                 ) : availableTables.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No tables available.</p>
+                  <p className="text-sm text-muted-foreground">{t.settings.noTablesAvailable}</p>
                 ) : (
                   availableTables.map((table) => (
                     <div key={table} className="flex items-center space-x-2">

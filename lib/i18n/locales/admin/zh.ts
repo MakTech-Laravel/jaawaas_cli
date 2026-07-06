@@ -1,3 +1,7 @@
+import adminEn from "./en";
+import { deepMerge } from "../../deep-merge";
+import { adminZhSupplement } from "./supplements/zh";
+
 const adminZh = {
   layout: {
     panelTitle: "管理面板",
@@ -238,6 +242,8 @@ const adminZh = {
     searchRfqPlaceholder: "按产品、ID 或公司搜索...",
     allStatuses: "全部状态",
     submitRfq: "提交报价申请",
+    socialMediaLinks: "社交媒体链接",
+    urlPlaceholder: "https://...",
   },
   roles: {
     buyer: "买家",
@@ -788,6 +794,56 @@ const adminZh = {
       callToAction: "行动号召",
       buyerButton: "买家按钮文本",
       manufacturerButton: "制造商按钮文本",
+      helpCenterSettingsDesc: "配置主视觉区域、搜索和联系支持设置",
+      categoriesArticles: "分类与文章",
+      createCategoryDesc: "创建新的帮助中心分类",
+      createArticleIn: "在 {name} 中创建新文章",
+      initialContentOptional: "初始内容（可选）",
+      articleIntroPlaceholder: "文章介绍...",
+      clickArticleToEdit: "点击文章编辑其内容，或使用铅笔图标。",
+      noArticlesYet: "暂无文章。添加您的第一篇文章。",
+      selectArticleToEdit: "从上方列表中选择一篇文章以编辑其内容",
+      editArticleContentHint: "您可以编辑标题、介绍和分步说明",
+      popularArticlesDesc: "这些文章显示在帮助中心页面的\"热门文章\"部分。重新排序可更改其显示位置。",
+      noPopularArticles: "未选择热门文章。点击上方任意文章的\"+ 热门\"将其添加到这里。",
+      popularReorderTip: "提示：使用上/下箭头重新排序文章。此处的顺序与帮助中心页面上的显示顺序一致。",
+      articleTitleHint: "文章页面上显示的主标题",
+      urlSlugHint: "用于文章 URL（不含空格）",
+      articleIntroDesc: "此文本显示在文章顶部，分步指南之前。",
+      articleIntroPlaceholderLong: "撰写此主题的简介或概述。说明用户将学到什么以及为何重要...",
+      stepGuideDesc: "添加编号步骤以引导用户完成流程",
+      stepPlaceholder: "步骤 {n}：描述用户应执行的操作...",
+      noStepsYet: "尚未添加步骤。点击\"添加步骤\"创建分步指南。",
+      addFirstStep: "添加第一步",
+      stepsCount: "{count} 个步骤",
+      editArticleContent: "编辑文章内容",
+      socialMediaDesc: "管理页脚社交媒体链接（URL 和可见性）。平台名称固定。",
+      contentTranslationHint: "您编辑的文本将以当前语言保存，并在保存时自动翻译为所有支持的语言。",
+      active: "活跃",
+      hidden: "隐藏",
+      editLegalDesc: "编辑此页面的内容区块。保存将触发自动翻译。",
+      legalPagesLoadFailed: "加载法律页面失败。",
+      legalPagesSaveFailed: "保存法律页面失败。",
+      legalPagesSaved: "法律页面已保存。正在为所有语言生成翻译。",
+      saveLegalPage: "保存页面",
+      legalPagesNotConnected: "法律页面未从 API 加载。请刷新或初始化数据库。",
+      aboutPageLoadFailed: "加载关于我们页面失败。",
+      aboutPageSaveFailed: "保存关于我们页面失败。",
+      aboutPageSaved: "关于我们页面已保存。正在为所有语言生成翻译。",
+      saveAboutPage: "保存页面",
+      aboutPageNotConnected: "关于我们页面未连接到 API。请刷新或运行：php artisan db:seed --class=AboutPageSeeder",
+      socialLinksLoadFailed: "加载社交媒体链接失败。",
+      socialLinksSaveFailed: "保存社交媒体链接失败。",
+      socialLinksSaved: "社交媒体链接保存成功。",
+      saveSocialLinks: "保存链接",
+      socialLinksNotConnected: "社交媒体链接未连接到 API。请刷新或运行：php artisan db:seed --class=SocialMediaLinkSeeder",
+      whyDifferent: "我们的独特之处",
+      newSectionTitle: "{n}. 新区块",
+      aboutUsDesc: "自定义关于我们页面的内容。保存将触发自动翻译。",
+      sectionTitleLabel: "区块标题",
+      valueTitlePlaceholder: "价值标题",
+      descriptionPlaceholder: "描述",
+      articleTitleExample: "例如：如何搜索供应商",
       iconLinkedIn: "LinkedIn",
       iconTwitter: "X (Twitter)",
       iconFacebook: "Facebook",
@@ -984,6 +1040,6 @@ const adminZh = {
     allStatus: "全部状态",
     noRfqs: "未找到报价申请",
   },
-} as const;
+};
 
-export default adminZh;
+export default deepMerge(adminEn, deepMerge(adminZh, adminZhSupplement));

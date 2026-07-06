@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/i18n"
+import { LanguageSelector } from "@/components/settings/language-selector"
 import { NotificationsDropdown } from "@/components/notifications-dropdown"
 import { 
   LayoutDashboard, 
@@ -227,6 +228,9 @@ function AdminLayoutInner({
             */}
           </div>
           <div className="flex items-center gap-3">
+            <div className="hidden w-36 sm:block">
+              <LanguageSelector />
+            </div>
             <NotificationsDropdown />
             <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
               {t.nav.adminViewSite}

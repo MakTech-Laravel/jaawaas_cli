@@ -1,3 +1,7 @@
+import adminEn from "./en";
+import { deepMerge } from "../../deep-merge";
+import { adminArSupplement } from "./supplements/ar";
+
 const adminAr = {
   layout: {
     panelTitle: "لوحة الإدارة",
@@ -238,6 +242,8 @@ const adminAr = {
     searchRfqPlaceholder: "البحث حسب المنتج أو المعرّف أو الشركة...",
     allStatuses: "جميع الحالات",
     submitRfq: "تقديم طلب عرض",
+    socialMediaLinks: "روابط وسائل التواصل الاجتماعي",
+    urlPlaceholder: "https://...",
   },
   roles: {
     buyer: "مشتري",
@@ -788,6 +794,56 @@ const adminAr = {
       callToAction: "دعوة للعمل",
       buyerButton: "نص زر المشتري",
       manufacturerButton: "نص زر المصنع",
+      helpCenterSettingsDesc: "تكوين قسم البطل والبحث وإعدادات التواصل مع الدعم",
+      categoriesArticles: "الفئات والمقالات",
+      createCategoryDesc: "إنشاء فئة جديدة لمركز المساعدة",
+      createArticleIn: "إنشاء مقال جديد في {name}",
+      initialContentOptional: "المحتوى الأولي (اختياري)",
+      articleIntroPlaceholder: "مقدمة المقال...",
+      clickArticleToEdit: "انقر على مقال لتعديل محتواه، أو استخدم أيقونة القلم.",
+      noArticlesYet: "لا توجد مقالات بعد. أضف مقالك الأول.",
+      selectArticleToEdit: "اختر مقالاً من القائمة أعلاه لتعديل محتواه",
+      editArticleContentHint: "يمكنك تعديل العنوان والمقدمة والتعليمات خطوة بخطوة",
+      popularArticlesDesc: "تظهر هذه المقالات في قسم \"المقالات الشائعة\" في صفحة مركز المساعدة. أعد ترتيبها لتغيير موضع العرض.",
+      noPopularArticles: "لم يتم اختيار مقالات شائعة. انقر \"+ شائع\" على أي مقال أعلاه لإضافته هنا.",
+      popularReorderTip: "نصيحة: استخدم أسهم الأعلى/الأسفل لإعادة ترتيب المقالات. الترتيب هنا يطابق طريقة ظهورها في صفحة مركز المساعدة.",
+      articleTitleHint: "العنوان الرئيسي المعروض في صفحة المقال",
+      urlSlugHint: "يُستخدم في عنوان URL للمقال (بدون مسافات)",
+      articleIntroDesc: "يظهر هذا النص في أعلى المقال، قبل الدليل خطوة بخطوة.",
+      articleIntroPlaceholderLong: "اكتب مقدمة أو نظرة عامة حول هذا الموضوع. اشرح ما سيتعلمه المستخدم ولماذا هو مهم...",
+      stepGuideDesc: "أضف خطوات مرقمة ترشد المستخدمين خلال العملية",
+      stepPlaceholder: "الخطوة {n}: صف ما يجب على المستخدم فعله...",
+      noStepsYet: "لم تتم إضافة خطوات بعد. انقر \"إضافة خطوة\" لإنشاء دليل خطوة بخطوة.",
+      addFirstStep: "إضافة الخطوة الأولى",
+      stepsCount: "{count} خطوات",
+      editArticleContent: "تعديل محتوى المقال",
+      socialMediaDesc: "إدارة روابط التواصل الاجتماعي في التذييل (الروابط والظهور). أسماء المنصات ثابتة.",
+      contentTranslationHint: "يُحفظ النص الذي تعدّله بلغتك الحالية ويُترجم تلقائياً إلى جميع اللغات المدعومة عند الحفظ.",
+      active: "نشط",
+      hidden: "مخفي",
+      editLegalDesc: "عدّل أقسام محتوى هذه الصفحة. الحفظ يُفعّل الترجمة التلقائية.",
+      legalPagesLoadFailed: "فشل تحميل الصفحات القانونية.",
+      legalPagesSaveFailed: "فشل حفظ الصفحات القانونية.",
+      legalPagesSaved: "تم حفظ الصفحة القانونية. جاري إنشاء الترجمات لجميع اللغات.",
+      saveLegalPage: "حفظ الصفحة",
+      legalPagesNotConnected: "لم يتم تحميل الصفحات القانونية من واجهة البرمجة. حدّث الصفحة أو أعد تهيئة قاعدة البيانات.",
+      aboutPageLoadFailed: "فشل تحميل صفحة من نحن.",
+      aboutPageSaveFailed: "فشل حفظ صفحة من نحن.",
+      aboutPageSaved: "تم حفظ صفحة من نحن. جاري إنشاء الترجمات لجميع اللغات.",
+      saveAboutPage: "حفظ الصفحة",
+      aboutPageNotConnected: "صفحة من نحن غير متصلة بواجهة البرمجة. حدّث الصفحة أو نفّذ: php artisan db:seed --class=AboutPageSeeder",
+      socialLinksLoadFailed: "فشل تحميل روابط وسائل التواصل الاجتماعي.",
+      socialLinksSaveFailed: "فشل حفظ روابط وسائل التواصل الاجتماعي.",
+      socialLinksSaved: "تم حفظ روابط وسائل التواصل الاجتماعي بنجاح.",
+      saveSocialLinks: "حفظ الروابط",
+      socialLinksNotConnected: "روابط وسائل التواصل غير متصلة بواجهة البرمجة. حدّث الصفحة أو نفّذ: php artisan db:seed --class=SocialMediaLinkSeeder",
+      whyDifferent: "لماذا نحن مختلفون",
+      newSectionTitle: "{n}. قسم جديد",
+      aboutUsDesc: "خصّص محتوى صفحة من نحن. الحفظ يُفعّل الترجمة التلقائية.",
+      sectionTitleLabel: "عنوان القسم",
+      valueTitlePlaceholder: "عنوان القيمة",
+      descriptionPlaceholder: "الوصف",
+      articleTitleExample: "مثال: كيفية البحث عن موردين",
       iconLinkedIn: "LinkedIn",
       iconTwitter: "X (Twitter)",
       iconFacebook: "Facebook",
@@ -984,6 +1040,6 @@ const adminAr = {
     allStatus: "جميع الحالات",
     noRfqs: "لم يتم العثور على طلبات عروض",
   },
-} as const;
+};
 
-export default adminAr;
+export default deepMerge(adminEn, deepMerge(adminAr, adminArSupplement));
