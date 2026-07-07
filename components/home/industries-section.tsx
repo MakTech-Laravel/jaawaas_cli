@@ -1,11 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useMemo } from "react"
 import Link from "next/link"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Cpu, Cog, Shirt, Home, Heart, Car, UtensilsCrossed, FlaskConical, Package, Lightbulb, Wrench, HardHat, Sofa, Stethoscope, Wheat, Box, FileText, Factory, ShoppingBag, Globe } from "lucide-react"
 import { useTranslation } from "@/lib/i18n"
-import { getPublicCategories, BackendCategory } from "@/lib/api/categories"
+import { getPublicCategories } from "@/lib/api/categories"
+import { queryKeys } from "@/lib/query-keys"
 import DynamicIcon from "@/components/dynamic-icon"
 
 const industryIconClass = "h-6 w-6"
@@ -48,21 +50,19 @@ const industryIcons: Record<string, React.ReactNode> = {
 
 export function IndustriesSection() {
   const { t } = useTranslation()
-  const [categories, setCategories] = useState<BackendCategory[]>([])
 
-  useEffect(() => {
-    async function loadCategories() {
-      const res = await getPublicCategories({ perPage: 50 })
-      if (!res.success || !res.data) {
-        setCategories([])
-        return
-      }
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.publicCategories(50),
+    queryFn: () => getPublicCategories({ perPage: 50 }),
+  })
 
-      const featured = res.data.filter((c) => Number(c.featured) === 1)
-      setCategories(featured.slice(0, 8))
+  const categories = useMemo(() => {
+    if (!categoriesQuery.data?.success || !categoriesQuery.data.data) {
+      return []
     }
-    loadCategories()
-  }, [])
+    const featured = categoriesQuery.data.data.filter((c) => Number(c.featured) === 1)
+    return featured.slice(0, 8)
+  }, [categoriesQuery.data])
 
   if (!t || !t.landing?.featured) {
     return null

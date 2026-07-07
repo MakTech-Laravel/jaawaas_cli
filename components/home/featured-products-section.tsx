@@ -1,35 +1,29 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, Package } from "lucide-react"
-import { getProducts, type Product } from "@/lib/api/products"
+import { getProducts } from "@/lib/api/products"
+import { queryKeys } from "@/lib/query-keys"
 import { useTranslation } from "@/lib/i18n"
 
 export function FeaturedProductsSection() {
   const router = useRouter()
   const { t } = useTranslation()
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const res = await getProducts(1)
-        if (res?.success && res.data) {
-          setProducts(res.data.slice(0, 6))
-        }
-      } catch (error) {
-        console.error("Failed to load featured products", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchProducts()
-  }, [])
+  const productsQuery = useQuery({
+    queryKey: queryKeys.publicHomeFeaturedProducts(),
+    queryFn: () => getProducts(1),
+  })
+
+  const products =
+    productsQuery.data?.success && productsQuery.data.data
+      ? productsQuery.data.data.slice(0, 6)
+      : []
+  const loading = productsQuery.isLoading
 
   return (
     <section className="py-8 sm:py-12 lg:py-16">
@@ -67,10 +61,10 @@ export function FeaturedProductsSection() {
                 <div className="relative aspect-square bg-muted overflow-hidden sm:aspect-4/3">
                   <div className="absolute inset-0 flex items-center justify-center">
                     {product.image || product.images?.[0] ? (
-                      <img 
-                        src={product.image || product.images?.[0]} 
-                        alt={product.name} 
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                      <img
+                        src={product.image || product.images?.[0]}
+                        alt={product.name}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
                       <Package className="h-10 w-10 text-muted-foreground/30 sm:h-16 sm:w-16" />
@@ -82,17 +76,16 @@ export function FeaturedProductsSection() {
                     </Badge>
                   )}
                 </div>
-                
                 <div className="flex flex-1 flex-col p-2.5 sm:p-5">
                   <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground group-hover:text-secondary sm:line-clamp-1 sm:text-base">
                     {product.name}
                   </h3>
-                  <Link 
+                  <Link
                     href={product.supplierSlug ? `/suppliers/${product.supplierSlug}` : "#"}
                     className="mt-1 hidden truncate text-sm text-muted-foreground hover:text-secondary sm:block"
                     onClick={(e) => {
-                      if (product.supplierSlug) e.stopPropagation();
-                      else e.preventDefault();
+                      if (product.supplierSlug) e.stopPropagation()
+                      else e.preventDefault()
                     }}
                   >
                     by {product.supplierName || "Unknown Supplier"}

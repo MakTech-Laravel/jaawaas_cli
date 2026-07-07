@@ -1,9 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useMemo } from "react"
 import Link from "next/link"
+import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "@/lib/i18n"
 import { getPublicCategories, type BackendCategory } from "@/lib/api/categories"
+import { queryKeys } from "@/lib/query-keys"
 import en from "@/lib/i18n/locales/en"
 
 const POPULAR_LIMIT = 4
@@ -23,23 +25,18 @@ function pickPopularCategories(categories: BackendCategory[]): BackendCategory[]
 
 export function HeroPopularCategories() {
   const { t } = useTranslation()
-  const [categories, setCategories] = useState<BackendCategory[]>(FALLBACK_CATEGORIES)
 
-  useEffect(() => {
-    let mounted = true
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.publicCategories(50),
+    queryFn: () => getPublicCategories({ perPage: 50 }),
+  })
 
-    async function loadCategories() {
-      const res = await getPublicCategories({ perPage: 50 })
-      if (!mounted || !res.success || !res.data?.length) return
-
-      setCategories(pickPopularCategories(res.data))
+  const categories = useMemo(() => {
+    if (!categoriesQuery.data?.success || !categoriesQuery.data.data?.length) {
+      return FALLBACK_CATEGORIES
     }
-
-    void loadCategories()
-    return () => {
-      mounted = false
-    }
-  }, [])
+    return pickPopularCategories(categoriesQuery.data.data)
+  }, [categoriesQuery.data])
 
   const popularLabel = t.landing?.hero?.popular ?? en.landing.hero.popular
 

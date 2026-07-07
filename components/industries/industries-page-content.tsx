@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/lib/i18n"
@@ -12,6 +13,7 @@ import {
   CATEGORIES_LIST_PER_PAGE,
   type BackendCategory,
 } from "@/lib/api/categories"
+import { queryKeys } from "@/lib/query-keys"
 import DynamicIcon from "@/components/dynamic-icon"
 import { ListPagination } from "@/components/common/list-pagination"
 import { ArrowRight, Factory } from "lucide-react"
@@ -64,31 +66,44 @@ export function IndustriesPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [industries, setIndustries] = useState<Industry[]>([])
-  const [statsIndustries, setStatsIndustries] = useState<Industry[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(() => {
     const pageParam = searchParams.get("page")
     const parsed = pageParam ? parseInt(pageParam, 10) : 1
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
   })
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalIndustries, setTotalIndustries] = useState(0)
-  const [paginationFrom, setPaginationFrom] = useState<number | null>(null)
-  const [paginationTo, setPaginationTo] = useState<number | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      const res = await getAllPublicCategories({ perPage: 50 })
-      if (cancelled || !res.success) return
-      setStatsIndustries(res.data.map(mapCategoryToIndustry))
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const statsQuery = useQuery({
+    queryKey: queryKeys.publicIndustriesStats(),
+    queryFn: () => getAllPublicCategories({ perPage: 50 }),
+  })
+
+  const industriesQuery = useQuery({
+    queryKey: queryKeys.publicIndustriesList(currentPage),
+    queryFn: () => getPublicCategories({ page: currentPage, perPage: CATEGORIES_LIST_PER_PAGE }),
+    placeholderData: (previousData) => previousData,
+  })
+
+  const statsIndustries = useMemo(() => {
+    if (!statsQuery.data?.success) return []
+    return statsQuery.data.data.map(mapCategoryToIndustry)
+  }, [statsQuery.data])
+
+  const industries = useMemo(() => {
+    if (!industriesQuery.data?.success) return []
+    return industriesQuery.data.data.map(mapCategoryToIndustry)
+  }, [industriesQuery.data])
+
+  const isLoading = industriesQuery.isLoading
+  const loadError =
+    industriesQuery.data?.success === false
+      ? industriesQuery.data.message || "Failed to load industries."
+      : null
+  const totalPages = industriesQuery.data?.success ? industriesQuery.data.meta?.last_page ?? 1 : 1
+  const totalIndustries = industriesQuery.data?.success
+    ? industriesQuery.data.meta?.total ?? industries.length
+    : 0
+  const paginationFrom = industriesQuery.data?.success ? industriesQuery.data.meta?.from ?? null : null
+  const paginationTo = industriesQuery.data?.success ? industriesQuery.data.meta?.to ?? null : null
 
   useEffect(() => {
     const pageParam = searchParams.get("page")
@@ -111,35 +126,6 @@ export function IndustriesPageContent() {
     router.replace(query ? `/industries?${query}` : "/industries", { scroll: false })
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
-
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      setIsLoading(true)
-      setLoadError(null)
-      const res = await getPublicCategories({ page: currentPage, perPage: CATEGORIES_LIST_PER_PAGE })
-      if (cancelled) return
-      if (!res.success) {
-        setIndustries([])
-        setLoadError(res.message || "Failed to load industries.")
-        setTotalPages(1)
-        setTotalIndustries(0)
-        setPaginationFrom(null)
-        setPaginationTo(null)
-        setIsLoading(false)
-        return
-      }
-      setIndustries(res.data.map(mapCategoryToIndustry))
-      setTotalPages(res.meta?.last_page ?? 1)
-      setTotalIndustries(res.meta?.total ?? res.data.length)
-      setPaginationFrom(res.meta?.from ?? null)
-      setPaginationTo(res.meta?.to ?? null)
-      setIsLoading(false)
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [currentPage])
 
   const statsSource = statsIndustries.length > 0 ? statsIndustries : industries
   const totalSuppliers = statsSource.reduce((acc, ind) => acc + ind.supplierCount, 0)

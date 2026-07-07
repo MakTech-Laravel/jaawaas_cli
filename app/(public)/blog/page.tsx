@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useQuery } from "@tanstack/react-query"
 import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
@@ -11,39 +12,25 @@ import {
   fetchPublicArticles,
   formatPublishedDate,
   getBlogCategories,
-  type BlogArticle,
 } from "@/lib/api/articles"
+import { queryKeys } from "@/lib/query-keys"
 
 export default function BlogPage() {
-  const [articles, setArticles] = useState<BlogArticle[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState("All")
 
-  useEffect(() => {
-    let cancelled = false
+  const articlesQuery = useQuery({
+    queryKey: queryKeys.publicBlogArticles(),
+    queryFn: () => fetchPublicArticles(),
+  })
 
-    fetchPublicArticles()
-      .then((list) => {
-        if (!cancelled) {
-          setArticles(list)
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load articles")
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false)
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const articles = articlesQuery.data ?? []
+  const loading = articlesQuery.isLoading
+  const error =
+    articlesQuery.isError
+      ? articlesQuery.error instanceof Error
+        ? articlesQuery.error.message
+        : "Failed to load articles"
+      : null
 
   const filteredArticles =
     selectedCategory === "All"
@@ -59,7 +46,7 @@ export default function BlogPage() {
       <SiteHeader />
       <main className="flex-1">
 
-        {/* ─── Hero ─── */}
+        {/* ????????? Hero ????????? */}
         <section className="relative overflow-hidden bg-primary py-8 sm:py-12 lg:py-16">
           <div
             className="absolute inset-0 opacity-[0.06]"
@@ -82,7 +69,7 @@ export default function BlogPage() {
                 Insights &amp; Resources
               </h1>
               <p className="mt-5 text-lg text-primary-foreground/75 leading-relaxed max-w-2xl mx-auto">
-                Professional knowledge on global sourcing, RFQs, manufacturer reviews, supplier comparison, import/export, and international trade — built for serious B2B buyers and manufacturers.
+                Professional knowledge on global sourcing, RFQs, manufacturer reviews, supplier comparison, import/export, and international trade ??? built for serious B2B buyers and manufacturers.
               </p>
               <div className="mt-8 flex items-center justify-center gap-6 text-sm text-primary-foreground/60">
                 <span className="flex items-center gap-1.5"><BookOpen className="h-4 w-4" />{articles.length} Articles</span>
@@ -93,7 +80,7 @@ export default function BlogPage() {
           </div>
         </section>
 
-        {/* ─── Category Filter ─── */}
+        {/* ????????? Category Filter ????????? */}
         <section className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur-sm">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex gap-2 overflow-x-auto py-3 scrollbar-none">
