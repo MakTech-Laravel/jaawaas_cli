@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useQuery } from "@tanstack/react-query"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import {
@@ -9,8 +10,9 @@ import {
   formatOrderDate,
   ORDER_STATUS_FLOW,
 } from "@/lib/orders-context"
-import { getAdminOrders, getAdminOrderStats, type ApiOrder, type OrderStats } from "@/lib/api/orders"
+import { getAdminOrders, getAdminOrderStats, type OrderStats } from "@/lib/api/orders"
 import { useTranslation } from "@/lib/i18n"
+import { queryKeys } from "@/lib/query-keys"
 import {
   PackageCheck,
   Package,
@@ -48,13 +50,9 @@ export default function AdminOrdersPage() {
     return orderStatus[key] ?? status
   }
 
-  const [orders, setOrders] = useState<ApiOrder[]>([])
-  const [stats, setStats] = useState<OrderStats | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [page, setPage] = useState(1)
-  const [meta, setMeta] = useState<OrderMeta | null>(null)
   const perPage = 20
   
   // Debounce search
@@ -68,35 +66,29 @@ export default function AdminOrdersPage() {
     setPage(1)
   }, [debouncedSearch, statusFilter])
 
-  useEffect(() => {
-    async function fetchStats() {
-      const res = await getAdminOrderStats()
-      if (res.success && res.data) {
-        setStats(res.data)
-      }
-    }
-    fetchStats()
-  }, [])
+  const statsQuery = useQuery({
+    queryKey: queryKeys.adminOrderStats(),
+    queryFn: () => getAdminOrderStats(),
+  })
 
-  useEffect(() => {
-    async function fetchOrders() {
-      setIsLoading(true)
-      const res = await getAdminOrders({
+  const ordersQuery = useQuery({
+    queryKey: queryKeys.adminOrders(page, perPage, debouncedSearch, statusFilter),
+    queryFn: () =>
+      getAdminOrders({
         page,
         per_page: perPage,
         search: debouncedSearch || undefined,
         status: statusFilter === "all" ? undefined : statusFilter,
-      })
-      
-      if (res.success) {
-        setOrders(res.data)
-        setMeta(res.meta ?? null)
-      }
-      setIsLoading(false)
-    }
-    
-    fetchOrders()
-  }, [debouncedSearch, statusFilter, page])
+      }),
+    placeholderData: (previousData) => previousData,
+  })
+
+  const isLoading = ordersQuery.isLoading
+  const stats: OrderStats | null = statsQuery.data?.success ? statsQuery.data.data : null
+  const orders = ordersQuery.data?.success ? ordersQuery.data.data : []
+  const meta: OrderMeta | null = ordersQuery.data?.success ? (ordersQuery.data.meta ?? null) : null
+  const ordersError =
+    ordersQuery.data?.success === false ? (ordersQuery.data.message || c.loadFailed) : null
 
   return (
     <div className="space-y-6">
@@ -172,6 +164,9 @@ export default function AdminOrdersPage() {
 
       {/* Table */}
       <div className="overflow-hidden rounded-xl border border-border bg-card">
+        {ordersError && (
+          <div className="border-b border-red-200 bg-red-50 p-3 text-sm text-red-700">{ordersError}</div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted/50">

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -51,9 +52,11 @@ import {
   updateAdminReviewStatus,
   deleteAdminReview,
   BackendReview,
-  AdminReviewsStatsData
+  AdminReviewsStatsData,
+  AdminReviewsMeta,
 } from "@/lib/api/admin-product-reviews"
 import { useTranslation } from "@/lib/i18n"
+import { queryKeys } from "@/lib/query-keys"
 import {
   Search,
   Star,
@@ -79,11 +82,7 @@ export default function AdminReviewsPage() {
     flagged: { label: c.flagged, color: "bg-red-100 text-red-700", icon: Flag },
   }), [c])
 
-  const [reviews, setReviews] = useState<BackendReview[]>([])
-  const [loadingReviews, setLoadingReviews] = useState(true)
-  const [totalReviews, setTotalReviews] = useState(0)
-  const [lastPage, setLastPage] = useState(1)
-  const [perPage, setPerPage] = useState(15)
+  const queryClient = useQueryClient()
 
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -92,78 +91,72 @@ export default function AdminReviewsPage() {
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [deleteReviewId, setDeleteReviewId] = useState<number | null>(null)
   const [page, setPage] = useState<number>(1)
+  const reviewsQueryKey = queryKeys.adminReviews(page, statusFilter, ratingFilter, searchQuery)
+  const reviewStatsQuery = useQuery({
+    queryKey: queryKeys.adminReviewStats(),
+    queryFn: () => getAdminReviewsStats(),
+  })
 
-  const [stats, setStats] = useState<AdminReviewsStatsData | null>(null)
-  const [loadingStats, setLoadingStats] = useState(true)
+  const reviewsQuery = useQuery({
+    queryKey: reviewsQueryKey,
+    queryFn: () =>
+      getAdminReviews(page, {
+        status: statusFilter,
+        rating: ratingFilter,
+        search: searchQuery,
+      }),
+    placeholderData: (previousData) => previousData,
+  })
 
-  const loadStats = async () => {
-    try {
-      setLoadingStats(true)
-      const res = await getAdminReviewsStats()
-      if (res.success && res.data) {
-        setStats(res.data)
-      }
-    } catch (error) {
-      console.error("Error fetching admin reviews stats:", error)
-    } finally {
-      setLoadingStats(false)
-    }
-  }
+  const updateReviewMutation = useMutation({
+    mutationFn: ({ reviewId, status }: { reviewId: number; status: BackendReview["status"] }) =>
+      updateAdminReviewStatus(reviewId, status),
+  })
 
-  useEffect(() => {
-    loadStats()
-  }, [])
-
-  useEffect(() => {
-    let active = true
-    async function loadReviews() {
-      try {
-        setLoadingReviews(true)
-        const res = await getAdminReviews(page, {
-          status: statusFilter,
-          rating: ratingFilter,
-          search: searchQuery,
-        })
-        if (active && res.success) {
-          const mappedReviews = res.data.map(r => {
-            if (r.status === "flagged") {
-              return { ...r, status: "published" as const, status_label: c.published }
-            }
-            return r
-          })
-          setReviews(mappedReviews)
-          if (res.meta) {
-            setTotalReviews(res.meta.total)
-            setLastPage(res.meta.lastPage)
-            setPerPage(res.meta.perPage)
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching admin reviews list:", error)
-      } finally {
-        if (active) {
-          setLoadingReviews(false)
-        }
-      }
-    }
-    loadReviews()
-    return () => {
-      active = false
-    }
-  }, [page, statusFilter, ratingFilter, searchQuery, c.published])
+  const deleteReviewMutation = useMutation({
+    mutationFn: (reviewId: number) => deleteAdminReview(reviewId),
+  })
 
   useEffect(() => {
     setPage(1)
   }, [searchQuery, statusFilter, ratingFilter])
 
+  const loadingReviews = reviewsQuery.isLoading
+  const loadingStats = reviewStatsQuery.isLoading
+  const stats: AdminReviewsStatsData | null =
+    reviewStatsQuery.data?.success && reviewStatsQuery.data.data ? reviewStatsQuery.data.data : null
+  const rawReviews = reviewsQuery.data?.success ? reviewsQuery.data.data : []
+  const reviews = rawReviews.map((review) =>
+    review.status === "flagged"
+      ? { ...review, status: "published" as const, status_label: c.published }
+      : review
+  )
+  const meta: AdminReviewsMeta | null = reviewsQuery.data?.success ? reviewsQuery.data.meta : null
+  const totalReviews = meta?.total ?? 0
+  const lastPage = meta?.lastPage ?? 1
+  const perPage = meta?.perPage ?? 15
+
   const updateReviewStatus = async (reviewId: number, status: BackendReview["status"]) => {
     try {
-      const res = await updateAdminReviewStatus(reviewId, status)
+      const res = await updateReviewMutation.mutateAsync({ reviewId, status })
       if (res.success) {
-        setReviews(prev => prev.map(r => 
-          r.id === reviewId ? { ...r, status, status_label: statusConfig[status]?.label ?? status } : r
-        ))
-        loadStats()
+        queryClient.setQueryData(reviewsQueryKey, (previous: {
+          success: boolean
+          message?: string
+          data: BackendReview[]
+          meta: AdminReviewsMeta | null
+        } | undefined) => {
+          if (!previous?.success) return previous
+          return {
+            ...previous,
+            data: previous.data.map((review) =>
+              review.id === reviewId
+                ? { ...review, status, status_label: statusConfig[status]?.label ?? status }
+                : review
+            ),
+          }
+        })
+        await queryClient.invalidateQueries({ queryKey: queryKeys.adminReviewStats() })
       }
     } catch (error) {
       console.error("Error updating review status:", error)
@@ -172,10 +165,22 @@ export default function AdminReviewsPage() {
 
   const deleteReview = async (reviewId: number) => {
     try {
-      const res = await deleteAdminReview(reviewId)
+      const res = await deleteReviewMutation.mutateAsync(reviewId)
       if (res.success) {
-        setReviews(prev => prev.filter(r => r.id !== reviewId))
-        loadStats()
+        queryClient.setQueryData(reviewsQueryKey, (previous: {
+          success: boolean
+          message?: string
+          data: BackendReview[]
+          meta: AdminReviewsMeta | null
+        } | undefined) => {
+          if (!previous?.success) return previous
+          const nextData = previous.data.filter((review) => review.id !== reviewId)
+          const nextMeta = previous.meta
+            ? { ...previous.meta, total: Math.max(previous.meta.total - 1, 0) }
+            : previous.meta
+          return { ...previous, data: nextData, meta: nextMeta }
+        })
+        await queryClient.invalidateQueries({ queryKey: queryKeys.adminReviewStats() })
       }
     } catch (error) {
       console.error("Error deleting review:", error)

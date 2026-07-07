@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -42,7 +43,10 @@ import {
   deleteCertificate,
   Certificate,
 } from "@/lib/api/manufacturer-certificates"
+import { queryKeys } from "@/lib/query-keys"
 import { useTranslation } from "@/lib/i18n"
+
+const PER_PAGE = 10
 
 const statusColors: Record<string, { color: string; icon: typeof CheckCircle }> = {
   valid: { color: "bg-emerald-100 text-emerald-700", icon: CheckCircle },
@@ -72,61 +76,78 @@ export default function ManufacturerCertificationsPage() {
   const { t } = useTranslation()
   const c = t.mfg.certifications
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const statusLabels: Record<string, string> = {
     valid: c.valid,
     expiring: c.expiringSoon,
     expired: c.expired,
   }
-  const [certs, setCerts] = useState<Certificate[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingCert, setEditingCert] = useState<Certificate | null>(null)
   const [deletingCertId, setDeletingCertId] = useState<number | null>(null)
+  const [page, setPage] = useState(1)
 
-  const [currentPage, setCurrentPage] = useState(1)
-  const [lastPage, setLastPage] = useState(1)
-  const [total, setTotal] = useState(0)
-  const perPage = 10
+  const certsQueryKey = queryKeys.manufacturerCertifications(page)
 
-  const loadCertifications = async (page: number) => {
-    try {
-      setIsLoading(true)
-      const response = await fetchCertifications(page, perPage)
-      setCerts(response.data)
-      setCurrentPage(response.meta.current_page)
-      setLastPage(response.meta.last_page)
-      setTotal(response.meta.total)
-    } catch (error) {
+  const certsQuery = useQuery({
+    queryKey: certsQueryKey,
+    queryFn: () => fetchCertifications(page, PER_PAGE),
+    placeholderData: (previousData) => previousData,
+  })
+
+  const deleteCertMutation = useMutation({
+    mutationFn: (id: number) => deleteCertificate(id),
+  })
+
+  const certs = certsQuery.data?.data ?? []
+  const currentPage = certsQuery.data?.meta.current_page ?? page
+  const lastPage = certsQuery.data?.meta.last_page ?? 1
+  const total = certsQuery.data?.meta.total ?? 0
+  const isLoading = certsQuery.isLoading && !certsQuery.data
+
+  useEffect(() => {
+    if (certsQuery.isError) {
+      const error = certsQuery.error
       toast({
         variant: "destructive",
         title: t.common.error || "Error",
-        description:
-          error instanceof Error ? error.message : c.loadError,
+        description: error instanceof Error ? error.message : c.loadError,
       })
-    } finally {
-      setIsLoading(false)
     }
+  }, [certsQuery.isError, certsQuery.error, c.loadError, t.common.error, toast])
+
+  const invalidateCerts = (targetPage = page) => {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.manufacturerCertifications(targetPage),
+    })
   }
 
-  useEffect(() => {
-    void loadCertifications(1)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
   const handleCertificateAdded = () => {
-    void loadCertifications(1)
+    setPage(1)
+    invalidateCerts(1)
   }
 
   const handleCertificateUpdated = (updated: Certificate) => {
-    setCerts((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+    queryClient.setQueryData(certsQueryKey, (previous) => {
+      if (!previous) return previous
+      return {
+        ...previous,
+        data: previous.data.map((cert) => (cert.id === updated.id ? updated : cert)),
+      }
+    })
   }
 
   const handleDeleteCert = async (id: number) => {
     try {
-      await deleteCertificate(id)
+      await deleteCertMutation.mutateAsync(id)
       toast({ title: c.deleted, description: c.deleteSuccess })
-      const targetPage = certs.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage
-      void loadCertifications(targetPage)
+      const targetPage = certs.length === 1 && page > 1 ? page - 1 : page
+      if (targetPage !== page) {
+        setPage(targetPage)
+      } else {
+        invalidateCerts(targetPage)
+      }
     } catch (error) {
       toast({
         variant: "destructive",
@@ -310,15 +331,15 @@ export default function ManufacturerCertificationsPage() {
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 {c.showing
-                  .replace("{from}", String((currentPage - 1) * perPage + 1))
-                  .replace("{to}", String(Math.min(currentPage * perPage, total)))
+                  .replace("{from}", String((currentPage - 1) * PER_PAGE + 1))
+                  .replace("{to}", String(Math.min(currentPage * PER_PAGE, total)))
                   .replace("{total}", String(total))}
               </p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => void loadCertifications(currentPage - 1)}
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage <= 1 || isLoading}
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -330,7 +351,7 @@ export default function ManufacturerCertificationsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => void loadCertifications(currentPage + 1)}
+                  onClick={() => setPage((prev) => Math.min(lastPage, prev + 1))}
                   disabled={currentPage >= lastPage || isLoading}
                 >
                   {c.next}

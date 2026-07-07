@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -24,15 +24,16 @@ import {
   Users,
   Eye,
   CheckCircle,
-  Clock,
-  TrendingUp,
-  AlertTriangle,
   ArrowLeft,
   Loader2,
   Factory
 } from "lucide-react"
-import { Separator } from "@/components/ui/separator"
-import { fetchAdminPromotionById, fetchAdminPromotionParticipants, enrollAdminPromotionParticipant, type Promotion, type PromotionParticipant } from "@/lib/api/admin-promotions"
+import {
+  fetchAdminPromotionById,
+  fetchAdminPromotionParticipants,
+  enrollAdminPromotionParticipant,
+} from "@/lib/api/admin-promotions"
+import { queryKeys } from "@/lib/query-keys"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/lib/i18n"
 
@@ -44,38 +45,57 @@ export default function PromotionDetailsPage() {
   const router = useRouter()
   const promotionId = params.id as string
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
-  const [promotion, setPromotion] = useState<Promotion | null>(null)
-  const [participants, setParticipants] = useState<PromotionParticipant[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [approvingUserId, setApprovingUserId] = useState<number | null>(null)
+  const detailQueryKey = queryKeys.adminPromotionDetail(promotionId)
+
+  const detailQuery = useQuery({
+    queryKey: detailQueryKey,
+    queryFn: async () => {
+      const [promoRes, partsRes] = await Promise.all([
+        fetchAdminPromotionById(promotionId),
+        fetchAdminPromotionParticipants(promotionId),
+      ])
+      return { promoRes, partsRes }
+    },
+    enabled: Boolean(promotionId),
+  })
+
+  const approveMutation = useMutation({
+    mutationFn: (userId: number) => enrollAdminPromotionParticipant(promotionId, userId),
+  })
+
+  const promotion =
+    detailQuery.data?.promoRes.success && detailQuery.data.promoRes.data.promotion
+      ? detailQuery.data.promoRes.data.promotion
+      : null
+  const participants = detailQuery.data?.partsRes.success
+    ? detailQuery.data.partsRes.data
+    : []
+  const loading = detailQuery.isLoading
+  const error =
+    !loading && detailQuery.data && (!detailQuery.data.promoRes.success || !promotion)
+      ? detailQuery.data.promoRes.message || c.failedToLoadPromotion
+      : null
+  const approvingUserId = approveMutation.isPending
+    ? (approveMutation.variables ?? null)
+    : null
 
   const handleApproveParticipant = async (userId: number) => {
-    setApprovingUserId(userId)
     toast({
       title: p.approving,
       description: p.approvingDesc,
     })
-    
-    const res = await enrollAdminPromotionParticipant(promotionId, userId)
-    setApprovingUserId(null)
-    
+
+    const res = await approveMutation.mutateAsync(userId)
+
     if (res.success) {
       toast({
         title: c.success,
         description: res.message || c.participantApproved,
       })
-      const [promoRes, partsRes] = await Promise.all([
-        fetchAdminPromotionById(promotionId),
-        fetchAdminPromotionParticipants(promotionId)
-      ])
-      if (promoRes.success && promoRes.data.promotion) {
-        setPromotion(promoRes.data.promotion)
-      }
-      if (partsRes.success) {
-        setParticipants(partsRes.data)
-      }
+      await queryClient.invalidateQueries({ queryKey: detailQueryKey })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.adminPromotions() })
     } else {
       toast({
         title: c.error,
@@ -84,29 +104,6 @@ export default function PromotionDetailsPage() {
       })
     }
   }
-
-  useEffect(() => {
-    let cancelled = false
-    async function loadData() {
-      setLoading(true)
-      const [promoRes, partsRes] = await Promise.all([
-        fetchAdminPromotionById(promotionId),
-        fetchAdminPromotionParticipants(promotionId)
-      ])
-      
-      if (cancelled) return
-      
-      if (promoRes.success && promoRes.data.promotion) {
-        setPromotion(promoRes.data.promotion)
-        setParticipants(partsRes.success ? partsRes.data : [])
-      } else {
-        setError(promoRes.message || c.failedToLoadPromotion)
-      }
-      setLoading(false)
-    }
-    void loadData()
-    return () => { cancelled = true }
-  }, [promotionId])
 
   if (loading) {
     return (
@@ -292,7 +289,7 @@ export default function PromotionDetailsPage() {
                           size="sm" 
                           className="bg-secondary text-secondary-foreground hover:bg-secondary/90 mr-2 h-8 px-2 text-xs"
                           disabled={approvingUserId === participant.user_id}
-                          onClick={() => handleApproveParticipant(participant.user_id)}
+                          onClick={() => void handleApproveParticipant(participant.user_id)}
                         >
                           {approvingUserId === participant.user_id ? (
                             <Loader2 className="h-3 w-3 animate-spin mr-1" />

@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/i18n"
-import { getBuyerDashboard, BuyerDashboardData } from "@/lib/api/buyer-dashboard"
+import { getBuyerDashboard } from "@/lib/api/buyer-dashboard"
+import { queryKeys } from "@/lib/query-keys"
 import { BuyerActivityList } from "@/components/buyer/buyer-activity-list"
 import { 
   MessageSquare, 
@@ -25,20 +26,14 @@ import {
 export default function BuyerDashboardPage() {
   const { user } = useAuth()
   const { t } = useTranslation()
-  const [data, setData] = useState<BuyerDashboardData | null>(null)
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      setLoading(true)
-      const res = await getBuyerDashboard()
-      if (res.success && res.data) {
-        setData(res.data)
-      }
-      setLoading(false)
-    }
-    fetchDashboard()
-  }, [])
+  const dashboardQuery = useQuery({
+    queryKey: queryKeys.buyerDashboard(),
+    queryFn: getBuyerDashboard,
+  })
+
+  const data = dashboardQuery.data?.success ? dashboardQuery.data.data : null
+  const loading = dashboardQuery.isLoading
   
   const userDisplayName = data?.welcome?.first_name || data?.welcome?.name || user?.firstName || user?.name || t.buyer.layout.buyer
 

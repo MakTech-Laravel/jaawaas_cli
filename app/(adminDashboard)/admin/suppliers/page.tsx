@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -30,38 +31,34 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { fetchSuppliers, deleteManufacturer, rejectManufacturer, createManufacturerSupportTicket } from "@/lib/api/admin-manufacturer-registrations"
-import type { ManufacturerApplication, ManufacturerRegistrationResponse } from "@/lib/api/admin-manufacturer-registrations"
-import { 
+import {
+  fetchSuppliers,
+  deleteManufacturer,
+  rejectManufacturer,
+  createManufacturerSupportTicket,
+} from "@/lib/api/admin-manufacturer-registrations"
+import type {
+  ManufacturerApplication,
+  ManufacturerRegistrationResponse,
+  PaginationMeta,
+} from "@/lib/api/admin-manufacturer-registrations"
+import {
   Search,
   Factory,
   MoreVertical,
-  CheckCircle,
   X,
   Eye,
-  Star,
-  MapPin,
-  Ban,
   HelpCircle,
   AlertTriangle,
   Trash2,
-  RefreshCw,
   Mail,
   FileQuestion,
-  FileText,
-  Globe,
-  Camera,
-  ExternalLink,
-  Building2,
-  Loader2
+  Loader2,
 } from "lucide-react"
-import { Separator } from "@/components/ui/separator"
 import { useTranslation } from "@/lib/i18n"
 import { AdminPagination } from "@/components/admin/admin-pagination"
 import RequestAdditionalInfoDialog from "@/components/admin/request-additional-info-dialog"
-import type { PaginationMeta } from "@/lib/api/admin-manufacturer-registrations"
-
-type SupplierStatus = "draft" | "pending" | "approved" | "rejected" | "suspended" | "needs_info" | "active" | "deactivated"
+import { queryKeys } from "@/lib/query-keys"
 
 interface VerificationDocuments {
   businessLicense?: { name: string; uploadedAt: string }
@@ -108,6 +105,7 @@ export default function AdminSuppliersPage() {
   const support = t.admin.pages.mfgRegistrations
   const c = t.admin.common
   const supplierStatus = t.admin.supplierStatus
+  const queryClient = useQueryClient()
 
   const getStatusConfig = (statusKey: string) => {
     const key = statusKey as keyof typeof supplierStatus
@@ -118,7 +116,6 @@ export default function AdminSuppliersPage() {
     }
   }
   const { toast } = useToast()
-  const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedSuppliers, setSelectedSuppliers] = useState<(string | number)[]>([])
@@ -127,18 +124,13 @@ export default function AdminSuppliersPage() {
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [currentSupplier, setCurrentSupplier] = useState<Supplier | null>(null)
   const [rejectReason, setRejectReason] = useState("")
-  const [loading, setLoading] = useState(true)
-  const [deleting, setDeleting] = useState<(string | number) | null>(null)
-  const [rejecting, setRejecting] = useState<boolean>(false)
   const [showSupportDialog, setShowSupportDialog] = useState(false)
   const [supportTarget, setSupportTarget] = useState<Supplier | null>(null)
   const [supportSubject, setSupportSubject] = useState("")
   const [supportMessage, setSupportMessage] = useState("")
   const [supportDepartment, setSupportDepartment] = useState("account")
   const [supportPriority, setSupportPriority] = useState("medium")
-  const [creatingSupport, setCreatingSupport] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const [meta, setMeta] = useState<PaginationMeta | null>(null)
   const [debouncedSearch, setDebouncedSearch] = useState("")
 
   useEffect(() => {
@@ -150,58 +142,107 @@ export default function AdminSuppliersPage() {
     setCurrentPage(1)
   }, [debouncedSearch, statusFilter])
 
-  // Load suppliers from API
-  useEffect(() => {
-    const loadSuppliers = async () => {
-      try {
-        setLoading(true)
-        const response = await fetchSuppliers(currentPage, PER_PAGE, {
-          search: debouncedSearch || undefined,
-          status: statusFilter !== "all" ? statusFilter : undefined,
-        })
-        const filtered = response.data.filter(
-          (row) => (row.manufacture_status || row.status) !== "pending",
-        )
-        setSuppliers(filtered)
-        setMeta(response.meta ?? null)
-      } catch (err) {
-        toast({
-          title: c.error,
-          description: p.loadFailed,
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
+  const suppliersQueryKey = queryKeys.adminSuppliers(
+    currentPage,
+    PER_PAGE,
+    statusFilter,
+    debouncedSearch
+  )
+
+  const suppliersQuery = useQuery({
+    queryKey: suppliersQueryKey,
+    queryFn: async () => {
+      const response = await fetchSuppliers(currentPage, PER_PAGE, {
+        search: debouncedSearch || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+      })
+      return {
+        ...response,
+        data: response.data.filter(
+          (row) => (row.manufacture_status || row.status) !== "pending"
+        ) as Supplier[],
       }
+    },
+    placeholderData: (previousData) => previousData,
+  })
+
+  useEffect(() => {
+    if (suppliersQuery.isError) {
+      toast({
+        title: c.error,
+        description: p.loadFailed,
+        variant: "destructive",
+      })
     }
-    loadSuppliers()
-  }, [currentPage, debouncedSearch, statusFilter, toast, p.loadFailed])
+  }, [suppliersQuery.isError, toast, c.error, p.loadFailed])
+
+  const deleteMutation = useMutation({
+    mutationFn: (supplierId: string | number) => deleteManufacturer(supplierId),
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string | number; reason: string }) =>
+      rejectManufacturer(id, reason),
+  })
+
+  const supportTicketMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string | number
+      payload: {
+        subject: string
+        message: string
+        department_type: string
+        priority: string
+      }
+    }) => createManufacturerSupportTicket(id, payload),
+  })
+
+  const suppliers = suppliersQuery.data?.data ?? []
+  const meta = suppliersQuery.data?.meta ?? null
+  const loading = suppliersQuery.isLoading
+  const deleting = deleteMutation.isPending ? deleteMutation.variables ?? null : null
+  const rejecting = rejectMutation.isPending
+  const creatingSupport = supportTicketMutation.isPending
 
   const filteredSuppliers = suppliers
 
-  const allSelected = filteredSuppliers.length > 0 && selectedSuppliers.length === filteredSuppliers.length
+  const allSelected =
+    filteredSuppliers.length > 0 && selectedSuppliers.length === filteredSuppliers.length
 
   const toggleSelectAll = () => {
     if (allSelected) {
       setSelectedSuppliers([])
     } else {
-      setSelectedSuppliers(filteredSuppliers.map(s => s.id))
+      setSelectedSuppliers(filteredSuppliers.map((s) => s.id))
     }
   }
 
   const toggleSelect = (id: string | number) => {
-    setSelectedSuppliers(prev => 
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    setSelectedSuppliers((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     )
+  }
+
+  const patchSuppliersCache = (updater: (data: Supplier[]) => Supplier[]) => {
+    queryClient.setQueryData(suppliersQueryKey, (previous: ManufacturerRegistrationResponse | undefined) => {
+      if (!previous) return previous
+      const nextData = updater(previous.data as Supplier[])
+      const nextMeta = previous.meta
+        ? { ...previous.meta, total: Math.max((previous.meta.total ?? 0) - (previous.data.length - nextData.length), 0) }
+        : previous.meta
+      return { ...previous, data: nextData, meta: nextMeta }
+    })
   }
 
   const deleteSupplier = async (supplierId: string | number) => {
     try {
-      setDeleting(supplierId)
-      await deleteManufacturer(supplierId)
-      setSuppliers(prev => prev.filter(s => s.id !== supplierId))
-      setSelectedSuppliers(prev => prev.filter(x => x !== supplierId))
-      
+      await deleteMutation.mutateAsync(supplierId)
+      patchSuppliersCache((prev) => prev.filter((s) => s.id !== supplierId))
+      setSelectedSuppliers((prev) => prev.filter((x) => x !== supplierId))
+
       toast({
         title: c.success,
         description: p.deleteSuccess,
@@ -213,8 +254,6 @@ export default function AdminSuppliersPage() {
         description: errorMsg,
         variant: "destructive",
       })
-    } finally {
-      setDeleting(null)
     }
   }
 
@@ -253,8 +292,8 @@ export default function AdminSuppliersPage() {
     setSupportSubject(
       support.defaultSupportSubject.replace(
         "{company}",
-        company !== "—" ? company : supplierDisplayName(supplier),
-      ),
+        company !== "—" ? company : supplierDisplayName(supplier)
+      )
     )
     setSupportMessage("")
     setSupportDepartment("account")
@@ -275,12 +314,14 @@ export default function AdminSuppliersPage() {
     }
 
     try {
-      setCreatingSupport(true)
-      const response = await createManufacturerSupportTicket(supportTarget.id, {
-        subject: supportSubject.trim(),
-        message: supportMessage.trim(),
-        department_type: supportDepartment,
-        priority: supportPriority,
+      const response = await supportTicketMutation.mutateAsync({
+        id: supportTarget.id,
+        payload: {
+          subject: supportSubject.trim(),
+          message: supportMessage.trim(),
+          department_type: supportDepartment,
+          priority: supportPriority,
+        },
       })
 
       toast({
@@ -301,8 +342,6 @@ export default function AdminSuppliersPage() {
         description: errorMsg,
         variant: "destructive",
       })
-    } finally {
-      setCreatingSupport(false)
     }
   }
 
@@ -317,23 +356,20 @@ export default function AdminSuppliersPage() {
       return
     }
 
-    setRejecting(true)
     try {
-      await rejectManufacturer(currentSupplier.id, rejectReason)
-      setSuppliers(prev => prev.filter(s => s.id !== currentSupplier.id))
+      await rejectMutation.mutateAsync({ id: currentSupplier.id, reason: rejectReason })
+      patchSuppliersCache((prev) => prev.filter((s) => s.id !== currentSupplier.id))
       setShowRejectDialog(false)
       toast({
         title: c.success,
         description: p.rejectSuccess,
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: c.error,
-        description: error.message || p.rejectFailed,
+        description: error instanceof Error ? error.message : p.rejectFailed,
         variant: "destructive",
       })
-    } finally {
-      setRejecting(false)
     }
   }
 
@@ -342,9 +378,7 @@ export default function AdminSuppliersPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-medium text-foreground">{p.title}</h1>
-          <p className="mt-1 text-muted-foreground">
-            {p.subtitle}
-          </p>
+          <p className="mt-1 text-muted-foreground">{p.subtitle}</p>
         </div>
       </div>
 
@@ -381,7 +415,9 @@ export default function AdminSuppliersPage() {
       {/* Bulk Actions */}
       {selectedSuppliers.length > 0 && (
         <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/50 p-3">
-          <span className="text-sm font-medium">{c.selectedCount.replace("{count}", String(selectedSuppliers.length))}</span>
+          <span className="text-sm font-medium">
+            {c.selectedCount.replace("{count}", String(selectedSuppliers.length))}
+          </span>
           <div className="flex gap-2">
             <Button size="sm" variant="destructive" onClick={bulkDelete} disabled={deleting !== null}>
               <Trash2 className="mr-1 h-3 w-3" />
@@ -408,105 +444,97 @@ export default function AdminSuppliersPage() {
       ) : (
         <div className="space-y-4">
           <div className="grid gap-4">
-          {/* Header Row */}
-          <div className="hidden lg:flex items-center gap-4 px-4 py-2 text-sm font-medium text-muted-foreground">
-            <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
-            <div className="flex-1">{p.tableSupplier}</div>
-            <div className="w-32">{c.status}</div>
-            <div className="w-24">{c.rating}</div>
-            <div className="w-32">{c.actions}</div>
-          </div>
+            {/* Header Row */}
+            <div className="hidden lg:flex items-center gap-4 px-4 py-2 text-sm font-medium text-muted-foreground">
+              <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
+              <div className="flex-1">{p.tableSupplier}</div>
+              <div className="w-32">{c.status}</div>
+              <div className="w-24">{c.rating}</div>
+              <div className="w-32">{c.actions}</div>
+            </div>
 
-          {filteredSuppliers.map((supplier) => {
-            const displayName = [supplier.first_name, supplier.last_name].filter(Boolean).join(" ") || "—"
-            const displayCompany = supplier.company_name || supplier.company?.company_name || "—"
-            const statusKey = (supplier.manufacture_status || supplier.status || "draft").toLowerCase()
-            const config = getStatusConfig(statusKey)
+            {filteredSuppliers.map((supplier) => {
+              const displayName =
+                [supplier.first_name, supplier.last_name].filter(Boolean).join(" ") || "—"
+              const displayCompany =
+                supplier.company_name || supplier.company?.company_name || "—"
+              const statusKey = (supplier.manufacture_status || supplier.status || "draft").toLowerCase()
+              const config = getStatusConfig(statusKey)
 
-            return (
-              <div key={supplier.id} className="rounded-xl border border-border bg-card p-4">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-                  <Checkbox 
-                    checked={selectedSuppliers.includes(supplier.id)} 
-                    onCheckedChange={() => toggleSelect(supplier.id)}
-                  />
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-muted">
-                      <Factory className="h-7 w-7 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{displayName}</h3>
-                      <p className="text-sm text-muted-foreground">{displayCompany}</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          {supplier.email}
-                        </span>
+              return (
+                <div key={supplier.id} className="rounded-xl border border-border bg-card p-4">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                    <Checkbox
+                      checked={selectedSuppliers.includes(supplier.id)}
+                      onCheckedChange={() => toggleSelect(supplier.id)}
+                    />
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-muted">
+                        <Factory className="h-7 w-7 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-foreground">{displayName}</h3>
+                        <p className="text-sm text-muted-foreground">{displayCompany}</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {supplier.email}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="w-32 shrink-0">
-                    <Badge className={config.color}>
-                      {config.label}
-                    </Badge>
-                  </div>
 
-                  <div className="w-24 shrink-0 text-sm text-muted-foreground">
-                    {c.na}
-                  </div>
+                    <div className="w-32 shrink-0">
+                      <Badge className={config.color}>{config.label}</Badge>
+                    </div>
 
-                  <div className="flex items-center gap-2 w-32 shrink-0">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openReview(supplier)}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          {c.viewDetails}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openSupport(supplier)} disabled={creatingSupport}>
-                          <HelpCircle className="mr-2 h-4 w-4" />
-                          {creatingSupport ? support.creatingSupport : support.createSupport}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openInfoRequest(supplier)}>
-                          <FileQuestion className="mr-2 h-4 w-4 text-blue-600" />
-                          {p.requestInfo}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openReject(supplier)}>
-                          <X className="mr-2 h-4 w-4 text-red-600" />
-                          {c.reject}
-                        </DropdownMenuItem>
-                        {/*
-                        <DropdownMenuItem>
-                          <Ban className="mr-2 h-4 w-4 text-orange-600" />
-                          Suspend
-                        </DropdownMenuItem>
-                        */}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="text-destructive"
-                          onClick={() => deleteSupplier(supplier.id)}
-                          disabled={deleting === supplier.id}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          {deleting === supplier.id ? c.deleting : c.delete}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="w-24 shrink-0 text-sm text-muted-foreground">{c.na}</div>
+
+                    <div className="flex items-center gap-2 w-32 shrink-0">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openReview(supplier)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            {c.viewDetails}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openSupport(supplier)} disabled={creatingSupport}>
+                            <HelpCircle className="mr-2 h-4 w-4" />
+                            {creatingSupport ? support.creatingSupport : support.createSupport}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openInfoRequest(supplier)}>
+                            <FileQuestion className="mr-2 h-4 w-4 text-blue-600" />
+                            {p.requestInfo}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openReject(supplier)}>
+                            <X className="mr-2 h-4 w-4 text-red-600" />
+                            {c.reject}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => void deleteSupplier(supplier.id)}
+                            disabled={deleting === supplier.id}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {deleting === supplier.id ? c.deleting : c.delete}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
           </div>
 
           <AdminPagination
             page={currentPage}
-            meta={meta}
+            meta={meta as PaginationMeta | null}
             itemCount={filteredSuppliers.length}
             onPageChange={setCurrentPage}
             className="px-1"
@@ -519,13 +547,10 @@ export default function AdminSuppliersPage() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{p.supplierDetails}</DialogTitle>
-            <DialogDescription>
-              {p.supplierDetailsDesc}
-            </DialogDescription>
+            <DialogDescription>{p.supplierDetailsDesc}</DialogDescription>
           </DialogHeader>
           {currentSupplier && (
             <div className="space-y-6">
-              {/* Basic Info */}
               <div className="flex items-start gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-muted">
                   <Factory className="h-8 w-8 text-muted-foreground" />
@@ -534,10 +559,24 @@ export default function AdminSuppliersPage() {
                   <h3 className="text-lg font-semibold">
                     {[currentSupplier.first_name, currentSupplier.last_name].filter(Boolean).join(" ")}
                   </h3>
-                  <p className="text-sm text-muted-foreground">{currentSupplier.company_name || currentSupplier.company?.company_name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {currentSupplier.company_name || currentSupplier.company?.company_name}
+                  </p>
                 </div>
-                <Badge className={getStatusConfig((currentSupplier.manufacture_status || currentSupplier.status)?.toLowerCase() || "draft").color}>
-                  {getStatusConfig((currentSupplier.manufacture_status || currentSupplier.status)?.toLowerCase() || "draft").label}
+                <Badge
+                  className={
+                    getStatusConfig(
+                      (currentSupplier.manufacture_status || currentSupplier.status)?.toLowerCase() ||
+                        "draft"
+                    ).color
+                  }
+                >
+                  {
+                    getStatusConfig(
+                      (currentSupplier.manufacture_status || currentSupplier.status)?.toLowerCase() ||
+                        "draft"
+                    ).label
+                  }
                 </Badge>
               </div>
 
@@ -574,14 +613,12 @@ export default function AdminSuppliersPage() {
               <AlertTriangle className="h-5 w-5 text-destructive" />
               {p.rejectSupplier}
             </DialogTitle>
-            <DialogDescription>
-              {p.rejectSupplierDesc}
-            </DialogDescription>
+            <DialogDescription>{p.rejectSupplierDesc}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>{p.reasonForRejection}</Label>
-              <Textarea 
+              <Textarea
                 placeholder={c.rejectPlaceholder}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
@@ -590,8 +627,10 @@ export default function AdminSuppliersPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRejectDialog(false)} disabled={rejecting}>{c.cancel}</Button>
-            <Button variant="destructive" onClick={submitRejection} disabled={rejecting}>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)} disabled={rejecting}>
+              {c.cancel}
+            </Button>
+            <Button variant="destructive" onClick={() => void submitRejection()} disabled={rejecting}>
               {rejecting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -610,9 +649,7 @@ export default function AdminSuppliersPage() {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{support.createSupport}</DialogTitle>
-            <DialogDescription>
-              {support.createSupportDescription}
-            </DialogDescription>
+            <DialogDescription>{support.createSupportDescription}</DialogDescription>
           </DialogHeader>
 
           {supportTarget && (
@@ -627,8 +664,18 @@ export default function AdminSuppliersPage() {
                   {supportTarget.country || supportTarget.company?.country}
                 </p>
               )}
-              <Badge className={getStatusConfig((supportTarget.manufacture_status || supportTarget.status || "draft").toLowerCase()).color}>
-                {getStatusConfig((supportTarget.manufacture_status || supportTarget.status || "draft").toLowerCase()).label}
+              <Badge
+                className={
+                  getStatusConfig(
+                    (supportTarget.manufacture_status || supportTarget.status || "draft").toLowerCase()
+                  ).color
+                }
+              >
+                {
+                  getStatusConfig(
+                    (supportTarget.manufacture_status || supportTarget.status || "draft").toLowerCase()
+                  ).label
+                }
               </Badge>
             </div>
           )}
@@ -648,7 +695,11 @@ export default function AdminSuppliersPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>{support.supportDepartment}</Label>
-                <Select value={supportDepartment} onValueChange={setSupportDepartment} disabled={creatingSupport}>
+                <Select
+                  value={supportDepartment}
+                  onValueChange={setSupportDepartment}
+                  disabled={creatingSupport}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -664,7 +715,11 @@ export default function AdminSuppliersPage() {
 
               <div className="space-y-2">
                 <Label>{support.supportPriority}</Label>
-                <Select value={supportPriority} onValueChange={setSupportPriority} disabled={creatingSupport}>
+                <Select
+                  value={supportPriority}
+                  onValueChange={setSupportPriority}
+                  disabled={creatingSupport}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -695,7 +750,7 @@ export default function AdminSuppliersPage() {
             <Button variant="outline" onClick={() => setShowSupportDialog(false)} disabled={creatingSupport}>
               {c.cancel}
             </Button>
-            <Button onClick={submitSupportTicket} disabled={creatingSupport}>
+            <Button onClick={() => void submitSupportTicket()} disabled={creatingSupport}>
               {creatingSupport ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { getManufacturerDashboard, ManufacturerDashboardStats } from "@/lib/api/manufacturer-dashboard"
+import { getManufacturerDashboard } from "@/lib/api/manufacturer-dashboard"
+import { queryKeys } from "@/lib/query-keys"
 import ManufacturerStatCard from "@/components/manufacturer/manufacturer-stat-card"
 import { useTranslation } from "@/lib/i18n"
 import { 
@@ -24,21 +25,15 @@ import {
 } from "lucide-react"
 
 export default function ManufacturerDashboardPage() {
-  const [data, setData] = useState<ManufacturerDashboardStats | null>(null)
-  const [loading, setLoading] = useState(true)
   const { t } = useTranslation()
 
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      setLoading(true)
-      const res = await getManufacturerDashboard()
-      if (res.success && res.data) {
-        setData(res.data)
-      }
-      setLoading(false)
-    }
-    fetchDashboard()
-  }, [])
+  const dashboardQuery = useQuery({
+    queryKey: queryKeys.manufacturerDashboard(),
+    queryFn: getManufacturerDashboard,
+  })
+
+  const data = dashboardQuery.data?.success ? dashboardQuery.data.data : null
+  const loading = dashboardQuery.isLoading
 
   if (loading) {
     return (

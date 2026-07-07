@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,38 +30,38 @@ import {
   Loader2
 } from "lucide-react"
 
-import { getBuyerRFQ, respondToQuote, type BuyerRFQ } from "@/lib/api/rfqs"
+import { getBuyerRFQ, respondToQuote } from "@/lib/api/rfqs"
+import { queryKeys } from "@/lib/query-keys"
 import { format } from "date-fns"
 import Swal from 'sweetalert2'
 import { useTranslation } from "@/lib/i18n"
 
 export default function BuyerRFQDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const id = params.id as string
-  
+  const queryClient = useQueryClient()
+
   const { t } = useTranslation()
-  const [rfq, setRfq] = useState<BuyerRFQ | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const loadRFQ = async () => {
-    setLoading(true)
-    const response = await getBuyerRFQ(id)
-    if (response.success && response.data) {
-      setRfq(response.data)
-    }
-    setLoading(false)
-  }
+  const rfqQueryKey = queryKeys.buyerRfqDetail(id)
 
-  useEffect(() => {
-    loadRFQ()
-  }, [id])
+  const rfqQuery = useQuery({
+    queryKey: rfqQueryKey,
+    queryFn: () => getBuyerRFQ(id),
+    enabled: Boolean(id),
+  })
+
+  const respondMutation = useMutation({
+    mutationFn: (action: "accept" | "cancel") => respondToQuote(id, { action }),
+  })
+
+  const rfq = rfqQuery.data?.success ? rfqQuery.data.data : null
+  const loading = rfqQuery.isLoading
+  const isSubmitting = respondMutation.isPending
 
   const handleAction = async (action: "accept" | "cancel") => {
-    setIsSubmitting(true)
     try {
-      const response = await respondToQuote(id, { action })
+      const response = await respondMutation.mutateAsync(action)
       if (response.success) {
         Swal.fire({
           icon: 'success',
@@ -69,7 +69,8 @@ export default function BuyerRFQDetailPage() {
           text: action === "accept" ? t.buyer.rfqs.details.alerts.acceptSuccess : t.buyer.rfqs.details.alerts.declineSuccess,
           confirmButtonColor: '#10b981'
         })
-        loadRFQ() // Reload data to show updated status
+        await queryClient.invalidateQueries({ queryKey: rfqQueryKey })
+        await queryClient.invalidateQueries({ queryKey: queryKeys.buyerRfqs() })
       } else {
         Swal.fire({
           icon: 'error',
@@ -78,15 +79,13 @@ export default function BuyerRFQDetailPage() {
           confirmButtonColor: '#ef4444'
         })
       }
-    } catch (error) {
+    } catch (_error) {
       Swal.fire({
         icon: 'error',
         title: t.buyer.rfqs.details.alerts.error,
         text: t.buyer.rfqs.details.alerts.unexpectedError,
         confirmButtonColor: '#ef4444'
       })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useMemo, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import ManufacturerStatCard from "@/components/manufacturer/manufacturer-stat-card"
@@ -30,7 +31,8 @@ import {
   Tag
 } from "lucide-react"
 
-import { getManufacturerRFQs, type ManufacturerRFQ } from "@/lib/api/rfqs"
+import { getManufacturerRFQs } from "@/lib/api/rfqs"
+import { queryKeys } from "@/lib/query-keys"
 import { format } from "date-fns"
 
 const statusConfig: Record<string, { color: string; icon: typeof CheckCircle }> = {
@@ -50,35 +52,35 @@ const priorityConfig: Record<string, string> = {
 export default function ManufacturerInquiriesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  
-  const [inquiries, setInquiries] = useState<ManufacturerRFQ[]>([])
-  const [loading, setLoading] = useState(true)
   const { t } = useTranslation()
 
-  useEffect(() => {
-    async function loadInquiries() {
-      const response = await getManufacturerRFQs()
-      if (response.success && response.data) {
-        setInquiries(response.data)
-      }
-      setLoading(false)
-    }
-    loadInquiries()
-  }, [])
-
-  const filteredInquiries = inquiries.filter(inquiry => {
-    const searchString = searchQuery.toLowerCase()
-    if (searchQuery && 
-        !inquiry.product.name.toLowerCase().includes(searchString) && 
-        !inquiry.buyer.name.toLowerCase().includes(searchString) &&
-        !inquiry.rfq_number.toLowerCase().includes(searchString)) {
-      return false
-    }
-    if (statusFilter && statusFilter !== "all" && inquiry.status !== statusFilter) {
-      return false
-    }
-    return true
+  const inquiriesQuery = useQuery({
+    queryKey: queryKeys.manufacturerRfqs(),
+    queryFn: getManufacturerRFQs,
   })
+
+  const inquiries = inquiriesQuery.data?.success ? inquiriesQuery.data.data ?? [] : []
+  const loading = inquiriesQuery.isLoading
+
+  const filteredInquiries = useMemo(
+    () =>
+      inquiries.filter((inquiry) => {
+        const searchString = searchQuery.toLowerCase()
+        if (
+          searchQuery &&
+          !inquiry.product.name.toLowerCase().includes(searchString) &&
+          !inquiry.buyer.name.toLowerCase().includes(searchString) &&
+          !inquiry.rfq_number.toLowerCase().includes(searchString)
+        ) {
+          return false
+        }
+        if (statusFilter && statusFilter !== "all" && inquiry.status !== statusFilter) {
+          return false
+        }
+        return true
+      }),
+    [inquiries, searchQuery, statusFilter]
+  )
 
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">

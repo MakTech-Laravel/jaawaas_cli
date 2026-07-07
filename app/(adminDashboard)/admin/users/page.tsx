@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -89,9 +90,55 @@ import { useToast } from "@/hooks/use-toast"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import { createConversation, getConversations } from "@/lib/api/messages"
 import { useAuth } from "@/lib/auth-context"
+import { queryKeys } from "@/lib/query-keys"
 
-// Start with an empty list; the component will load data from the API.
-const initialUsers: UserItem[] = []
+interface AdminUsersListData {
+  users: UserItem[]
+  meta: Record<string, unknown> | null
+}
+
+function mapApiUser(u: Record<string, unknown>): UserItem {
+  return {
+    id: String(u.id),
+    name: `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim(),
+    email: String(u.email ?? ""),
+    role: normalizeUserRole(String(u.role ?? "buyer")),
+    company: (u.company as { company_name?: string } | null)?.company_name ?? null,
+    status: String(u.status ?? "active").toLowerCase() as UserStatus,
+    country: (u.company as { country?: string } | null)?.country ?? undefined,
+    joinedAt: u.created_at ? String(u.created_at) : undefined,
+  }
+}
+
+function mapApiUserDetail(u: Record<string, unknown>): AdminUserDetail {
+  return {
+    id: String(u.id),
+    first_name: u.first_name ? String(u.first_name) : undefined,
+    last_name: u.last_name ? String(u.last_name) : undefined,
+    name: `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim(),
+    email: String(u.email ?? ""),
+    role: normalizeUserRole(String(u.role ?? "buyer")),
+    company: u.company ?? null,
+    status: String(u.status ?? "active").toLowerCase() as UserStatus,
+    status_label: u.status_label ? String(u.status_label) : undefined,
+    statuses: (u.statuses as Record<string, string>) ?? undefined,
+    agreed_to_terms: Boolean(u.agreed_to_terms),
+    two_factor_enabled: Boolean(u.two_factor_enabled),
+    deactivated_at: (u.deactivated_at as string | null) ?? null,
+    deactivated_reason: (u.deactivated_reason as string | null) ?? null,
+    created_at: u.created_at ? String(u.created_at) : undefined,
+    updated_at: u.updated_at ? String(u.updated_at) : undefined,
+    preferred_language: u.preferred_language ? String(u.preferred_language) : undefined,
+    timezone: u.timezone ? String(u.timezone) : undefined,
+    quote_notification: Number(u.quote_notification ?? 0),
+    message_notification: Number(u.message_notification ?? 0),
+    supplier_update: Number(u.supplier_update ?? 0),
+    weekly_digest: Number(u.weekly_digest ?? 0),
+    marketing_promotion: Number(u.marketing_promotion ?? 0),
+    preferred_currency: (u.preferred_currency as AdminUserDetail["preferred_currency"]) ?? null,
+    login_history: (u.login_history as AdminUserDetail["login_history"]) ?? [],
+  }
+}
 
 export default function AdminUsersPage() {
   const { t } = useTranslation()
@@ -131,20 +178,16 @@ export default function AdminUsersPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { user: currentAuthUser } = useAuth()
-  const [users, setUsers] = useState<UserItem[]>(initialUsers)
+  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [page, setPage] = useState<number>(1)
   const [perPage, setPerPage] = useState<number>(5)
-  const [reloadKey, setReloadKey] = useState<number>(0)
-  const [meta, setMeta] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const [showUserDialog, setShowUserDialog] = useState(false)
   const [currentUser, setCurrentUser] = useState<AdminUserDetail | null>(null)
-  const [detailLoading, setDetailLoading] = useState<boolean>(false)
-  // Action dialogs state
+  const [detailUserId, setDetailUserId] = useState<string | null>(null)
   const [deactivateOpen, setDeactivateOpen] = useState(false)
   const [deactivateTarget, setDeactivateTarget] = useState<string | null>(null)
   const [deactivateReason, setDeactivateReason] = useState("")
@@ -153,62 +196,89 @@ export default function AdminUsersPage() {
   const [deleteReason, setDeleteReason] = useState("")
   const [bulkDeactivateOpen, setBulkDeactivateOpen] = useState(false)
   const [bulkDeactivateReason, setBulkDeactivateReason] = useState("")
-  const [actionLoading, setActionLoading] = useState(false)
   const [contactingUserId, setContactingUserId] = useState<string | null>(null)
 
-  useEffect(() => {
-    let mounted = true
+  const usersQueryKey = queryKeys.adminUsers(page, perPage, searchQuery, roleFilter, statusFilter)
 
-    async function fetchUsers() {
-      setIsLoading(true)
-      try {
-        const params: Record<string, any> = { per_page: perPage, page }
-        if (searchQuery) params.search = searchQuery
-        if (roleFilter !== "all") params.role = roleFilter
-        if (statusFilter !== "all") params.status = statusFilter
+  const usersQuery = useQuery({
+    queryKey: usersQueryKey,
+    queryFn: async (): Promise<AdminUsersListData> => {
+      const params: Record<string, string | number> = { per_page: perPage, page }
+      if (searchQuery) params.search = searchQuery
+      if (roleFilter !== "all") params.role = roleFilter
+      if (statusFilter !== "all") params.status = statusFilter
 
-        const res = await apiClient.get("/admin/users", { params })
-        const payload = res.data
+      const res = await apiClient.get("/admin/users", { params })
+      const payload = res.data
 
-        if (!mounted) return
-
-        const mapped: UserItem[] = (payload.data ?? []).map((u: any) => ({
-          id: String(u.id),
-          name: `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim(),
-          email: u.email ?? "",
-          role: normalizeUserRole(String(u.role ?? "buyer")),
-          company: u.company?.company_name ?? null,
-          status: (String(u.status ?? "active")).toLowerCase() as UserStatus,
-          country: u.company?.country ?? undefined,
-          joinedAt: u.created_at ?? undefined,
-        }))
-
-        setUsers(mapped)
-        setMeta(payload.meta ?? null)
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("Failed to fetch users", err)
-      } finally {
-        if (mounted) setIsLoading(false)
+      return {
+        users: (payload.data ?? []).map((u: Record<string, unknown>) => mapApiUser(u)),
+        meta: payload.meta ?? null,
       }
-    }
-
-    fetchUsers()
-
-    return () => {
-      mounted = false
-    }
-  }, [searchQuery, roleFilter, statusFilter, page, perPage, reloadKey])
-
-  const filteredUsers = users.filter(user => {
-    if (searchQuery && !user.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !user.email.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false
-    }
-    if (roleFilter !== "all" && user.role !== roleFilter) return false
-    if (statusFilter !== "all" && user.status !== statusFilter) return false
-    return true
+    },
+    placeholderData: (previousData) => previousData,
   })
+
+  const userDetailQuery = useQuery({
+    queryKey: queryKeys.adminUserDetail(detailUserId ?? ""),
+    queryFn: async () => {
+      const res = await apiClient.get(`/admin/users/${detailUserId}`)
+      const u = res.data?.data
+      if (!u) {
+        throw new Error(c.userNotFound)
+      }
+      return mapApiUserDetail(u as Record<string, unknown>)
+    },
+    enabled: Boolean(detailUserId),
+  })
+
+  useEffect(() => {
+    if (userDetailQuery.data) {
+      setCurrentUser(userDetailQuery.data)
+    }
+  }, [userDetailQuery.data])
+
+  useEffect(() => {
+    if (userDetailQuery.isError) {
+      toast({
+        title: c.failedToLoadUserDetails,
+        description: getApiErrorMessage(userDetailQuery.error) || String(userDetailQuery.error),
+        variant: "destructive",
+      })
+    }
+  }, [userDetailQuery.isError, userDetailQuery.error, toast, c.failedToLoadUserDetails])
+
+  const activateMutation = useMutation({
+    mutationFn: (id: string) => apiClient.patch(`/admin/users/${id}/active`),
+  })
+
+  const deactivateMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      apiClient.patch(`/admin/users/${id}/deactivate`, { reason: reason ?? undefined }),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      apiClient.delete(`/admin/users/${id}`, { data: { reason: reason ?? undefined } }),
+  })
+
+  const users = usersQuery.data?.users ?? []
+  const meta = usersQuery.data?.meta ?? null
+  const isLoading = usersQuery.isLoading
+  const detailLoading = userDetailQuery.isLoading
+  const actionLoading =
+    activateMutation.isPending ||
+    deactivateMutation.isPending ||
+    deleteMutation.isPending
+
+  const patchUsersCache = (updater: (list: UserItem[]) => UserItem[]) => {
+    queryClient.setQueryData(usersQueryKey, (previous: AdminUsersListData | undefined) => {
+      if (!previous) return previous
+      return { ...previous, users: updater(previous.users) }
+    })
+  }
+
+  const filteredUsers = users
 
   const allSelected = filteredUsers.length > 0 && selectedUsers.length === filteredUsers.length
 
@@ -232,30 +302,26 @@ export default function AdminUsersPage() {
 
     try {
       if (status === 'active') {
-        await apiClient.patch(`/admin/users/${id}/active`)
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active' } : u))
+        await activateMutation.mutateAsync(id)
+        patchUsersCache((prev) => prev.map((u) => (u.id === id ? { ...u, status: 'active' } : u)))
         toast({ title: p.userActivated })
-        setReloadKey(k => k + 1)
         return
       }
 
       if (status === 'deactivated') {
-        await apiClient.patch(`/admin/users/${id}/deactivate`, { reason: reason ?? undefined })
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'deactivated' } : u))
+        await deactivateMutation.mutateAsync({ id, reason })
+        patchUsersCache((prev) => prev.map((u) => (u.id === id ? { ...u, status: 'deactivated' } : u)))
         toast({ title: p.userDeactivated })
-        setReloadKey(k => k + 1)
         return
       }
 
       if (status === 'suspended') {
-        // No API provided for suspend — perform local update only
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'suspended' } : u))
+        patchUsersCache((prev) => prev.map((u) => (u.id === id ? { ...u, status: 'suspended' } : u)))
         toast({ title: c.userSuspendedLocal })
         return
       }
 
-      // Fallback: local update
-      setUsers(prev => prev.map(u => u.id === id ? { ...u, status } : u))
+      patchUsersCache((prev) => prev.map((u) => (u.id === id ? { ...u, status } : u)))
       toast({ title: c.userStatusUpdatedLocal })
     } catch (err) {
       toast({ title: c.actionFailed, description: getApiErrorMessage(err), variant: 'destructive' })
@@ -268,11 +334,12 @@ export default function AdminUsersPage() {
     if (status === 'active') {
       toast({ title: c.activatingUsers })
       try {
-        await Promise.all(selectedUsers.map((id) => apiClient.patch(`/admin/users/${id}/active`)))
-        setUsers(prev => prev.map(u => selectedUsers.includes(u.id) ? { ...u, status: 'active' } : u))
+        await Promise.all(selectedUsers.map((id) => activateMutation.mutateAsync(id)))
+        patchUsersCache((prev) =>
+          prev.map((u) => (selectedUsers.includes(u.id) ? { ...u, status: 'active' } : u))
+        )
         setSelectedUsers([])
         toast({ title: c.usersActivated })
-        setReloadKey(k => k + 1)
         return
       } catch (err) {
         toast({ title: c.bulkActivationFailed, description: getApiErrorMessage(err), variant: 'destructive' })
@@ -281,13 +348,13 @@ export default function AdminUsersPage() {
     }
 
     if (status === 'deactivated') {
-      // Open bulk deactivate dialog to collect reason
       setBulkDeactivateOpen(true)
       return
     }
 
-    // For other statuses, do local update only
-    setUsers(prev => prev.map(u => selectedUsers.includes(u.id) ? { ...u, status } : u))
+    patchUsersCache((prev) =>
+      prev.map((u) => (selectedUsers.includes(u.id) ? { ...u, status } : u))
+    )
     setSelectedUsers([])
     toast({ title: c.statusUpdatedLocal })
   }
@@ -295,10 +362,9 @@ export default function AdminUsersPage() {
   const deleteUser = async (id: string, reason?: string) => {
     toast({ title: c.deletingUser })
     try {
-      await apiClient.delete(`/admin/users/${id}`, { data: { reason: reason ?? undefined } })
-      setUsers(prev => prev.filter(u => u.id !== id))
+      await deleteMutation.mutateAsync({ id, reason })
+      patchUsersCache((prev) => prev.filter((u) => u.id !== id))
       toast({ title: p.userDeleted })
-      setReloadKey(k => k + 1)
     } catch (err) {
       toast({ title: c.deleteFailed, description: getApiErrorMessage(err), variant: 'destructive' })
     }
@@ -306,74 +372,29 @@ export default function AdminUsersPage() {
 
   const performBulkDeactivate = async () => {
     if (selectedUsers.length === 0) return
-    setActionLoading(true)
     toast({ title: c.deactivatingUsers })
     try {
-      await Promise.all(selectedUsers.map((id) => apiClient.patch(`/admin/users/${id}/deactivate`, { reason: bulkDeactivateReason ?? undefined })))
-      setUsers(prev => prev.map(u => selectedUsers.includes(u.id) ? { ...u, status: 'deactivated' } : u))
+      await Promise.all(
+        selectedUsers.map((id) =>
+          deactivateMutation.mutateAsync({ id, reason: bulkDeactivateReason ?? undefined })
+        )
+      )
+      patchUsersCache((prev) =>
+        prev.map((u) => (selectedUsers.includes(u.id) ? { ...u, status: 'deactivated' } : u))
+      )
       setSelectedUsers([])
       toast({ title: c.usersDeactivated })
-      setReloadKey(k => k + 1)
       setBulkDeactivateOpen(false)
       setBulkDeactivateReason("")
     } catch (err) {
       toast({ title: c.bulkDeactivateFailed, description: getApiErrorMessage(err), variant: 'destructive' })
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  const fetchUserDetail = async (userId: string) => {
-    setDetailLoading(true)
-    try {
-      const res = await apiClient.get(`/admin/users/${userId}`)
-      const u = res.data?.data
-      if (!u) {
-        toast({ title: c.userNotFound, description: c.userNotFoundDesc, variant: "destructive" })
-        return
-      }
-
-      const mapped: AdminUserDetail = {
-        id: String(u.id),
-        first_name: u.first_name ?? undefined,
-        last_name: u.last_name ?? undefined,
-        name: `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim(),
-        email: u.email ?? "",
-        role: normalizeUserRole(String(u.role ?? "buyer")),
-        company: u.company ?? null,
-        status: (String(u.status ?? "active")).toLowerCase() as UserStatus,
-        status_label: u.status_label ?? undefined,
-        statuses: u.statuses ?? undefined,
-        agreed_to_terms: u.agreed_to_terms ?? false,
-        two_factor_enabled: u.two_factor_enabled ?? false,
-        deactivated_at: u.deactivated_at ?? null,
-        deactivated_reason: u.deactivated_reason ?? null,
-        created_at: u.created_at ?? undefined,
-        updated_at: u.updated_at ?? undefined,
-        preferred_language: u.preferred_language ?? undefined,
-        timezone: u.timezone ?? undefined,
-        quote_notification: u.quote_notification ?? 0,
-        message_notification: u.message_notification ?? 0,
-        supplier_update: u.supplier_update ?? 0,
-        weekly_digest: u.weekly_digest ?? 0,
-        marketing_promotion: u.marketing_promotion ?? 0,
-        preferred_currency: u.preferred_currency ?? null,
-        login_history: u.login_history ?? [],
-      }
-
-      setCurrentUser(mapped)
-    } catch (err) {
-      toast({ title: c.failedToLoadUserDetails, description: getApiErrorMessage(err) || String(err), variant: "destructive" })
-    } finally {
-      setDetailLoading(false)
     }
   }
 
   const openUserDetails = (user: UserItem) => {
-    // show dialog immediately with lightweight data while fetching full details
     setCurrentUser(user as AdminUserDetail)
+    setDetailUserId(user.id)
     setShowUserDialog(true)
-    fetchUserDetail(user.id)
   }
 
   const buyerCount = users.filter(u => u.role === "buyer").length
@@ -939,9 +960,7 @@ export default function AdminUsersPage() {
             <Button variant="outline" onClick={() => setDeactivateOpen(false)} disabled={actionLoading}>{c.cancel}</Button>
             <Button onClick={async () => {
               if (!deactivateTarget) return
-              setActionLoading(true)
               await updateUserStatus(deactivateTarget, 'deactivated', deactivateReason)
-              setActionLoading(false)
               setDeactivateOpen(false)
               setDeactivateTarget(null)
               setDeactivateReason("")
@@ -968,9 +987,7 @@ export default function AdminUsersPage() {
             <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={actionLoading}>{c.cancel}</Button>
             <Button variant="destructive" onClick={async () => {
               if (!deleteTarget) return
-              setActionLoading(true)
               await deleteUser(deleteTarget, deleteReason)
-              setActionLoading(false)
               setDeleteOpen(false)
               setDeleteTarget(null)
               setDeleteReason("")

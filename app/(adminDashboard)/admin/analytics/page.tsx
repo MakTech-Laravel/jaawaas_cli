@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Badge } from "@/components/ui/badge"
@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/chart"
 import { getAdminAnalyticsMetrics, getAdminAnalyticsGrowth, getAdminAnalyticsCountries, getAdminAnalyticsIndustries, AdminAnalyticsMetricItem, GrowthItem, CountryDistributionItem, IndustryItem } from "@/lib/api/admin-analytics"
 import { useTranslation } from "@/lib/i18n"
+import { queryKeys } from "@/lib/query-keys"
 
 const metricIcons: Record<string, React.ComponentType<any>> = {
   total_revenue: DollarSign,
@@ -63,74 +64,41 @@ export default function AdminAnalyticsPage() {
     },
   } satisfies ChartConfig
 
-  const [metrics, setMetrics] = useState<AdminAnalyticsMetricItem[]>([])
-  const [growthData, setGrowthData] = useState<GrowthItem[]>([])
-  const [countries, setCountries] = useState<CountryDistributionItem[]>([])
-  const [industries, setIndustries] = useState<IndustryItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isChartLoading, setIsChartLoading] = useState(true)
-  const [isCountriesLoading, setIsCountriesLoading] = useState(true)
-  const [isIndustriesLoading, setIsIndustriesLoading] = useState(true)
+  const metricsQuery = useQuery({
+    queryKey: queryKeys.adminAnalyticsMetrics(),
+    queryFn: () => getAdminAnalyticsMetrics(),
+  })
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true)
-    setIsChartLoading(true)
-    setIsCountriesLoading(true)
-    setIsIndustriesLoading(true)
+  const growthQuery = useQuery({
+    queryKey: queryKeys.adminAnalyticsGrowth(),
+    queryFn: () => getAdminAnalyticsGrowth(),
+  })
 
-    // Fetch metrics
-    try {
-      const res = await getAdminAnalyticsMetrics()
-      if (res.success && res.data?.metrics) {
-        setMetrics(res.data.metrics)
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setIsLoading(false)
-    }
+  const countriesQuery = useQuery({
+    queryKey: queryKeys.adminAnalyticsCountries(),
+    queryFn: () => getAdminAnalyticsCountries(),
+  })
 
-    // Fetch growth
-    try {
-      const res = await getAdminAnalyticsGrowth()
-      if (res.success && res.data) {
-        // Reverse array to render chronologically (oldest to newest)
-        setGrowthData([...res.data].reverse())
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setIsChartLoading(false)
-    }
+  const industriesQuery = useQuery({
+    queryKey: queryKeys.adminAnalyticsIndustries(),
+    queryFn: () => getAdminAnalyticsIndustries(),
+  })
 
-    // Fetch countries
-    try {
-      const res = await getAdminAnalyticsCountries()
-      if (res.success && res.data) {
-        setCountries(res.data)
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setIsCountriesLoading(false)
-    }
+  const metrics: AdminAnalyticsMetricItem[] =
+    metricsQuery.data?.success && metricsQuery.data.data?.metrics
+      ? metricsQuery.data.data.metrics
+      : []
+  const growthData: GrowthItem[] =
+    growthQuery.data?.success && growthQuery.data.data ? [...growthQuery.data.data].reverse() : []
+  const countries: CountryDistributionItem[] =
+    countriesQuery.data?.success && countriesQuery.data.data ? countriesQuery.data.data : []
+  const industries: IndustryItem[] =
+    industriesQuery.data?.success && industriesQuery.data.data ? industriesQuery.data.data : []
 
-    // Fetch industries
-    try {
-      const res = await getAdminAnalyticsIndustries()
-      if (res.success && res.data) {
-        setIndustries(res.data)
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setIsIndustriesLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    loadData()
-  }, [loadData])
+  const isLoading = metricsQuery.isLoading
+  const isChartLoading = growthQuery.isLoading
+  const isCountriesLoading = countriesQuery.isLoading
+  const isIndustriesLoading = industriesQuery.isLoading
 
   return (
     <div className="space-y-6">

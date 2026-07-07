@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useMemo, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -24,7 +25,8 @@ import {
   MessageSquare,
   Loader2
 } from "lucide-react"
-import { getBuyerRFQs, type BuyerRFQ } from "@/lib/api/rfqs"
+import { getBuyerRFQs } from "@/lib/api/rfqs"
+import { queryKeys } from "@/lib/query-keys"
 import { useTranslation } from "@/lib/i18n"
 import { format } from "date-fns"
 
@@ -40,10 +42,16 @@ const statusConfig: Record<string, { color: string; icon: typeof CheckCircle }> 
 export default function BuyerRFQsPage() {
   const router = useRouter()
   const { t } = useTranslation()
-  const [rfqs, setRfqs] = useState<BuyerRFQ[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+
+  const rfqsQuery = useQuery({
+    queryKey: queryKeys.buyerRfqs(),
+    queryFn: getBuyerRFQs,
+  })
+
+  const rfqs = rfqsQuery.data?.success ? rfqsQuery.data.data ?? [] : []
+  const loading = rfqsQuery.isLoading
 
   const getStatusLabel = (status: string) => {
     const key = status.toLowerCase()
@@ -51,32 +59,32 @@ export default function BuyerRFQsPage() {
     return t.buyer.rfqs.status[key as keyof typeof t.buyer.rfqs.status] || status
   }
 
-  useEffect(() => {
-    async function loadRFQs() {
-      const response = await getBuyerRFQs()
-      if (response.success && response.data) {
-        setRfqs(response.data)
-      }
-      setLoading(false)
-    }
-    loadRFQs()
-  }, [])
+  const filteredRFQs = useMemo(
+    () =>
+      rfqs.filter((rfq) => {
+        const productName = rfq.product?.name || ""
+        const supplierName = rfq.supplier?.company_name || ""
+        const rfqNumber = rfq.rfq_number || ""
 
-  const filteredRFQs = rfqs.filter(rfq => {
-    const productName = rfq.product?.name || ""
-    const supplierName = rfq.supplier?.company_name || ""
-    const rfqNumber = rfq.rfq_number || ""
-    
-    if (searchQuery && !productName.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !supplierName.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !rfqNumber.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false
-    }
-    if (statusFilter && statusFilter !== "all" && rfq.status.toLowerCase() !== statusFilter.toLowerCase()) {
-      return false
-    }
-    return true
-  })
+        if (
+          searchQuery &&
+          !productName.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !supplierName.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !rfqNumber.toLowerCase().includes(searchQuery.toLowerCase())
+        ) {
+          return false
+        }
+        if (
+          statusFilter &&
+          statusFilter !== "all" &&
+          rfq.status.toLowerCase() !== statusFilter.toLowerCase()
+        ) {
+          return false
+        }
+        return true
+      }),
+    [rfqs, searchQuery, statusFilter]
+  )
 
   if (loading) {
     return (

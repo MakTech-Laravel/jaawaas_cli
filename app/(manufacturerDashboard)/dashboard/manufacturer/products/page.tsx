@@ -1,6 +1,7 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -69,6 +70,7 @@ import {
   duplicateManufacturerProductToDraft,
   buildManufacturerProductUpdateFormData,
 } from "@/lib/api/manufacturer-products"
+import { queryKeys } from "@/lib/query-keys"
 import type {
   ManufacturerProductListItem,
   ManufacturerProductDetail,
@@ -112,6 +114,7 @@ function listItemFromDetail(d: ManufacturerProductDetail): ManufacturerProductLi
 
 export default function ManufacturerProductsPage() {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const getStatusLabel = (status: ManufacturerProductStatus) => {
     switch (status) {
       case "active":
@@ -129,21 +132,82 @@ export default function ManufacturerProductsPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | ManufacturerProductStatus>("all")
   const [page, setPage] = useState(1)
 
-  const [productsList, setProductsList] = useState<ManufacturerProductListItem[]>([])
-  const [meta, setMeta] = useState<ManufacturerProductMeta | null>(null)
-  const [stats, setStats] = useState<ManufacturerProductStats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const productsQueryKey = queryKeys.manufacturerProducts(page, debouncedSearch, statusFilter)
+
+  const productsQuery = useQuery({
+    queryKey: productsQueryKey,
+    queryFn: () =>
+      getManufacturerProducts({
+        page,
+        per_page: 10,
+        search: debouncedSearch || undefined,
+        status: statusFilter,
+      }),
+    placeholderData: (previousData) => previousData,
+  })
+
+  const statsQuery = useQuery({
+    queryKey: queryKeys.manufacturerProductStats(),
+    queryFn: getManufacturerProductStats,
+  })
+
+  const productsList = productsQuery.data?.success ? productsQuery.data.data : []
+  const meta = productsQuery.data?.success ? productsQuery.data.meta : null
+  const stats = statsQuery.data?.success ? statsQuery.data.data : null
+  const loading = productsQuery.isLoading && !productsQuery.data
+  const error =
+    productsQuery.data?.success === false
+      ? productsQuery.data.message ?? "Failed to load products."
+      : null
 
   const [editingRow, setEditingRow] = useState<ManufacturerProductListItem | null>(null)
-  const [editDetail, setEditDetail] = useState<ManufacturerProductDetail | null>(null)
-  const [editDetailLoading, setEditDetailLoading] = useState(false)
+  const [editDetailOverride, setEditDetailOverride] = useState<ManufacturerProductDetail | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
-  const [savingEdit, setSavingEdit] = useState(false)
 
-  const [viewDetail, setViewDetail] = useState<ManufacturerProductDetail | null>(null)
-  const [viewLoading, setViewLoading] = useState(false)
+  const editDetailQuery = useQuery({
+    queryKey: queryKeys.manufacturerProductDetail(editingRow?.slug ?? ""),
+    queryFn: () => getManufacturerProductBySlug(editingRow!.slug),
+    enabled: showEditDialog && Boolean(editingRow?.slug) && editDetailOverride === null,
+  })
+
+  const editDetail =
+    editDetailOverride ??
+    (editDetailQuery.data?.success ? editDetailQuery.data.data : null)
+  const editDetailLoading = editDetailOverride === null && editDetailQuery.isLoading
+
+  const [viewProduct, setViewProduct] = useState<ManufacturerProductListItem | null>(null)
   const [showViewDialog, setShowViewDialog] = useState(false)
+
+  const viewQuery = useQuery({
+    queryKey: queryKeys.manufacturerProductDetail(viewProduct?.slug ?? ""),
+    queryFn: () => getManufacturerProductBySlug(viewProduct!.slug),
+    enabled: showViewDialog && Boolean(viewProduct?.slug),
+  })
+
+  const viewDetail = viewQuery.data?.success ? viewQuery.data.data : null
+  const viewLoading = viewQuery.isLoading
+
+  const updateProductMutation = useMutation({
+    mutationFn: ({ id, formData }: { id: number; formData: FormData }) =>
+      updateManufacturerProduct(id, formData),
+  })
+  const deleteProductMutation = useMutation({
+    mutationFn: (id: number) => deleteManufacturerProduct(id),
+  })
+  const statusProductMutation = useMutation({
+    mutationFn: ({
+      id,
+      status,
+    }: {
+      id: number
+      status: ManufacturerProductStatus
+    }) => changeManufacturerProductStatus(id, status),
+  })
+  const duplicateProductMutation = useMutation({
+    mutationFn: (id: number) => duplicateManufacturerProductToDraft(id),
+  })
+
+  const savingEdit = updateProductMutation.isPending
 
   const [deletingProductId, setDeletingProductId] = useState<number | null>(null)
   const [rowActionIds, setRowActionIds] = useState<Set<number>>(new Set())
@@ -168,38 +232,55 @@ export default function ManufacturerProductsPage() {
     setPage(1)
   }, [debouncedSearch, statusFilter])
 
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    const [listRes, statsRes] = await Promise.all([
-      getManufacturerProducts({
-        page,
-        per_page: 10,
-        search: debouncedSearch || undefined,
-        status: statusFilter,
-      }),
-      getManufacturerProductStats(),
-    ])
-
-    if (!listRes.success) {
-      setError(listRes.message ?? "Failed to load products.")
-      setProductsList([])
-      setMeta(null)
-    } else {
-      setError(null)
-      setProductsList(listRes.data)
-      setMeta(listRes.meta)
-    }
-
-    if (statsRes.success) {
-      setStats(statsRes.data)
-    }
-    setLoading(false)
-  }, [page, debouncedSearch, statusFilter])
+  const invalidateProducts = () => {
+    void queryClient.invalidateQueries({ queryKey: productsQueryKey })
+    void queryClient.invalidateQueries({ queryKey: queryKeys.manufacturerProductStats() })
+  }
 
   useEffect(() => {
-    void refresh()
-  }, [refresh])
+    if (!showEditDialog || !editingRow || editDetailOverride || editDetailQuery.isLoading) {
+      return
+    }
+    if (editDetailQuery.data && !editDetailQuery.data.success) {
+      toast.error(editDetailQuery.data.message ?? "Could not load product for editing.")
+      setShowEditDialog(false)
+      setEditingRow(null)
+      setEditDetailOverride(null)
+    }
+  }, [
+    showEditDialog,
+    editingRow,
+    editDetailOverride,
+    editDetailQuery.isLoading,
+    editDetailQuery.data,
+  ])
+
+  useEffect(() => {
+    if (!showViewDialog || viewQuery.isLoading) {
+      return
+    }
+    if (viewQuery.data && !viewQuery.data.success) {
+      toast.error(viewQuery.data.message ?? "Could not load product.")
+      setShowViewDialog(false)
+      setViewProduct(null)
+    }
+  }, [showViewDialog, viewQuery.isLoading, viewQuery.data])
+
+  useEffect(() => {
+    if (!editDetail || !showEditDialog) {
+      return
+    }
+    setEditFormData({
+      name: editDetail.name,
+      description: editDetail.description,
+      minPrice: editDetail.minPrice,
+      maxPrice: editDetail.maxPrice,
+      minimumOrderQuantity: editDetail.minimumOrderQuantity,
+      unit: editDetail.unit,
+      leadTime: editDetail.leadTime,
+      status: editDetail.status,
+    })
+  }, [editDetail?.id, showEditDialog])
 
   const markRowBusy = (id: number, busy: boolean) => {
     setRowActionIds((prev) => {
@@ -213,15 +294,14 @@ export default function ManufacturerProductsPage() {
     })
   }
 
-  const openEditDialog = async (
+  const openEditDialog = (
     product: ManufacturerProductListItem,
     prefetched?: ManufacturerProductDetail | null
   ) => {
     setEditingRow(product)
+    setEditDetailOverride(prefetched ?? null)
     setShowEditDialog(true)
     if (prefetched) {
-      setEditDetail(prefetched)
-      setEditDetailLoading(false)
       setEditFormData({
         name: prefetched.name,
         description: prefetched.description,
@@ -232,37 +312,13 @@ export default function ManufacturerProductsPage() {
         leadTime: prefetched.leadTime,
         status: prefetched.status,
       })
-      return
     }
-    setEditDetail(null)
-    setEditDetailLoading(true)
-    const res = await getManufacturerProductBySlug(product.slug)
-    setEditDetailLoading(false)
-    if (!res.success || !res.data) {
-      toast.error(res.message ?? "Could not load product for editing.")
-      setShowEditDialog(false)
-      setEditingRow(null)
-      return
-    }
-    const d = res.data
-    setEditDetail(d)
-    setEditFormData({
-      name: d.name,
-      description: d.description,
-      minPrice: d.minPrice,
-      maxPrice: d.maxPrice,
-      minimumOrderQuantity: d.minimumOrderQuantity,
-      unit: d.unit,
-      leadTime: d.leadTime,
-      status: d.status,
-    })
   }
 
   const saveProductChanges = async () => {
     if (!editingRow || !editDetail) {
       return
     }
-    setSavingEdit(true)
     const fd = buildManufacturerProductUpdateFormData({
       name: editFormData.name,
       description: editFormData.description,
@@ -296,8 +352,7 @@ export default function ManufacturerProductsPage() {
       imageFiles: [],
       brochureFile: null,
     })
-    const res = await updateManufacturerProduct(editingRow.id, fd)
-    setSavingEdit(false)
+    const res = await updateProductMutation.mutateAsync({ id: editingRow.id, formData: fd })
     if (!res.success) {
       toast.error(res.message ?? "Update failed.")
       return
@@ -305,32 +360,32 @@ export default function ManufacturerProductsPage() {
     toast.success(res.message ?? "Product updated.")
     setShowEditDialog(false)
     setEditingRow(null)
-    setEditDetail(null)
-    void refresh()
+    setEditDetailOverride(null)
+    invalidateProducts()
   }
 
   const duplicateProduct = async (product: ManufacturerProductListItem) => {
     markRowBusy(product.id, true)
-    const res = await duplicateManufacturerProductToDraft(product.id)
+    const res = await duplicateProductMutation.mutateAsync(product.id)
     markRowBusy(product.id, false)
     if (!res.success) {
       toast.error(res.message ?? "Duplicate failed.")
       return
     }
     toast.success(res.message ?? "Product duplicated as draft.")
-    void refresh()
+    invalidateProducts()
   }
 
   const setProductStatus = async (productId: number, status: ManufacturerProductStatus) => {
     markRowBusy(productId, true)
-    const res = await changeManufacturerProductStatus(productId, status)
+    const res = await statusProductMutation.mutateAsync({ id: productId, status })
     markRowBusy(productId, false)
     if (!res.success) {
       toast.error(res.message ?? "Status change failed.")
       return
     }
     toast.success(res.message ?? "Status updated.")
-    void refresh()
+    invalidateProducts()
   }
 
   const confirmDeleteProduct = async () => {
@@ -339,7 +394,7 @@ export default function ManufacturerProductsPage() {
     }
     const id = deletingProductId
     markRowBusy(id, true)
-    const res = await deleteManufacturerProduct(id)
+    const res = await deleteProductMutation.mutateAsync(id)
     markRowBusy(id, false)
     setDeletingProductId(null)
     if (!res.success) {
@@ -347,21 +402,12 @@ export default function ManufacturerProductsPage() {
       return
     }
     toast.success(res.message ?? "Product deleted.")
-    void refresh()
+    invalidateProducts()
   }
 
-  const openViewDialog = async (product: ManufacturerProductListItem) => {
+  const openViewDialog = (product: ManufacturerProductListItem) => {
+    setViewProduct(product)
     setShowViewDialog(true)
-    setViewDetail(null)
-    setViewLoading(true)
-    const res = await getManufacturerProductBySlug(product.slug)
-    setViewLoading(false)
-    if (!res.success || !res.data) {
-      toast.error(res.message ?? "Could not load product.")
-      setShowViewDialog(false)
-      return
-    }
-    setViewDetail(res.data)
   }
 
   const lastPage = meta?.lastPage ?? 1
@@ -656,7 +702,7 @@ export default function ManufacturerProductsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8"
-                                  onClick={() => void openEditDialog(product)}
+                                  onClick={() => openEditDialog(product)}
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
@@ -751,7 +797,7 @@ export default function ManufacturerProductsPage() {
           setShowEditDialog(open)
           if (!open) {
             setEditingRow(null)
-            setEditDetail(null)
+            setEditDetailOverride(null)
           }
         }}
       >
@@ -910,7 +956,7 @@ export default function ManufacturerProductsPage() {
         onOpenChange={(open) => {
           setShowViewDialog(open)
           if (!open) {
-            setViewDetail(null)
+            setViewProduct(null)
           }
         }}
       >

@@ -1,18 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Swal from "sweetalert2"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +18,7 @@ import { getAdminProducts, updateAdminProductApprovalStatus, deleteAdminProduct 
 import type { AdminProduct, AdminProductMeta } from "@/lib/api/admin-products"
 import { useTranslation } from "@/lib/i18n"
 import { AdminPagination } from "@/components/admin/admin-pagination"
+import { queryKeys } from "@/lib/query-keys"
 
 const iconMap: Record<string, React.ReactNode> = {
   Factory: <Icons.Factory className="h-7 w-7" />,
@@ -54,10 +49,7 @@ export default function AdminProductsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [products, setProducts] = useState<AdminProduct[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [meta, setMeta] = useState<AdminProductMeta | null>(null)
+  const queryClient = useQueryClient()
   const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set())
 
   // Get query parameters
@@ -79,35 +71,32 @@ export default function AdminProductsPage() {
     router.push(`/admin/products?${newParams.toString()}`)
   }
 
-  // Fetch products when query params change
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true)
-      setError(null)
-      
-      const params: Record<string, unknown> = {
-        page,
-        per_page: perPage,
-      }
+  const queryFilters: Record<string, unknown> = { page, per_page: perPage }
+  if (search) queryFilters.search = search
+  if (isApprovedFilter !== "all") {
+    queryFilters.is_approved = isApprovedFilter === "1" ? 1 : 0
+  }
 
-      if (search) params.search = search
-      if (isApprovedFilter !== "all") {
-        params.is_approved = isApprovedFilter === "1" ? 1 : 0
-      }
+  const productsQueryKey = queryKeys.adminProducts(page, perPage, search, isApprovedFilter)
 
-      const response = await getAdminProducts(page, params)
-      if (response.success) {
-        setProducts(response.data)
-        setMeta(response.meta ?? null)
-      } else {
-        setError(response.message || p.fetchFailed)
-        setProducts([])
-      }
-      setLoading(false)
-    }
+  const productsQuery = useQuery({
+    queryKey: productsQueryKey,
+    queryFn: () => getAdminProducts(page, queryFilters),
+    placeholderData: (previousData) => previousData,
+  })
 
-    fetchProducts()
-  }, [search, isApprovedFilter, perPage, page])
+  const products = productsQuery.data?.success ? productsQuery.data.data : []
+  const meta = productsQuery.data?.success ? productsQuery.data.meta : null
+  const error = productsQuery.data?.success === false ? (productsQuery.data.message || p.fetchFailed) : null
+
+  const updateApprovalMutation = useMutation({
+    mutationFn: ({ productId, isApproved }: { productId: number; isApproved: boolean }) =>
+      updateAdminProductApprovalStatus(productId, isApproved),
+  })
+
+  const deleteProductMutation = useMutation({
+    mutationFn: (productId: number) => deleteAdminProduct(productId),
+  })
 
   // Handle product approval status update
   const handleApprovalStatusChange = async (
@@ -115,15 +104,23 @@ export default function AdminProductsPage() {
     isApproved: boolean
   ) => {
     setUpdatingIds((prev) => new Set([...prev, productId]))
-    const response = await updateAdminProductApprovalStatus(productId, isApproved)
+    const response = await updateApprovalMutation.mutateAsync({ productId, isApproved })
     
     if (response.success) {
-      // Update local state
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === productId ? { ...p, is_approved: isApproved } : p
-        )
-      )
+      queryClient.setQueryData(productsQueryKey, (previous: {
+        success: boolean
+        data: AdminProduct[]
+        meta: AdminProductMeta | null
+        message?: string
+      } | undefined) => {
+        if (!previous?.success) return previous
+        return {
+          ...previous,
+          data: previous.data.map((product) =>
+            product.id === productId ? { ...product, is_approved: isApproved } : product
+          ),
+        }
+      })
       
       // Show success alert
       await Swal.fire({
@@ -179,11 +176,28 @@ export default function AdminProductsPage() {
     }
 
     setUpdatingIds((prev) => new Set([...prev, productId]))
-    const response = await deleteAdminProduct(productId)
+    const response = await deleteProductMutation.mutateAsync(productId)
     
     if (response.success) {
-      // Remove product from local state
-      setProducts((prev) => prev.filter((p) => p.id !== productId))
+      queryClient.setQueryData(productsQueryKey, (previous: {
+        success: boolean
+        data: AdminProduct[]
+        meta: AdminProductMeta | null
+        message?: string
+      } | undefined) => {
+        if (!previous?.success) return previous
+
+        const nextProducts = previous.data.filter((product) => product.id !== productId)
+        const nextMeta = previous.meta
+          ? { ...previous.meta, total: Math.max(previous.meta.total - 1, 0) }
+          : previous.meta
+
+        return {
+          ...previous,
+          data: nextProducts,
+          meta: nextMeta,
+        }
+      })
       
       // Show success alert
       await Swal.fire({
@@ -259,7 +273,7 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Loading State */}
-      {loading && (
+      {productsQuery.isLoading && (
         <div className="flex items-center justify-center py-12">
           <p className="text-muted-foreground">{p.loading}</p>
         </div>
@@ -273,13 +287,13 @@ export default function AdminProductsPage() {
       )}
 
       {/* Products Grid */}
-      {!loading && products.length === 0 && (
+      {!productsQuery.isLoading && products.length === 0 && (
         <div className="flex items-center justify-center py-12">
           <p className="text-muted-foreground">{p.noProducts}</p>
         </div>
       )}
 
-      {!loading && (
+      {!productsQuery.isLoading && (
         <>
           <div className="grid gap-4">
             {products.map((product) => {

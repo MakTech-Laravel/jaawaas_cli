@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useMemo, useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -43,6 +44,7 @@ import {
   Search
 } from "lucide-react"
 import { fetchPlans, createPlan, updatePlan, deletePlan as deleteApiPlan, fetchPlanFeatures, togglePopularPlan, updatePlanFeature, type PricingPlan as BackendPricingPlan, type PlanFeature } from "@/lib/api/admin-pricing"
+import { queryKeys } from "@/lib/query-keys"
 import { useTranslation } from "@/lib/i18n"
 
 interface PricingFeature {
@@ -254,8 +256,31 @@ export default function AdminPricingPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.pricing
   const c = t.admin.common
-  const [plans, setPlans] = useState<PricingPlan[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
+
+  const plansQuery = useQuery({
+    queryKey: queryKeys.adminPricingPlans(),
+    queryFn: fetchPlans,
+  })
+
+  const featuresQuery = useQuery({
+    queryKey: queryKeys.adminPlanFeatures(),
+    queryFn: fetchPlanFeatures,
+  })
+
+  const availableFeatures = featuresQuery.data ?? []
+  const plans = useMemo(() => {
+    const backendPlans = plansQuery.data ?? []
+    const features = featuresQuery.data ?? []
+    return backendPlans.map((plan) => transformBackendPlan(plan, features))
+  }, [plansQuery.data, featuresQuery.data])
+
+  const isLoading = plansQuery.isLoading || featuresQuery.isLoading
+
+  const refreshPricingPlans = async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.adminPricingPlans() })
+  }
+
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
@@ -265,7 +290,6 @@ export default function AdminPricingPage() {
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
-  const [availableFeatures, setAvailableFeatures] = useState<PlanFeature[]>([])
   const [featureCatalogFilter, setFeatureCatalogFilter] = useState("")
   const [featureSearchFilter, setFeatureSearchFilter] = useState("")
   const [showFeatureSelector, setShowFeatureSelector] = useState<"add" | "edit" | null>(null)
@@ -277,27 +301,6 @@ export default function AdminPricingPage() {
   const [togglingPopularPlanId, setTogglingPopularPlanId] = useState<string | null>(null)
   const [isFeatureCatalogOpen, setIsFeatureCatalogOpen] = useState(false)
 
-  useEffect(() => {
-    const loadPlans = async () => {
-      setIsLoading(true)
-      try {
-        const [backendPlans, features] = await Promise.all([
-          fetchPlans(),
-          fetchPlanFeatures()
-        ])
-        const transformedPlans = backendPlans.map((plan) => transformBackendPlan(plan, features))
-        setPlans(transformedPlans)
-        setAvailableFeatures(features)
-      } catch (error) {
-        console.error("Error loading plans:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadPlans()
-  }, [])
-  
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
@@ -359,11 +362,14 @@ export default function AdminPricingPage() {
       })
 
       if (result.success) {
-        setAvailableFeatures(prev => prev.map(feature => (
-          feature.id === editingFeature.id
-            ? result.feature || { ...feature, name: trimmedName }
-            : feature
-        )))
+        queryClient.setQueryData(queryKeys.adminPlanFeatures(), (previous: PlanFeature[] | undefined) => {
+          if (!previous) return previous
+          return previous.map((feature) =>
+            feature.id === editingFeature.id
+              ? result.feature || { ...feature, name: trimmedName }
+              : feature
+          )
+        })
         setShowFeatureEditDialog(false)
         setEditingFeature(null)
       } else {
@@ -409,20 +415,7 @@ export default function AdminPricingPage() {
       const result = await updatePlan(editingPlan.id, payload)
 
       if (result.success) {
-        // Update local state
-        setPlans(prev => {
-          const updatedPlans = prev.map(p => 
-            p.id === editingPlan.id 
-              ? { ...p, ...editForm }
-              : p
-          )
-          if (editForm.highlighted) {
-            return updatedPlans.map(p => 
-              p.id === editingPlan.id ? p : { ...p, highlighted: false }
-            )
-          }
-          return updatedPlans
-        })
+        await refreshPricingPlans()
         setShowEditDialog(false)
         setEditingPlan(null)
       } else {
@@ -461,10 +454,7 @@ export default function AdminPricingPage() {
       const result = await updatePlan(planId, payload)
 
       if (result.success) {
-        // Update local state
-        setPlans(prev => prev.map(p => 
-          p.id === planId ? { ...p, active: newActiveStatus } : p
-        ))
+        await refreshPricingPlans()
       } else {
         console.error("Failed to toggle plan status:", result.message)
       }
@@ -481,12 +471,7 @@ export default function AdminPricingPage() {
       const result = await togglePopularPlan(planId)
       
       if (result.success) {
-        // Update local state - ensure only one plan is highlighted
-        const plan = plans.find(p => p.id === planId)
-        setPlans(prev => prev.map(p => ({
-          ...p,
-          highlighted: p.id === planId ? !plan?.highlighted : false
-        })))
+        await refreshPricingPlans()
       } else {
         console.error("Failed to toggle plan popular status:", result.message)
       }
@@ -564,24 +549,7 @@ export default function AdminPricingPage() {
       const result = await createPlan(payload)
 
       if (result.success) {
-        // If API returns the created plan, use it; otherwise create locally
-        if (result.plan) {
-          const newPlan = transformBackendPlan(result.plan)
-          setPlans(prev => [...prev, newPlan])
-        } else {
-          const newPlan: PricingPlan = {
-            id: `plan-${Date.now()}`,
-            name: editForm.name,
-            description: editForm.description,
-            monthlyPrice: editForm.monthlyPrice,
-            yearlyPrice: editForm.yearlyPrice,
-            features: editForm.features,
-            highlighted: false,
-            buttonText: editForm.buttonText,
-            active: true
-          }
-          setPlans(prev => [...prev, newPlan])
-        }
+        await refreshPricingPlans()
 
         // Reset form
         setShowAddDialog(false)
@@ -611,7 +579,7 @@ export default function AdminPricingPage() {
     try {
       const result = await deleteApiPlan(planId)
       if (result.success) {
-        setPlans(prev => prev.filter(p => p.id !== planId))
+        await refreshPricingPlans()
       }
     } catch (error) {
       console.error("Error deleting plan:", error)

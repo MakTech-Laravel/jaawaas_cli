@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -36,6 +37,7 @@ import {
 import Swal from "sweetalert2"
 import { getAdminContacts, getAdminContactById, deleteAdminContact, updateAdminContactReadStatus, type AdminContact } from "@/lib/api/admin-contacts"
 import { useTranslation } from "@/lib/i18n"
+import { queryKeys } from "@/lib/query-keys"
 
 export default function AdminContactsPage() {
   const { t } = useTranslation()
@@ -43,13 +45,8 @@ export default function AdminContactsPage() {
   const c = t.admin.common
   const router = useRouter()
   const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
 
-  const [contacts, setContacts] = useState<AdminContact[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [lastPage, setLastPage] = useState(1)
-  const [total, setTotal] = useState(0)
-  
   // Viewing details
   const [selectedContact, setSelectedContact] = useState<AdminContact | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -72,29 +69,34 @@ export default function AdminContactsPage() {
     router.push(`/admin/contact?${newParams.toString()}`)
   }
 
-  useEffect(() => {
-    const fetchContacts = async () => {
-      setLoading(true)
-      setError(null)
-      
+  const contactsQueryKey = queryKeys.adminContacts(page, perPage, search)
+  const contactsQuery = useQuery({
+    queryKey: contactsQueryKey,
+    queryFn: () => {
       const filters: Record<string, unknown> = { per_page: perPage }
       if (search) filters.search = search
-      
-      const response = await getAdminContacts(page, filters)
-      
-      if (response.success) {
-        setContacts(response.data)
-        setLastPage(response.meta?.lastPage ?? 1)
-        setTotal(response.meta?.total ?? 0)
-      } else {
-        setError(response.message || c.failedToFetchContact)
-        setContacts([])
-      }
-      setLoading(false)
-    }
+      return getAdminContacts(page, filters)
+    },
+    placeholderData: (previousData) => previousData,
+  })
 
-    fetchContacts()
-  }, [page, perPage, search])
+  const deleteContactMutation = useMutation({
+    mutationFn: (id: number) => deleteAdminContact(id),
+  })
+
+  const updateReadMutation = useMutation({
+    mutationFn: ({ id, isRead }: { id: number; isRead: boolean }) =>
+      updateAdminContactReadStatus(id, isRead),
+  })
+
+  const contacts = contactsQuery.data?.success ? contactsQuery.data.data : []
+  const loading = contactsQuery.isLoading
+  const error =
+    contactsQuery.data?.success === false
+      ? contactsQuery.data.message || c.failedToFetchContact
+      : null
+  const lastPage = contactsQuery.data?.success ? contactsQuery.data.meta?.lastPage ?? 1 : 1
+  const total = contactsQuery.data?.success ? contactsQuery.data.meta?.total ?? 0 : 0
 
   const formatDate = (dateString: string) => {
     try {
@@ -111,10 +113,23 @@ export default function AdminContactsPage() {
     
     // If it's unread, mark it as read using the dedicated endpoint
     if (!contact.is_read) {
-      const readResponse = await updateAdminContactReadStatus(contact.id, true)
+      const readResponse = await updateReadMutation.mutateAsync({ id: contact.id, isRead: true })
       if (readResponse.success) {
         // Update local state proactively
-        setContacts(prev => prev.map(c => c.id === contact.id ? { ...c, is_read: true } : c))
+        queryClient.setQueryData(contactsQueryKey, (previous: {
+          success: boolean
+          data: AdminContact[]
+          meta: { lastPage?: number; total?: number } | null
+          message?: string
+        } | undefined) => {
+          if (!previous?.success) return previous
+          return {
+            ...previous,
+            data: previous.data.map((item) =>
+              item.id === contact.id ? { ...item, is_read: true } : item
+            ),
+          }
+        })
       }
     }
     
@@ -122,7 +137,18 @@ export default function AdminContactsPage() {
     const response = await getAdminContactById(contact.id)
     if (response.success && response.data) {
       setSelectedContact(response.data)
-      setContacts(prev => prev.map(c => c.id === contact.id ? response.data! : c))
+      queryClient.setQueryData(contactsQueryKey, (previous: {
+        success: boolean
+        data: AdminContact[]
+        meta: { lastPage?: number; total?: number } | null
+        message?: string
+      } | undefined) => {
+        if (!previous?.success) return previous
+        return {
+          ...previous,
+          data: previous.data.map((item) => (item.id === contact.id ? response.data! : item)),
+        }
+      })
     }
   }
 
@@ -146,10 +172,21 @@ export default function AdminContactsPage() {
 
     if (!result.isConfirmed) return
 
-    const response = await deleteAdminContact(contact.id)
+    const response = await deleteContactMutation.mutateAsync(contact.id)
     if (response.success) {
-      setContacts(prev => prev.filter(c => c.id !== contact.id))
-      setTotal(prev => Math.max(0, prev - 1))
+      queryClient.setQueryData(contactsQueryKey, (previous: {
+        success: boolean
+        data: AdminContact[]
+        meta: { lastPage?: number; total?: number } | null
+        message?: string
+      } | undefined) => {
+        if (!previous?.success) return previous
+        const nextData = previous.data.filter((item) => item.id !== contact.id)
+        const nextMeta = previous.meta
+          ? { ...previous.meta, total: Math.max((previous.meta.total ?? 0) - 1, 0) }
+          : previous.meta
+        return { ...previous, data: nextData, meta: nextMeta }
+      })
       
       if (selectedContact?.id === contact.id) {
         setIsDialogOpen(false)

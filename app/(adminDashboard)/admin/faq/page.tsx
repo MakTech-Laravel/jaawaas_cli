@@ -1,6 +1,7 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -50,6 +51,8 @@ import {
   updateAdminFaq,
   updateAdminFaqCategory,
 } from "@/lib/api/admin-faqs"
+import type { AdminFaqCategory } from "@/lib/api/admin-faqs"
+import { queryKeys } from "@/lib/query-keys"
 import { useTranslation } from "@/lib/i18n"
 import Swal from "sweetalert2"
 import {
@@ -147,13 +150,67 @@ function showErrorAlert(c: { ok: string }, oopsTitle: string, message: string) {
   })
 }
 
+function normalizeFaqCategories(data: AdminFaqCategory[], noneLabel: string): FAQCategory[] {
+  return data
+    .map((category, index) => ({ ...category, tempOrder: index }))
+    .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.tempOrder - b.tempOrder)
+    .map((category, categoryIndex) => ({
+      id: String(category.id),
+      name: (category.name || "").trim().length > 0 ? category.name : noneLabel,
+      slug: category.slug,
+      sort: Number.isFinite(category.sort) ? category.sort : categoryIndex,
+      faqs: (category.faqs || [])
+        .map((faq, faqIndex) => ({ ...faq, tempOrder: faqIndex }))
+        .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.tempOrder - b.tempOrder)
+        .map((faq, faqIndex) => ({
+          id: String(faq.id),
+          question: (faq.question || "").trim().length > 0 ? faq.question : noneLabel,
+          answer: (faq.answer || "").trim().length > 0 ? faq.answer : noneLabel,
+          sort: Number.isFinite(faq.sort) ? faq.sort : faqIndex,
+        })),
+    }))
+}
+
 export default function AdminFaqPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.faq
   const c = t.admin.common
-  const [categories, setCategories] = useState<FAQCategory[]>([])
+  const queryClient = useQueryClient()
+  const faqQueryKey = queryKeys.adminFaqCategories()
+
+  const faqQuery = useQuery({
+    queryKey: faqQueryKey,
+    queryFn: async () => {
+      const response = await getAdminFaqCategories()
+      if (!response.success) {
+        throw new Error(response.message || p.failedFetchCategories)
+      }
+      return normalizeFaqCategories(response.data, c.none)
+    },
+  })
+
+  useEffect(() => {
+    if (faqQuery.isError) {
+      showErrorAlert(
+        c,
+        p.oops,
+        faqQuery.error instanceof Error ? faqQuery.error.message : p.failedFetchCategories
+      )
+    }
+  }, [faqQuery.isError, faqQuery.error, c, p.failedFetchCategories, p.oops])
+
+  const categories = faqQuery.data ?? []
+  const isLoading = faqQuery.isLoading
+
+  const patchFaqCategories = (updater: (prev: FAQCategory[]) => FAQCategory[]) => {
+    queryClient.setQueryData(faqQueryKey, updater)
+  }
+
+  const refreshFaqCategories = async () => {
+    await queryClient.invalidateQueries({ queryKey: faqQueryKey })
+  }
+
   const [expandedCategories, setExpandedCategories] = useState<string[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isReordering, setIsReordering] = useState(false)
@@ -184,49 +241,6 @@ export default function AdminFaqPage() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   )
-
-  const loadCategories = useCallback(async (silent = false) => {
-    if (!silent) {
-      setIsLoading(true)
-    }
-
-    const response = await getAdminFaqCategories()
-    if (response.success) {
-      const normalizedCategories: FAQCategory[] = response.data
-        .map((category, index) => ({ ...category, tempOrder: index }))
-        .sort((a: any, b: any) => (a.sort ?? 0) - (b.sort ?? 0) || a.tempOrder - b.tempOrder)
-        .map((category, categoryIndex) => ({
-          id: String(category.id),
-          name: (category.name || "").trim().length > 0 ? category.name : c.none,
-          slug: category.slug,
-          sort: Number.isFinite(category.sort) ? category.sort : categoryIndex,
-          faqs: (category.faqs || [])
-            .map((faq, faqIndex) => ({ ...faq, tempOrder: faqIndex }))
-            .sort((a: any, b: any) => (a.sort ?? 0) - (b.sort ?? 0) || a.tempOrder - b.tempOrder)
-            .map((faq, faqIndex) => ({
-              id: String(faq.id),
-              question: (faq.question || "").trim().length > 0 ? faq.question : c.none,
-              answer: (faq.answer || "").trim().length > 0 ? faq.answer : c.none,
-              sort: Number.isFinite(faq.sort) ? faq.sort : faqIndex,
-            })),
-        }))
-
-      setCategories(normalizedCategories)
-    } else {
-      showErrorAlert(c, p.oops, response.message || p.failedFetchCategories)
-      if (!silent) {
-        setCategories([])
-      }
-    }
-
-    if (!silent) {
-      setIsLoading(false)
-    }
-  }, [c, p])
-
-  useEffect(() => {
-    void loadCategories()
-  }, [loadCategories])
 
   // Calculate totals
   const totalCategories = categories.length
@@ -285,7 +299,7 @@ export default function AdminFaqPage() {
         return
       }
 
-      await loadCategories(true)
+      await refreshFaqCategories()
       showSuccessAlert(c, response.message || (editingCategory ? p.categoryUpdated : p.categoryAdded))
       setCategoryDialogOpen(false)
       setCategoryTitle("")
@@ -347,7 +361,7 @@ export default function AdminFaqPage() {
         return
       }
 
-      await loadCategories(true)
+      await refreshFaqCategories()
       showSuccessAlert(c, response.message || (editingFaq ? p.faqUpdated : p.faqAdded))
       setFaqDialogOpen(false)
       setFaqQuestion("")
@@ -381,7 +395,7 @@ export default function AdminFaqPage() {
         return
       }
 
-      await loadCategories(true)
+      await refreshFaqCategories()
       showSuccessAlert(c, response.message || (itemToDelete.type === "category" ? p.categoryDeleted : p.faqDeleted))
       setDeleteDialogOpen(false)
       setItemToDelete(null)
@@ -403,14 +417,14 @@ export default function AdminFaqPage() {
     const currentPosition = toPosition(category.sort, index)
     const newPosition = toPosition(targetCategory?.sort, newIndex)
 
-    setCategories((prev) => arrayMove(prev, index, newIndex))
+    patchFaqCategories((prev) => arrayMove(prev, index, newIndex))
     setIsReordering(true)
     try {
       const response = await moveAdminFaqCategoryPosition(category.id, currentPosition, newPosition)
       if (!response.success) {
         showErrorAlert(c, p.oops, response.message || p.failedReorderCategory)
       }
-      await loadCategories(true)
+      await refreshFaqCategories()
     } finally {
       setIsReordering(false)
     }
@@ -429,14 +443,14 @@ export default function AdminFaqPage() {
     const currentPosition = toPosition(category.sort, index)
     const newPosition = toPosition(targetCategory?.sort, newIndex)
 
-    setCategories((prev) => arrayMove(prev, index, newIndex))
+    patchFaqCategories((prev) => arrayMove(prev, index, newIndex))
     setIsReordering(true)
     try {
       const response = await moveAdminFaqCategoryPosition(category.id, currentPosition, newPosition)
       if (!response.success) {
         showErrorAlert(c, p.oops, response.message || p.failedReorderCategory)
       }
-      await loadCategories(true)
+      await refreshFaqCategories()
     } finally {
       setIsReordering(false)
     }
@@ -459,7 +473,7 @@ export default function AdminFaqPage() {
     const newPosition = toPosition(targetFaq?.sort, newIndex)
     const faqCategoryId = toPosition(categoryId, Number(categoryId))
 
-    setCategories((prev) =>
+    patchFaqCategories((prev) =>
       prev.map((c) => {
         if (c.id === categoryId) {
           return { ...c, faqs: arrayMove(c.faqs, faqIndex, newIndex) }
@@ -474,7 +488,7 @@ export default function AdminFaqPage() {
       if (!response.success) {
         showErrorAlert(c, p.oops, response.message || p.failedReorderFaq)
       }
-      await loadCategories(true)
+      await refreshFaqCategories()
     } finally {
       setIsReordering(false)
     }
@@ -496,7 +510,7 @@ export default function AdminFaqPage() {
     const newPosition = toPosition(targetFaq?.sort, newIndex)
     const faqCategoryId = toPosition(categoryId, Number(categoryId))
 
-    setCategories((prev) =>
+    patchFaqCategories((prev) =>
       prev.map((c) => {
         if (c.id === categoryId) {
           return { ...c, faqs: arrayMove(c.faqs, faqIndex, newIndex) }
@@ -511,7 +525,7 @@ export default function AdminFaqPage() {
       if (!response.success) {
         showErrorAlert(c, p.oops, response.message || p.failedReorderFaq)
       }
-      await loadCategories(true)
+      await refreshFaqCategories()
     } finally {
       setIsReordering(false)
     }
@@ -530,14 +544,14 @@ export default function AdminFaqPage() {
       const currentPosition = Number.isFinite(activeCategory?.sort) ? activeCategory.sort : oldIndex
       const newPosition = Number.isFinite(targetCategory?.sort) ? targetCategory.sort : newIndex
 
-      setCategories((items) => arrayMove(items, oldIndex, newIndex))
+      patchFaqCategories((items) => arrayMove(items, oldIndex, newIndex))
       setIsReordering(true)
       try {
         const response = await moveAdminFaqCategoryPosition(String(active.id), currentPosition, newPosition)
         if (!response.success) {
           showErrorAlert(c, p.oops, response.message || p.failedReorderCategory)
         }
-        await loadCategories(true)
+        await refreshFaqCategories()
       } finally {
         setIsReordering(false)
       }
@@ -561,7 +575,7 @@ export default function AdminFaqPage() {
       const newPosition = toPosition(targetFaq?.sort, newIndex)
       const faqCategoryId = toPosition(categoryId, Number(categoryId))
 
-      setCategories((prev) =>
+      patchFaqCategories((prev) =>
         prev.map((c) => {
           if (c.id === categoryId) {
             return {
@@ -579,7 +593,7 @@ export default function AdminFaqPage() {
         if (!response.success) {
           showErrorAlert(c, p.oops, response.message || p.failedReorderFaq)
         }
-        await loadCategories(true)
+        await refreshFaqCategories()
       } finally {
         setIsReordering(false)
       }

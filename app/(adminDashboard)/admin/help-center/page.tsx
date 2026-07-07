@@ -1,6 +1,7 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -36,6 +37,7 @@ import {
   type HelpCenterCategory,
   type HelpCenterArticle
 } from "@/lib/api/admin-help-center"
+import { queryKeys } from "@/lib/query-keys"
 import { useTranslation } from "@/lib/i18n"
 
 function showSuccessAlert(c: { success: string; ok: string }, message: string) {
@@ -62,13 +64,51 @@ export default function AdminHelpCenterPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.helpCenter
   const c = t.admin.common
-  const [categories, setCategories] = useState<HelpCenterCategory[]>([])
-  const [articlesData, setArticlesData] = useState<Record<number, HelpCenterArticle[]>>({})
-  const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [isSaving, setIsSaving] = useState(false)
-  const [loadingArticles, setLoadingArticles] = useState<Record<number, boolean>>({})
   
   const [expandedCategories, setExpandedCategories] = useState<number[]>([])
+
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.adminHelpCategories(),
+    queryFn: async () => {
+      const res = await getAdminHelpCategories(1, 100)
+      if (!res.success) {
+        throw new Error(res.message || p.failedLoadCategories)
+      }
+      return res
+    },
+  })
+
+  useEffect(() => {
+    if (categoriesQuery.isError) {
+      const message =
+        categoriesQuery.error instanceof Error
+          ? categoriesQuery.error.message
+          : p.failedLoadCategories
+      showErrorAlert(c, c.error, message)
+    }
+  }, [categoriesQuery.isError, categoriesQuery.error, c, p.failedLoadCategories])
+
+  const articleQueries = useQueries({
+    queries: expandedCategories.map((categoryId) => ({
+      queryKey: queryKeys.adminHelpArticles(categoryId),
+      queryFn: () => getAdminHelpArticles(categoryId, 1, 100),
+    })),
+  })
+
+  const categories = categoriesQuery.data?.data ?? []
+  const isLoading = categoriesQuery.isLoading
+
+  const articlesData: Record<number, HelpCenterArticle[]> = {}
+  const loadingArticles: Record<number, boolean> = {}
+  expandedCategories.forEach((categoryId, index) => {
+    const query = articleQueries[index]
+    loadingArticles[categoryId] = query?.isLoading ?? false
+    if (query?.data?.success) {
+      articlesData[categoryId] = query.data.data ?? []
+    }
+  })
 
   // Category Dialog State
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
@@ -85,39 +125,12 @@ export default function AdminHelpCenterPage() {
   const [artDescription, setArtDescription] = useState("")
   const [artSteps, setArtSteps] = useState<{content: string}[]>([{content: ""}])
 
-  const loadCategories = useCallback(async (silent = false) => {
-    if (!silent) setIsLoading(true)
-    const res = await getAdminHelpCategories(1, 100) // fetch up to 100 for now
-    if (res.success) {
-      setCategories(res.data || [])
-    } else {
-      if (!silent) showErrorAlert(c, c.error, res.message || p.failedLoadCategories)
-    }
-    if (!silent) setIsLoading(false)
-  }, [c, p])
-
-  useEffect(() => {
-    void loadCategories()
-  }, [loadCategories])
-
-  const fetchArticlesForCategory = async (categoryId: number) => {
-    setLoadingArticles(prev => ({...prev, [categoryId]: true}))
-    const res = await getAdminHelpArticles(categoryId, 1, 100)
-    if (res.success) {
-      setArticlesData(prev => ({...prev, [categoryId]: res.data || []}))
-    }
-    setLoadingArticles(prev => ({...prev, [categoryId]: false}))
-  }
-
-  const toggleCategory = async (categoryId: number) => {
-    if (expandedCategories.includes(categoryId)) {
-      setExpandedCategories(prev => prev.filter(id => id !== categoryId))
-    } else {
-      setExpandedCategories(prev => [...prev, categoryId])
-      if (!articlesData[categoryId]) {
-        await fetchArticlesForCategory(categoryId)
-      }
-    }
+  const toggleCategory = (categoryId: number) => {
+    setExpandedCategories((prev) =>
+      prev.includes(categoryId)
+        ? prev.filter((id) => id !== categoryId)
+        : [...prev, categoryId]
+    )
   }
 
   // === Category CRUD ===
@@ -154,7 +167,7 @@ export default function AdminHelpCenterPage() {
     if (res.success) {
       showSuccessAlert(c, res.message || p.categorySaved)
       setCategoryDialogOpen(false)
-      await loadCategories(true)
+      await queryClient.invalidateQueries({ queryKey: queryKeys.adminHelpCategories() })
     } else {
       showErrorAlert(c, c.error, res.message || p.failedSaveCategory)
     }
@@ -176,7 +189,7 @@ export default function AdminHelpCenterPage() {
       const res = await deleteAdminHelpCategory(id)
       if (res.success) {
         showSuccessAlert(c, res.message || p.categoryDeleted)
-        await loadCategories(true)
+        await queryClient.invalidateQueries({ queryKey: queryKeys.adminHelpCategories() })
       } else {
         showErrorAlert(c, c.error, res.message || p.failedDeleteCategory)
       }
@@ -238,9 +251,11 @@ export default function AdminHelpCenterPage() {
     if (res.success) {
       showSuccessAlert(c, res.message || p.articleSaved)
       setArticleDialogOpen(false)
-      await fetchArticlesForCategory(selectedCategoryId)
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.adminHelpArticles(selectedCategoryId),
+      })
       if (!expandedCategories.includes(selectedCategoryId)) {
-        setExpandedCategories([...expandedCategories, selectedCategoryId])
+        setExpandedCategories((prev) => [...prev, selectedCategoryId])
       }
     } else {
       showErrorAlert(c, c.error, res.message || p.failedSaveArticle)
@@ -263,7 +278,9 @@ export default function AdminHelpCenterPage() {
       const res = await deleteAdminHelpArticle(articleId)
       if (res.success) {
         showSuccessAlert(c, res.message || p.articleDeleted)
-        await fetchArticlesForCategory(categoryId)
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.adminHelpArticles(categoryId),
+        })
       } else {
         showErrorAlert(c, c.error, res.message || p.failedDeleteArticle)
       }

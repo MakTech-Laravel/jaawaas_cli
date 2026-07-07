@@ -1,6 +1,7 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -38,6 +39,7 @@ import {
 } from "@/lib/api/admin-supplier-reports"
 import type { SupplierReportStatus } from "@/lib/api/supplier-reports"
 import { ListPagination } from "@/components/common/list-pagination"
+import { queryKeys } from "@/lib/query-keys"
 
 const REPORTS_PER_PAGE = 15
 
@@ -60,19 +62,14 @@ export default function AdminReportsPage() {
   const p = t.admin.pages.reports
   const c = t.admin.common
   const rs = t.admin.reportStatus
+  const queryClient = useQueryClient()
 
-  const [reports, setReports] = useState<AdminSupplierReport[]>([])
-  const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalReports, setTotalReports] = useState(0)
-  const [paginationFrom, setPaginationFrom] = useState<number | null>(null)
-  const [paginationTo, setPaginationTo] = useState<number | null>(null)
   const [statusFilter, setStatusFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")
   const [updatingId, setUpdatingId] = useState<number | null>(null)
   const [viewingReport, setViewingReport] = useState<AdminSupplierReport | null>(null)
-  const [viewLoading, setViewLoading] = useState(false)
+  const [viewingReportId, setViewingReportId] = useState<number | null>(null)
 
   const priorityLabels: Record<string, string> = {
     high: c.high,
@@ -80,36 +77,80 @@ export default function AdminReportsPage() {
     low: c.low,
   }
 
-  const loadReports = useCallback(async () => {
-    try {
-      setLoading(true)
-      const response = await fetchAdminSupplierReports({
+  const reportsQuery = useQuery({
+    queryKey: queryKeys.adminSupplierReports(
+      currentPage,
+      statusFilter,
+      priorityFilter,
+      REPORTS_PER_PAGE
+    ),
+    queryFn: () =>
+      fetchAdminSupplierReports({
         status: statusFilter === "all" ? undefined : statusFilter,
         priority: priorityFilter === "all" ? undefined : priorityFilter,
         page: currentPage,
         per_page: REPORTS_PER_PAGE,
-      })
-      setReports(response.data || [])
+      }),
+    placeholderData: (previousData) => previousData,
+  })
 
-      const meta = response.meta
-      setTotalReports(meta?.total ?? response.data?.length ?? 0)
-      setTotalPages(meta?.last_page ?? 1)
-      setPaginationFrom(meta?.from ?? null)
-      setPaginationTo(meta?.to ?? null)
-    } catch (error) {
+  const reportDetailQuery = useQuery({
+    queryKey: viewingReportId
+      ? queryKeys.adminSupplierReportDetail(viewingReportId)
+      : ["admin-supplier-report", "idle"],
+    queryFn: () => fetchAdminSupplierReport(viewingReportId as number),
+    enabled: viewingReportId !== null,
+  })
+
+  const updateReportMutation = useMutation({
+    mutationFn: ({
+      reportId,
+      status,
+    }: {
+      reportId: number
+      status: SupplierReportStatus
+    }) => updateAdminSupplierReport(reportId, { status }),
+  })
+
+  const reports = reportsQuery.data?.data || []
+  const loading = reportsQuery.isLoading
+  const totalReports = reportsQuery.data?.meta?.total ?? reports.length
+  const totalPages = reportsQuery.data?.meta?.last_page ?? 1
+  const paginationFrom = reportsQuery.data?.meta?.from ?? null
+  const paginationTo = reportsQuery.data?.meta?.to ?? null
+
+  const reportsError = reportsQuery.error
+  useEffect(() => {
+    if (reportsError) {
       toast({
         title: c.error,
-        description: error instanceof Error ? error.message : c.loadFailed,
+        description:
+          reportsError instanceof Error ? reportsError.message : c.loadFailed,
         variant: "destructive",
       })
-    } finally {
-      setLoading(false)
     }
-  }, [c.error, c.loadFailed, currentPage, priorityFilter, statusFilter, toast])
+  }, [c.error, c.loadFailed, reportsError, toast])
 
+  const viewLoading = reportDetailQuery.isLoading
   useEffect(() => {
-    loadReports()
-  }, [loadReports])
+    if (reportDetailQuery.data?.data) {
+      setViewingReport(reportDetailQuery.data.data)
+    }
+  }, [reportDetailQuery.data])
+
+  const reportDetailError = reportDetailQuery.error
+  useEffect(() => {
+    if (reportDetailError && viewingReportId !== null) {
+      toast({
+        title: c.error,
+        description:
+          reportDetailError instanceof Error ? reportDetailError.message : c.loadFailed,
+        variant: "destructive",
+      })
+      setViewingReport(null)
+      setViewingReportId(null)
+    }
+  }, [c.error, c.loadFailed, reportDetailError, toast, viewingReportId])
 
   const handleStatusFilterChange = (value: string) => {
     setStatusFilter(value)
@@ -136,7 +177,10 @@ export default function AdminReportsPage() {
   ) => {
     try {
       setUpdatingId(report.id)
-      const result = await updateAdminSupplierReport(report.id, { status })
+      const result = await updateReportMutation.mutateAsync({
+        reportId: report.id,
+        status,
+      })
 
       toast({
         title: p.reportUpdated,
@@ -146,8 +190,14 @@ export default function AdminReportsPage() {
       if (viewingReport?.id === report.id) {
         setViewingReport(result.data)
       }
-
-      await loadReports()
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.adminSupplierReports(
+          currentPage,
+          statusFilter,
+          priorityFilter,
+          REPORTS_PER_PAGE
+        ),
+      })
     } catch (error) {
       toast({
         title: c.error,
@@ -161,20 +211,7 @@ export default function AdminReportsPage() {
 
   const openViewReport = async (report: AdminSupplierReport) => {
     setViewingReport(report)
-    try {
-      setViewLoading(true)
-      const result = await fetchAdminSupplierReport(report.id)
-      setViewingReport(result.data)
-    } catch (error) {
-      toast({
-        title: c.error,
-        description: error instanceof Error ? error.message : c.loadFailed,
-        variant: "destructive",
-      })
-      setViewingReport(null)
-    } finally {
-      setViewLoading(false)
-    }
+    setViewingReportId(report.id)
   }
 
   const getStatusLabel = (status: string, statusLabel?: string) => {
@@ -351,7 +388,12 @@ export default function AdminReportsPage() {
 
       <Dialog
         open={viewingReport !== null}
-        onOpenChange={(open) => !open && setViewingReport(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewingReport(null)
+            setViewingReportId(null)
+          }
+        }}
       >
         <DialogContent className="flex max-h-[min(92dvh,56rem)] w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl sm:w-full lg:max-w-3xl">
           <DialogHeader className="shrink-0 border-b border-border px-4 py-4 text-left sm:px-6 sm:py-5">
