@@ -1,8 +1,9 @@
 "use client"
 
-import { Suspense, useState, useEffect, useRef } from "react"
+import { Suspense, useState, useEffect, useRef, useMemo } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
 import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
@@ -22,6 +23,7 @@ import { countries as allCountries, popularManufacturingCountries, exportMarketR
 import { SupplierActionButtons } from "@/components/suppliers/supplier-action-buttons"
 import { CompareBar } from "@/components/suppliers/compare-bar"
 import { getPublicSuppliers, SUPPLIERS_LIST_PER_PAGE, Supplier as ApiSupplier } from "@/lib/api/public-suppliers"
+import { queryKeys } from "@/lib/query-keys"
 import { Supplier } from "@/lib/data/suppliers"
 import { ListPagination } from "@/components/common/list-pagination"
 import { 
@@ -105,42 +107,82 @@ function SuppliersPageContent() {
   const skipFilterPageReset = useRef(true)
 
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
   const [selectedIndustry, setSelectedIndustry] = useState<string>("all")
   const [selectedCertification, setSelectedCertification] = useState<string>("all")
   const [selectedMoq, setSelectedMoq] = useState<string>("all")
   const [showFilters, setShowFilters] = useState(false)
 
-  const [dynamicIndustries, setDynamicIndustries] = useState<{slug: string, name: string}[]>([])
-  const [dynamicCertifications, setDynamicCertifications] = useState<{value: string, label: string}[]>([])
-
   useEffect(() => {
-    const fetchGlobalFilters = async () => {
-      const response = await getPublicSuppliers({ per_page: 100, page: 1 })
-      if (response && response.data) {
-        const indMap = new Map<string, string>()
-        const certSet = new Set<string>()
-        response.data.forEach(s => {
-          if (s.industry && s.industry_slug) indMap.set(s.industry_slug, s.industry)
-          if (s.certifications) s.certifications.forEach(c => certSet.add(c))
-        })
-        setDynamicIndustries(Array.from(indMap.entries()).map(([slug, name]) => ({ slug, name })).sort((a,b) => a.name.localeCompare(b.name)))
-        setDynamicCertifications(Array.from(certSet).sort().map(c => ({ value: c, label: c })))
-      }
-    }
-    fetchGlobalFilters()
-  }, [])
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
-  const [suppliers, setSuppliers] = useState<Supplier[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const filterOptionsQuery = useQuery({
+    queryKey: queryKeys.publicSuppliersFilterOptions(),
+    queryFn: () => getPublicSuppliers({ per_page: 100, page: 1 }),
+  })
+
+  const dynamicIndustries = useMemo(() => {
+    if (!filterOptionsQuery.data?.data) return []
+    const indMap = new Map<string, string>()
+    filterOptionsQuery.data.data.forEach((s) => {
+      if (s.industry && s.industry_slug) indMap.set(s.industry_slug, s.industry)
+    })
+    return Array.from(indMap.entries())
+      .map(([slug, name]) => ({ slug, name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [filterOptionsQuery.data])
+
+  const dynamicCertifications = useMemo(() => {
+    if (!filterOptionsQuery.data?.data) return []
+    const certSet = new Set<string>()
+    filterOptionsQuery.data.data.forEach((s) => {
+      s.certifications?.forEach((c) => certSet.add(c))
+    })
+    return Array.from(certSet)
+      .sort()
+      .map((c) => ({ value: c, label: c }))
+  }, [filterOptionsQuery.data])
+
   const [currentPage, setCurrentPage] = useState(() => {
     const pageParam = searchParams.get("page")
     const parsed = pageParam ? parseInt(pageParam, 10) : 1
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
   })
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalSuppliers, setTotalSuppliers] = useState(0)
-  const [paginationFrom, setPaginationFrom] = useState<number | null>(null)
-  const [paginationTo, setPaginationTo] = useState<number | null>(null)
+
+  const mappedCountry = countryParam
+    ? allCountries.find((c) => c.code === countryParam)?.name
+    : undefined
+
+  const suppliersQuery = useQuery({
+    queryKey: queryKeys.publicSuppliers(
+      currentPage,
+      debouncedSearch,
+      selectedIndustry,
+      selectedCertification,
+      selectedMoq,
+      mappedCountry ?? null
+    ),
+    queryFn: () =>
+      getPublicSuppliers({
+        page: currentPage,
+        search: debouncedSearch || undefined,
+        industry: selectedIndustry !== "all" ? selectedIndustry : undefined,
+        country: mappedCountry || undefined,
+        certification: selectedCertification !== "all" ? selectedCertification : undefined,
+        moq: selectedMoq !== "all" ? selectedMoq : undefined,
+      }),
+    placeholderData: (previousData) => previousData,
+  })
+
+  const suppliers: Supplier[] =
+    suppliersQuery.data?.data?.map(mapApiSupplierToMockSupplier) ?? []
+  const isLoading = suppliersQuery.isLoading
+  const totalPages = suppliersQuery.data?.meta?.last_page ?? 1
+  const totalSuppliers = suppliersQuery.data?.meta?.total ?? suppliers.length
+  const paginationFrom = suppliersQuery.data?.meta?.from ?? null
+  const paginationTo = suppliersQuery.data?.meta?.to ?? null
 
   useEffect(() => {
     if (skipFilterPageReset.current) {
@@ -175,42 +217,6 @@ function SuppliersPageContent() {
     router.replace(query ? `/suppliers?${query}` : "/suppliers", { scroll: false })
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
-
-  useEffect(() => {
-    const fetchSuppliers = async () => {
-      setIsLoading(true)
-      const mappedCountry = countryParam ? allCountries.find(c => c.code === countryParam)?.name : undefined
-      const res = await getPublicSuppliers({
-        page: currentPage,
-        search: searchQuery || undefined,
-        industry: selectedIndustry !== "all" ? selectedIndustry : undefined,
-        country: mappedCountry || undefined,
-        certification: selectedCertification !== "all" ? selectedCertification : undefined,
-        moq: selectedMoq !== "all" ? selectedMoq : undefined,
-      })
-
-      if (res && res.data) {
-        setSuppliers(res.data.map(mapApiSupplierToMockSupplier))
-        setTotalPages(res.meta?.last_page ?? 1)
-        setTotalSuppliers(res.meta?.total ?? res.data.length)
-        setPaginationFrom(res.meta?.from ?? null)
-        setPaginationTo(res.meta?.to ?? null)
-      } else {
-        setSuppliers([])
-        setTotalSuppliers(0)
-        setTotalPages(1)
-        setPaginationFrom(null)
-        setPaginationTo(null)
-      }
-      setIsLoading(false)
-    }
-
-    const timerId = setTimeout(() => {
-      fetchSuppliers()
-    }, 400)
-
-    return () => clearTimeout(timerId)
-  }, [searchQuery, selectedIndustry, selectedCertification, selectedMoq, currentPage, countryParam])
 
   const clearFilters = () => {
     setSearchQuery("")

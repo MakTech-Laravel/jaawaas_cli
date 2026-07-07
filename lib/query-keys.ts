@@ -110,6 +110,51 @@ export const queryKeys = {
     ["manufacturer-analytics-performance", period] as const,
   manufacturerAnalyticsFunnel: (period: string) => ["manufacturer-analytics-funnel", period] as const,
   manufacturerReviewCenter: () => ["manufacturer-review-center"] as const,
+  publicCategories: (perPage: number) => ["public-categories", perPage] as const,
+  publicAllCategories: () => ["public-all-categories"] as const,
+  publicHomeFeaturedProducts: () => ["public-home-featured-products"] as const,
+  publicHomeFeaturedSuppliers: () => ["public-home-featured-suppliers"] as const,
+  publicFaqCategories: () => ["public-faq-categories"] as const,
+  publicSearchProducts: (query: string) => ["public-search-products", query] as const,
+  publicSearchSuppliers: (query: string) => ["public-search-suppliers", query] as const,
+  publicProducts: (
+    page: number,
+    search: string,
+    category: string,
+    sortBy: string,
+    country: string,
+    moq: string,
+    certs: string,
+    markets: string,
+    categoriesReady: number
+  ) =>
+    [
+      "public-products",
+      page,
+      search,
+      category,
+      sortBy,
+      country,
+      moq,
+      certs,
+      markets,
+      categoriesReady,
+    ] as const,
+  publicSuppliersFilterSource: () => ["public-suppliers-filter-source"] as const,
+  publicSuppliersFilterOptions: () => ["public-suppliers-filter-options"] as const,
+  publicSuppliers: (
+    page: number,
+    search: string,
+    industry: string,
+    certification: string,
+    moq: string,
+    country: string | null
+  ) => ["public-suppliers", page, search, industry, certification, moq, country] as const,
+  publicIndustriesList: (page: number) => ["public-industries-list", page] as const,
+  publicIndustriesStats: () => ["public-industries-stats"] as const,
+  publicProductDetail: (slug: string) => ["public-product-detail", slug] as const,
+  publicBlogArticles: () => ["public-blog-articles"] as const,
+  publicBlogArticle: (slug: string) => ["public-blog-article", slug] as const,
 }
 
 /** Partial keys for `invalidateQueries` when filters/pagination vary */
@@ -120,4 +165,6 @@ export const queryKeyFamilies = {
   manufacturerOrders: ["manufacturer-orders"] as const,
   manufacturerProducts: ["manufacturer-products"] as const,
   manufacturerCertifications: ["manufacturer-certifications"] as const,
+  publicProducts: ["public-products"] as const,
+  publicSuppliers: ["public-suppliers"] as const,
 } as const

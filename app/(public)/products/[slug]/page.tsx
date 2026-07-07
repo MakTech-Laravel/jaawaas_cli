@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
 import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
@@ -16,6 +17,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { getProduct, type Product } from "@/lib/api/products"
+import { queryKeys } from "@/lib/query-keys"
 import { useFavorites } from "@/lib/favorites-context"
 import { useAuth } from "@/lib/auth-context"
 import { 
@@ -58,36 +60,31 @@ export default function ProductPage() {
     productCompareCount,
     maxProductCompare
   } = useFavorites()
-  
-  const [product, setProduct] = useState<Product | null>(null)
+
+  const productQuery = useQuery({
+    queryKey: queryKeys.publicProductDetail(slug),
+    queryFn: () => getProduct(slug),
+    enabled: Boolean(slug),
+  })
+
+  const product: Product | null =
+    productQuery.data?.success && productQuery.data.data ? productQuery.data.data : null
+  const loading = productQuery.isLoading
+  const error =
+    productQuery.data?.success === false
+      ? productQuery.data.message || "Product not found"
+      : productQuery.isError
+        ? "Product not found"
+        : null
+
   const [activeImage, setActiveImage] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  // Fetch product data
   useEffect(() => {
-    const fetchProduct = async () => {
-      setLoading(true)
-      setError(null)
-      
-      const response = await getProduct(slug)
-      
-      if (response.success && response.data) {
-        setProduct(response.data)
-        const allImages = response.data.images || []
-        const firstImg = allImages.length > 0 ? allImages[0] : response.data.image
-        if (firstImg) setActiveImage(firstImg)
-      } else {
-        setError(response.message || "Product not found")
-      }
-      
-      setLoading(false)
-    }
-
-    if (slug) {
-      fetchProduct()
-    }
-  }, [slug])
+    if (!product) return
+    const allImages = product.images || []
+    const firstImg = allImages.length > 0 ? allImages[0] : product.image
+    if (firstImg) setActiveImage(firstImg)
+  }, [product])
 
   const handleFavoriteClick = () => {
     if (!product) return

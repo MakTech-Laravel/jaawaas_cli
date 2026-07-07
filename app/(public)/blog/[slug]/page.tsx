@@ -1,9 +1,10 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useMemo } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
+import { useQuery } from "@tanstack/react-query"
 import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
@@ -12,57 +13,34 @@ import {
   fetchPublicArticleBySlug,
   fetchPublicArticles,
   formatPublishedDate,
-  type BlogArticle,
 } from "@/lib/api/articles"
+import { queryKeys } from "@/lib/query-keys"
 
 export default function BlogArticlePage() {
   const params = useParams()
   const slugParam = params?.slug
   const slug = slugParam ? decodeURIComponent(String(slugParam)) : ""
 
-  const [article, setArticle] = useState<BlogArticle | null>(null)
-  const [suggestedArticles, setSuggestedArticles] = useState<BlogArticle[]>([])
-  const [loading, setLoading] = useState(true)
-  const [notFound, setNotFound] = useState(false)
+  const articleQuery = useQuery({
+    queryKey: queryKeys.publicBlogArticle(slug),
+    queryFn: () => fetchPublicArticleBySlug(slug),
+    enabled: Boolean(slug),
+  })
 
-  useEffect(() => {
-    if (!slug) {
-      setLoading(false)
-      setNotFound(true)
-      return
-    }
+  const articlesQuery = useQuery({
+    queryKey: queryKeys.publicBlogArticles(),
+    queryFn: () => fetchPublicArticles(),
+    enabled: Boolean(slug),
+  })
 
-    let cancelled = false
+  const article = articleQuery.data ?? null
+  const suggestedArticles = useMemo(() => {
+    if (!articlesQuery.data || !slug) return []
+    return articlesQuery.data.filter((item) => item.slug !== slug).slice(0, 3)
+  }, [articlesQuery.data, slug])
 
-    Promise.all([fetchPublicArticleBySlug(slug), fetchPublicArticles()])
-      .then(([loadedArticle, allArticles]) => {
-        if (cancelled) return
-
-        if (!loadedArticle) {
-          setNotFound(true)
-          return
-        }
-
-        setArticle(loadedArticle)
-        setSuggestedArticles(
-          allArticles.filter((item) => item.slug !== slug).slice(0, 3)
-        )
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setNotFound(true)
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false)
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [slug])
+  const loading = Boolean(slug) && (articleQuery.isLoading || articlesQuery.isLoading)
+  const notFound = Boolean(slug) && articleQuery.isFetched && !articleQuery.data
 
   if (loading) {
     return (

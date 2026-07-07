@@ -1,17 +1,19 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useMemo, useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useQueries } from "@tanstack/react-query"
 import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getProducts, type Product } from "@/lib/api/products"
-import { getPublicSuppliers, type Supplier } from "@/lib/api/public-suppliers"
-import { getAllPublicCategories, type BackendCategory } from "@/lib/api/categories"
+import { getProducts } from "@/lib/api/products"
+import { getPublicSuppliers } from "@/lib/api/public-suppliers"
+import { getAllPublicCategories } from "@/lib/api/categories"
+import { queryKeys } from "@/lib/query-keys"
 import { 
   Search, 
   Package,
@@ -28,61 +30,47 @@ function SearchContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const initialQuery = searchParams.get("q") || ""
-  
+  const q = searchParams.get("q") || ""
+
   const [searchQuery, setSearchQuery] = useState(initialQuery)
   const [activeTab, setActiveTab] = useState("all")
-
-  const [products, setProducts] = useState<Product[]>([])
-  const [suppliers, setSuppliers] = useState<Supplier[]>([])
-  const [industries, setIndustries] = useState<BackendCategory[]>([])
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setSearchQuery(searchParams.get("q") || "")
   }, [searchParams])
 
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true)
-      const q = searchParams.get("q") || ""
-      
-      try {
-        const [productsRes, suppliersRes, catsRes] = await Promise.all([
-          getProducts(1, { search: q }),
-          getPublicSuppliers({ search: q }),
-          getAllPublicCategories()
-        ])
+  const [productsQuery, suppliersQuery, categoriesQuery] = useQueries({
+    queries: [
+      {
+        queryKey: queryKeys.publicSearchProducts(q),
+        queryFn: () => getProducts(1, { search: q }),
+      },
+      {
+        queryKey: queryKeys.publicSearchSuppliers(q),
+        queryFn: () => getPublicSuppliers({ search: q }),
+      },
+      {
+        queryKey: queryKeys.publicAllCategories(),
+        queryFn: () => getAllPublicCategories(),
+      },
+    ],
+  })
 
-        if (productsRes.success) {
-          setProducts(productsRes.data)
-        } else {
-          setProducts([])
-        }
-
-        if (suppliersRes && suppliersRes.success) {
-          setSuppliers(suppliersRes.data)
-        } else {
-          setSuppliers([])
-        }
-
-        if (catsRes.success) {
-          let cats = catsRes.data
-          if (q) {
-            cats = cats.filter(c => c.name.toLowerCase().includes(q.toLowerCase()))
-          }
-          setIndustries(cats)
-        } else {
-          setIndustries([])
-        }
-      } catch (err) {
-        console.error("Failed to fetch search results", err)
-      } finally {
-        setLoading(false)
-      }
+  const products = productsQuery.data?.success ? productsQuery.data.data : []
+  const suppliers = suppliersQuery.data?.success ? suppliersQuery.data.data : []
+  const industries = useMemo(() => {
+    if (!categoriesQuery.data?.success) {
+      return []
     }
-    
-    fetchData()
-  }, [searchParams])
+    let cats = categoriesQuery.data.data
+    if (q) {
+      cats = cats.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()))
+    }
+    return cats
+  }, [categoriesQuery.data, q])
+
+  const loading =
+    productsQuery.isLoading || suppliersQuery.isLoading || categoriesQuery.isLoading
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()

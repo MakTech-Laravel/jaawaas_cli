@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
 import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
@@ -14,7 +15,8 @@ import { industries, getIndustryBySlug } from "@/lib/data/industries"
 import { suppliers } from "@/lib/data/suppliers"
 import { products } from "@/lib/data/products"
 import { countries as countryData } from "@/lib/data/countries"
-import { getPublicCategories, type BackendCategory } from "@/lib/api/categories"
+import { getPublicCategories } from "@/lib/api/categories"
+import { queryKeys } from "@/lib/query-keys"
 import { 
   ArrowRight, 
   Cpu, 
@@ -89,27 +91,13 @@ export default function IndustryPage() {
   const params = useParams()
   const router = useRouter()
   const slug = params.slug as string
-  const [publicCategories, setPublicCategories] = useState<BackendCategory[]>([])
-  const [publicCategoriesLoaded, setPublicCategoriesLoaded] = useState(false)
 
-  useEffect(() => {
-    let mounted = true
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.publicCategories(100),
+    queryFn: () => getPublicCategories({ perPage: 100 }),
+  })
 
-    const loadPublicCategories = async () => {
-      const response = await getPublicCategories({ perPage: 100 })
-      if (!mounted) return
-      if (response.success) {
-        setPublicCategories(response.data)
-      }
-      setPublicCategoriesLoaded(true)
-    }
-
-    void loadPublicCategories()
-
-    return () => {
-      mounted = false
-    }
-  }, [])
+  const publicCategories = categoriesQuery.data?.success ? categoriesQuery.data.data : []
 
   const backendCurrentCategory = useMemo(
     () => publicCategories.find((category) => category.slug === slug),

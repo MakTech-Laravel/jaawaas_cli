@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useMemo, useRef } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "@/lib/i18n"
 import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
@@ -19,9 +20,10 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { getProducts, mapProductSortParam, PRODUCTS_LIST_PER_PAGE, type Product } from "@/lib/api/products"
 import { getPublicCategories, type BackendCategory } from "@/lib/api/categories"
+import { queryKeys } from "@/lib/query-keys"
 import { ProductActionButtons } from "@/components/products/product-action-buttons"
 import { countries as countryData } from "@/lib/data/countries"
-import { getPublicSuppliers, type Supplier } from "@/lib/api/public-suppliers"
+import { getPublicSuppliers } from "@/lib/api/public-suppliers"
 
 
 
@@ -39,6 +41,56 @@ import {
   Globe
 } from "lucide-react"
 
+function buildPublicProductFilters(
+  allCategories: BackendCategory[],
+  selectedCategory: string,
+  debouncedSearch: string,
+  selectedCountry: string,
+  selectedMoq: string,
+  selectedCerts: string[],
+  selectedMarkets: string[],
+  sortBy: string
+): Record<string, unknown> {
+  const filters: Record<string, unknown> = {}
+
+  if (selectedCategory !== "all") {
+    filters.category = selectedCategory
+    let foundCat = allCategories.find(
+      (c) => (c.slug || c.name.toLowerCase().replace(/\s+/g, "-")) === selectedCategory
+    )
+    if (foundCat) {
+      filters.category_id = foundCat.id
+      filters.category_slug = foundCat.slug || selectedCategory
+    } else {
+      for (const cat of allCategories) {
+        const sub = (cat.sub_categories || cat.subcategories || []).find(
+          (s) => (s.slug || s.name.toLowerCase().replace(/\s+/g, "-")) === selectedCategory
+        )
+        if (sub) {
+          foundCat = cat
+          filters.category_id = cat.id
+          filters.category_slug = cat.slug
+          break
+        }
+      }
+    }
+  }
+
+  if (debouncedSearch) {
+    filters.search = debouncedSearch
+  }
+  if (selectedCountry) filters.country = selectedCountry
+  if (selectedMoq) filters.moq = selectedMoq
+  if (selectedCerts.length > 0) filters.certifications = selectedCerts.join(",")
+  if (selectedMarkets.length > 0) filters.markets = selectedMarkets.join(",")
+
+  const sortParam = mapProductSortParam(sortBy)
+  if (sortParam) filters.sort = sortParam
+
+  filters.per_page = PRODUCTS_LIST_PER_PAGE
+  return filters
+}
+
 function ProductsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -51,23 +103,16 @@ function ProductsPageContent() {
     { label: `> 1000 ${t?.landing?.products?.pieces || "pieces"}`, value: ">1000" },
   ], [t])
 
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get("category") || "all")
   const [sortBy, setSortBy] = useState("relevance")
   const [showFilters, setShowFilters] = useState(false)
-  const [allCategories, setAllCategories] = useState<BackendCategory[]>([])
   const [currentPage, setCurrentPage] = useState(() => {
     const pageParam = searchParams.get("page")
     const parsed = pageParam ? parseInt(pageParam, 10) : 1
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
   })
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalProducts, setTotalProducts] = useState(0)
-  const [paginationFrom, setPaginationFrom] = useState<number | null>(null)
-  const [paginationTo, setPaginationTo] = useState<number | null>(null)
   const skipFilterPageReset = useRef(true)
 
   // New Quick Filters states
@@ -75,6 +120,11 @@ function ProductsPageContent() {
   const [selectedMoq, setSelectedMoq] = useState<string>("")
   const [selectedCerts, setSelectedCerts] = useState<string[]>([])
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>([])
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   // Get featured countries
   const featuredCountries = useMemo(() => {
@@ -87,32 +137,82 @@ function ProductsPageContent() {
       .slice(0, 8)
   }, [])
 
-  const [dynamicCertifications, setDynamicCertifications] = useState<string[]>([])
-  const [dynamicExportMarkets, setDynamicExportMarkets] = useState<string[]>([])
-  const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([])
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.publicCategories(100),
+    queryFn: () => getPublicCategories({ perPage: 100 }),
+  })
 
-  // Fetch global dynamic filters (certifications and markets) from suppliers
-  useEffect(() => {
-    const fetchGlobalFilters = async () => {
-      const response = await getPublicSuppliers()
-      if (response && response.data) {
-        setAllSuppliers(response.data)
-        const certSet = new Set<string>()
-        const marketSet = new Set<string>()
-        response.data.forEach(supplier => {
-          if (supplier.certifications) {
-            supplier.certifications.forEach(cert => certSet.add(cert))
-          }
-          if (supplier.export_markets) {
-            supplier.export_markets.forEach(market => marketSet.add(market))
-          }
-        })
-        setDynamicCertifications(Array.from(certSet).sort())
-        setDynamicExportMarkets(Array.from(marketSet).sort())
-      }
-    }
-    fetchGlobalFilters()
-  }, [])
+  const supplierFiltersQuery = useQuery({
+    queryKey: queryKeys.publicSuppliersFilterSource(),
+    queryFn: () => getPublicSuppliers(),
+  })
+
+  const allCategories = categoriesQuery.data?.success ? categoriesQuery.data.data : []
+
+  const dynamicCertifications = useMemo(() => {
+    const suppliers = supplierFiltersQuery.data?.data
+    if (!suppliers) return []
+    const certSet = new Set<string>()
+    suppliers.forEach((supplier) => {
+      supplier.certifications?.forEach((cert) => certSet.add(cert))
+    })
+    return Array.from(certSet).sort()
+  }, [supplierFiltersQuery.data])
+
+  const dynamicExportMarkets = useMemo(() => {
+    const suppliers = supplierFiltersQuery.data?.data
+    if (!suppliers) return []
+    const marketSet = new Set<string>()
+    suppliers.forEach((supplier) => {
+      supplier.export_markets?.forEach((market) => marketSet.add(market))
+    })
+    return Array.from(marketSet).sort()
+  }, [supplierFiltersQuery.data])
+
+  const certsKey = selectedCerts.join(",")
+  const marketsKey = selectedMarkets.join(",")
+
+  const productsQuery = useQuery({
+    queryKey: queryKeys.publicProducts(
+      currentPage,
+      debouncedSearch,
+      selectedCategory,
+      sortBy,
+      selectedCountry,
+      selectedMoq,
+      certsKey,
+      marketsKey,
+      allCategories.length
+    ),
+    queryFn: () =>
+      getProducts(
+        currentPage,
+        buildPublicProductFilters(
+          allCategories,
+          selectedCategory,
+          debouncedSearch,
+          selectedCountry,
+          selectedMoq,
+          selectedCerts,
+          selectedMarkets,
+          sortBy
+        )
+      ),
+    placeholderData: (previousData) => previousData,
+  })
+
+  const products: Product[] = productsQuery.data?.success ? productsQuery.data.data : []
+  const loading = productsQuery.isLoading
+  const error =
+    productsQuery.data?.success === false
+      ? productsQuery.data.message || "Failed to load products"
+      : null
+  const totalPages = productsQuery.data?.success ? productsQuery.data.meta?.last_page || 1 : 1
+  const totalProducts = productsQuery.data?.success
+    ? productsQuery.data.meta?.total ?? products.length
+    : 0
+  const paginationFrom = productsQuery.data?.success ? productsQuery.data.meta?.from ?? null : null
+  const paginationTo = productsQuery.data?.success ? productsQuery.data.meta?.to ?? null : null
 
   // Reset page when filters change (skip initial mount so ?page=2 URLs still work)
   useEffect(() => {
@@ -127,17 +227,6 @@ function ProductsPageContent() {
     const query = params.toString()
     router.replace(query ? `/products?${query}` : "/products", { scroll: false })
   }, [selectedCategory, searchQuery, sortBy, selectedCountry, selectedMoq, selectedCerts, selectedMarkets, router])
-
-  // Fetch all categories once
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const response = await getPublicCategories({ perPage: 100 })
-      if (response.success) {
-        setAllCategories(response.data)
-      }
-    }
-    fetchCategories()
-  }, [])
 
   // Use the fetched categories for the dropdown
   const categories = useMemo(() => {
@@ -172,73 +261,6 @@ function ProductsPageContent() {
     router.replace(query ? `/products?${query}` : "/products", { scroll: false })
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
-
-  // Fetch products when filters or page changes
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true)
-      setError(null)
-      
-      const filters: Record<string, unknown> = {}
-      if (selectedCategory !== "all") {
-        filters.category = selectedCategory
-        // Try to find if it's a category or subcategory to pass the correct ID to backend
-        let foundCat = allCategories.find(c => (c.slug || c.name.toLowerCase().replace(/\s+/g, '-')) === selectedCategory)
-        if (foundCat) {
-          filters.category_id = foundCat.id
-          filters.category_slug = foundCat.slug || selectedCategory
-        } else {
-          // Check subcategories
-          for (const cat of allCategories) {
-            const sub = (cat.sub_categories || cat.subcategories || []).find(s => (s.slug || s.name.toLowerCase().replace(/\s+/g, '-')) === selectedCategory)
-            if (sub) {
-              // TRICK: The user requested that if a subcategory is clicked, we show ALL products from the parent category!
-              // So we deliberately treat this as if the parent category was clicked for filtering purposes.
-              foundCat = cat
-              filters.category_id = cat.id 
-              filters.category_slug = cat.slug
-              // We omit sub_category_id so the backend doesn't filter out the parent's other products
-              break
-            }
-          }
-        }
-      }
-      if (searchQuery) {
-        filters.search = searchQuery
-      }
-      if (selectedCountry) filters.country = selectedCountry
-      if (selectedMoq) filters.moq = selectedMoq
-      if (selectedCerts.length > 0) filters.certifications = selectedCerts.join(",")
-      if (selectedMarkets.length > 0) filters.markets = selectedMarkets.join(",")
-
-      const sortParam = mapProductSortParam(sortBy)
-      if (sortParam) filters.sort = sortParam
-
-      filters.per_page = PRODUCTS_LIST_PER_PAGE
-
-      const response = await getProducts(currentPage, filters)
-      
-      if (response.success) {
-        setProducts(response.data)
-        setTotalPages(response.meta?.last_page || 1)
-        setTotalProducts(response.meta?.total ?? response.data.length)
-        setPaginationFrom(response.meta?.from ?? null)
-        setPaginationTo(response.meta?.to ?? null)
-      } else {
-        setError(response.message || "Failed to load products")
-        setProducts([])
-        setTotalPages(1)
-        setTotalProducts(0)
-        setPaginationFrom(null)
-        setPaginationTo(null)
-      }
-      
-      setLoading(false)
-    }
-
-    const timeoutId = setTimeout(fetchProducts, 300)
-    return () => clearTimeout(timeoutId)
-  }, [selectedCategory, searchQuery, currentPage, sortBy, selectedCountry, selectedMoq, selectedCerts, selectedMarkets, allCategories])
 
   // Sync category from URL params when they change
   useEffect(() => {

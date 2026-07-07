@@ -1,33 +1,27 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, MapPin, CheckCircle, Building2 } from "lucide-react"
-import { getPublicSuppliers, type Supplier } from "@/lib/api/public-suppliers"
+import { getPublicSuppliers } from "@/lib/api/public-suppliers"
+import { queryKeys } from "@/lib/query-keys"
 import { useTranslation } from "@/lib/i18n"
 
 export function FeaturedSuppliersSection() {
   const { t } = useTranslation()
-  const [suppliers, setSuppliers] = useState<Supplier[]>([])
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchSuppliers() {
-      try {
-        const res = await getPublicSuppliers()
-        if (res?.success && res.data) {
-          setSuppliers(res.data.slice(0, 4))
-        }
-      } catch (error) {
-        console.error("Failed to load featured suppliers", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchSuppliers()
-  }, [])
+  const suppliersQuery = useQuery({
+    queryKey: queryKeys.publicHomeFeaturedSuppliers(),
+    queryFn: () => getPublicSuppliers(),
+  })
+
+  const suppliers =
+    suppliersQuery.data?.success && suppliersQuery.data.data
+      ? suppliersQuery.data.data.slice(0, 4)
+      : []
+  const loading = suppliersQuery.isLoading
 
   return (
     <section className="bg-muted/50 py-8 sm:py-12 lg:py-16">

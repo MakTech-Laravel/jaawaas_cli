@@ -254,12 +254,15 @@ Use TanStack Query for **read-heavy list/detail/CRUD** pages. Keep React Context
 - Buyer: dashboard, activity, RFQs (+ detail), orders (+ detail via `OrderDetailView`)
 - Manufacturer: dashboard, inquiries (+ detail), orders (+ detail via `SellerOrdersList` / `SellerOrderDetail`), products, certifications, analytics, review-center
 - Shared: `OrderDetailView` (admin + buyer order detail)
+- Public (Phase 2): home sections, `/search`, `/products`, `/suppliers`, `/industries` (+ `[slug]`), `/products/[slug]`, `/blog` (+ `[slug]`)
+- Public query keys: `publicCategories`, `publicAllCategories`, `publicHomeFeaturedProducts`, `publicHomeFeaturedSuppliers`, `publicFaqCategories`, `publicSearchProducts`, `publicSearchSuppliers`, `publicProducts`, `publicSuppliers`, `publicSuppliersFilterSource`, `publicSuppliersFilterOptions`, `publicIndustriesList`, `publicIndustriesStats`, `publicProductDetail`, `publicBlogArticles`, `publicBlogArticle`
 
 **Intentionally not migrated (freeze unless explicitly requested)**
 - `lib/auth-context.tsx`, messages/realtime, subscription orchestration
 - Admin: settings, site-settings, insights, messages
 - Buyer/manufacturer: settings, messages, support-tickets (chat components), product create/edit wizards
 - Context-driven pages: favorites/saved, cart-like flows
+- Public: pricing, messages, RFQ create, compare/map pages, legacy `/articles/[id]` (SSR pages like `/faq`, `/suppliers/[slug]` stay server components)
 
 **Preserve UX** during migration: existing toasts, Swal dialogs, pagination, filters, and empty/error states.
 
