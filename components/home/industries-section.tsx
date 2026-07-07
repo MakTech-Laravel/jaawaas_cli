@@ -141,7 +141,7 @@ export function IndustriesSection() {
                   </div>
 
                   <h3 
-                    className="mt-2 line-clamp-2 text-sm font-semibold leading-snug sm:mt-5 sm:text-xl"
+                    className="mt-2 truncate text-sm font-semibold leading-snug sm:mt-5 sm:text-xl"
                     style={{ color: industry.title_color || undefined }}
                   >
                     {industry.name}
