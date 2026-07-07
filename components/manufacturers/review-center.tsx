@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -39,6 +40,7 @@ import {
   type ReviewCenterUser,
   type ReviewCenterVerification,
 } from "@/lib/api/manufacturer-review-center"
+import { queryKeys } from "@/lib/query-keys"
 import type { AdditionalInformationRequest } from "@/lib/api/manufacturer-additional-information"
 import {
   storeAdditionalInfoRequest,
@@ -262,11 +264,56 @@ function AdditionalInfoRequestDetails({
 export default function ReviewCenter() {
   const { toast } = useToast()
   const { t } = useTranslation()
-  const [reviews, setReviews] = useState<ReviewRequest[]>([])
-  const [user, setUser] = useState<ReviewCenterUser | null>(null)
-  const [verification, setVerification] = useState<ReviewCenterVerification | null>(null)
-  const [additionalRequests, setAdditionalRequests] = useState<AdditionalInformationRequest[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
+
+  const reviewCenterQuery = useQuery({
+    queryKey: queryKeys.manufacturerReviewCenter(),
+    queryFn: fetchManufacturerReviewCenter,
+  })
+
+  const reviews = reviewCenterQuery.data?.data?.review_requests ?? []
+  const user = reviewCenterQuery.data?.data?.user ?? null
+  const verification = reviewCenterQuery.data?.data?.verification ?? null
+  const additionalRequests = [...(reviewCenterQuery.data?.data?.additional_information_requests ?? [])].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+  const loading = reviewCenterQuery.isLoading
+
+  const refreshReviews = () => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.manufacturerReviewCenter() })
+  }
+
+  useEffect(() => {
+    if (!reviewCenterQuery.data?.success) {
+      return
+    }
+    const apiRequests = [...(reviewCenterQuery.data.data.additional_information_requests || [])].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+    const pending = apiRequests.find((request) => isAdditionalInfoPending(request.status))
+    if (pending) {
+      storeAdditionalInfoRequest(pending)
+    } else {
+      const stored = getStoredAdditionalInfoRequest()
+      const matched = stored
+        ? apiRequests.find((request) => request.token === stored.token)
+        : null
+      if (matched && !isAdditionalInfoPending(matched.status)) {
+        clearAdditionalInfoStorage()
+      }
+    }
+  }, [reviewCenterQuery.data])
+
+  useEffect(() => {
+    if (reviewCenterQuery.isError) {
+      toast({
+        title: "Error",
+        description: "Failed to load review center.",
+        variant: "destructive",
+      })
+    }
+  }, [reviewCenterQuery.isError, toast])
+
   const [showCompleted, setShowCompleted] = useState(false)
 
   // Capture flow state
@@ -275,48 +322,6 @@ export default function ReviewCenter() {
   const [showPreSubmit, setShowPreSubmit] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitNotes, setSubmitNotes] = useState("")
-
-  // Load reviews
-  const loadReviews = useCallback(async () => {
-    try {
-      setLoading(true)
-      const response = await fetchManufacturerReviewCenter()
-      const data = response.data
-      setUser(data.user)
-      setVerification(data.verification)
-      const apiRequests = [...(data.additional_information_requests || [])].sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )
-      setAdditionalRequests(apiRequests)
-      setReviews(data.review_requests || [])
-
-      const pending = apiRequests.find((request) => isAdditionalInfoPending(request.status))
-      if (pending) {
-        storeAdditionalInfoRequest(pending)
-      } else {
-        const stored = getStoredAdditionalInfoRequest()
-        const matched = stored
-          ? apiRequests.find((request) => request.token === stored.token)
-          : null
-        if (matched && !isAdditionalInfoPending(matched.status)) {
-          clearAdditionalInfoStorage()
-        }
-      }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load review center.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }, [toast])
-
-  useEffect(() => {
-    loadReviews()
-  }, [loadReviews])
 
   // Separate pending vs completed
   const pendingReviews = reviews.filter(
@@ -404,7 +409,7 @@ export default function ReviewCenter() {
       setSubmitNotes("")
 
       // Refresh
-      loadReviews()
+      refreshReviews()
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Failed to submit review"
       toast({
@@ -630,7 +635,7 @@ export default function ReviewCenter() {
                     <AdditionalInformationSubmit
                       request={request}
                       embedded
-                      onSuccess={() => void loadReviews()}
+                      onSuccess={() => refreshReviews()}
                     />
                   </CardContent>
                 </Card>

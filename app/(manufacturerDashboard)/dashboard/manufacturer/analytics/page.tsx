@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -41,10 +42,8 @@ import {
   getManufacturerAnalyticsMetrics, 
   getManufacturerAnalyticsPerformance,
   getManufacturerAnalyticsFunnel,
-  AnalyticsMetricItem,
-  AnalyticsPerformanceItem,
-  AnalyticsFunnelStep
 } from "@/lib/api/manufacturer-analytics"
+import { queryKeys } from "@/lib/query-keys"
 import ManufacturerStatCard from "@/components/manufacturer/manufacturer-stat-card"
 import { useTranslation } from "@/lib/i18n"
 
@@ -105,62 +104,40 @@ export default function ManufacturerAnalyticsPage() {
     ...topCountries,
     { country: a.other, flag: "OT", percentage: 10 },
   ]
-  const [metrics, setMetrics] = useState<AnalyticsMetricItem[]>([])
-  const [performanceData, setPerformanceData] = useState<AnalyticsPerformanceItem[]>([])
-  const [funnelSteps, setFunnelSteps] = useState<AnalyticsFunnelStep[]>([])
-  
-  const [isLoading, setIsLoading] = useState(true)
-  const [isChartLoading, setIsChartLoading] = useState(true)
-  const [isFunnelLoading, setIsFunnelLoading] = useState(true)
   const [period, setPeriod] = useState("30")
+  const apiPeriod = periodApiMap[period] || "last_30_days"
 
-  const loadAnalytics = useCallback(async (selectedPeriod: string) => {
-    const apiPeriod = periodApiMap[selectedPeriod] || "last_30_days"
-    
-    // Fetch metrics
-    try {
-      setIsLoading(true)
-      const res = await getManufacturerAnalyticsMetrics({ period: apiPeriod })
-      if (res.success && res.data?.metrics) {
-        setMetrics(res.data.metrics)
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setIsLoading(false)
-    }
+  const metricsQuery = useQuery({
+    queryKey: queryKeys.manufacturerAnalyticsMetrics(apiPeriod),
+    queryFn: () => getManufacturerAnalyticsMetrics({ period: apiPeriod }),
+  })
 
-    // Fetch performance data
-    try {
-      setIsChartLoading(true)
-      const res = await getManufacturerAnalyticsPerformance({ period: apiPeriod })
-      if (res.success && res.data) {
-        // Reverse array to render chronologically (oldest to newest)
-        setPerformanceData([...res.data].reverse())
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setIsChartLoading(false)
-    }
+  const performanceQuery = useQuery({
+    queryKey: queryKeys.manufacturerAnalyticsPerformance(apiPeriod),
+    queryFn: () => getManufacturerAnalyticsPerformance({ period: apiPeriod }),
+  })
 
-    // Fetch funnel data
-    try {
-      setIsFunnelLoading(true)
-      const res = await getManufacturerAnalyticsFunnel({ period: apiPeriod })
-      if (res.success && res.data?.steps) {
-        setFunnelSteps(res.data.steps)
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setIsFunnelLoading(false)
-    }
-  }, [])
+  const funnelQuery = useQuery({
+    queryKey: queryKeys.manufacturerAnalyticsFunnel(apiPeriod),
+    queryFn: () => getManufacturerAnalyticsFunnel({ period: apiPeriod }),
+  })
 
-  useEffect(() => {
-    loadAnalytics(period)
-  }, [period, loadAnalytics])
+  const metrics =
+    metricsQuery.data?.success && metricsQuery.data.data?.metrics
+      ? metricsQuery.data.data.metrics
+      : []
+  const performanceData =
+    performanceQuery.data?.success && performanceQuery.data.data
+      ? [...performanceQuery.data.data].reverse()
+      : []
+  const funnelSteps =
+    funnelQuery.data?.success && funnelQuery.data.data?.steps
+      ? funnelQuery.data.data.steps
+      : []
+
+  const isLoading = metricsQuery.isLoading
+  const isChartLoading = performanceQuery.isLoading
+  const isFunnelLoading = funnelQuery.isLoading
 
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">

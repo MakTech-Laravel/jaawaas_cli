@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import {
   useRfqs,
@@ -9,6 +10,7 @@ import {
   type RfqStatus,
 } from "@/lib/rfqs-context"
 import { getAdminRfqs, type AdminRfqItem, type AdminRfqMeta } from "@/lib/api/admin-rfqs"
+import { queryKeys } from "@/lib/query-keys"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
@@ -198,9 +200,6 @@ export function RfqList({ config }: { config: RfqListConfig }) {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [page, setPage] = useState(1)
-  const [serverRfqs, setServerRfqs] = useState<Rfq[]>([])
-  const [adminMeta, setAdminMeta] = useState<AdminRfqMeta | null>(null)
-  const [adminLoading, setAdminLoading] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400)
@@ -211,38 +210,26 @@ export function RfqList({ config }: { config: RfqListConfig }) {
     setPage(1)
   }, [debouncedSearch, statusFilter])
 
-  useEffect(() => {
-    if (!isAdmin) return
-
-    let mounted = true
-
-    async function fetchAdminRfqs() {
-      setAdminLoading(true)
-      const res = await getAdminRfqs({
+  const adminRfqsQuery = useQuery({
+    queryKey: queryKeys.adminRfqs(page, ADMIN_PER_PAGE, statusFilter, debouncedSearch),
+    queryFn: () =>
+      getAdminRfqs({
         page,
         per_page: ADMIN_PER_PAGE,
         search: debouncedSearch || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
-      })
+      }),
+    enabled: isAdmin,
+    placeholderData: (previousData) => previousData,
+  })
 
-      if (!mounted) return
-
-      if (res.success) {
-        setServerRfqs(res.data.map(mapAdminRfqToRfq))
-        setAdminMeta(res.meta)
-      } else {
-        setServerRfqs([])
-        setAdminMeta(null)
-      }
-      setAdminLoading(false)
-    }
-
-    void fetchAdminRfqs()
-
-    return () => {
-      mounted = false
-    }
-  }, [isAdmin, page, debouncedSearch, statusFilter])
+  const serverRfqs =
+    isAdmin && adminRfqsQuery.data?.success
+      ? adminRfqsQuery.data.data.map(mapAdminRfqToRfq)
+      : []
+  const adminMeta: AdminRfqMeta | null =
+    isAdmin && adminRfqsQuery.data?.success ? adminRfqsQuery.data.meta : null
+  const adminLoading = isAdmin && adminRfqsQuery.isLoading
 
   let myRfqs: Rfq[] = []
   if (isAdmin) {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Swal from "sweetalert2"
 import { Button } from "@/components/ui/button"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
@@ -43,6 +44,7 @@ import {
   type CategoriesPaginationMeta,
 } from "@/lib/api/categories"
 import { useTranslation } from "@/lib/i18n"
+import { queryKeys } from "@/lib/query-keys"
 import { AdminPagination } from "@/components/admin/admin-pagination"
 import { 
   Search,
@@ -104,12 +106,9 @@ export default function AdminIndustriesPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.industries
   const c = t.admin.common
-  const [industries, setIndustries] = useState<Industry[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [page, setPage] = useState(1)
-  const [meta, setMeta] = useState<CategoriesPaginationMeta | null>(null)
-  const [totalSubcategories, setTotalSubcategories] = useState(0)
   
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
@@ -227,43 +226,51 @@ export default function AdminIndustriesPage() {
     })
   }
 
-  const loadFromBackend = async (targetPage = page) => {
-    setIsLoading(true)
-    setErrorMessage(null)
+  const industriesQueryKey = queryKeys.adminIndustries(page, PER_PAGE, debouncedSearch)
 
-    const [categoriesResult, subcategoriesResult] = await Promise.all([
-      getAdminCategories({ perPage: PER_PAGE, page: targetPage, search: debouncedSearch || undefined }),
-      getAdminSubcategories(),
-    ])
+  const industriesQuery = useQuery({
+    queryKey: industriesQueryKey,
+    queryFn: async () => {
+      const [categoriesResult, subcategoriesResult] = await Promise.all([
+        getAdminCategories({ perPage: PER_PAGE, page, search: debouncedSearch || undefined }),
+        getAdminSubcategories(),
+      ])
 
-    if (!categoriesResult.success) {
-      setIndustries([])
-      setMeta(null)
-      setErrorMessage(categoriesResult.message || c.failedToLoadCategories)
-      setIsLoading(false)
-      return
-    }
+      if (!categoriesResult.success) {
+        throw new Error(categoriesResult.message || c.failedToLoadCategories)
+      }
 
-    const mapped = mapServerData(
-      categoriesResult.data,
-      subcategoriesResult.success ? subcategoriesResult.data : []
-    )
-    setIndustries(mapped)
-    setMeta(categoriesResult.meta ?? null)
-    setTotalSubcategories(
-      subcategoriesResult.success ? subcategoriesResult.data.length : 0,
-    )
+      const industries = mapServerData(
+        categoriesResult.data,
+        subcategoriesResult.success ? subcategoriesResult.data : []
+      )
 
-    if (!subcategoriesResult.success) {
-      setErrorMessage(subcategoriesResult.message || c.subcategoriesFailed)
-    }
+      return {
+        industries,
+        meta: categoriesResult.meta ?? null,
+        totalSubcategories: subcategoriesResult.success ? subcategoriesResult.data.length : 0,
+        subcategoriesWarning: !subcategoriesResult.success
+          ? subcategoriesResult.message || c.subcategoriesFailed
+          : null,
+      }
+    },
+    placeholderData: (previousData) => previousData,
+  })
 
-    setIsLoading(false)
+  const industries = industriesQuery.data?.industries ?? []
+  const meta = industriesQuery.data?.meta ?? null
+  const totalSubcategories = industriesQuery.data?.totalSubcategories ?? 0
+  const isLoading = industriesQuery.isLoading
+  const loadError =
+    industriesQuery.isError
+      ? industriesQuery.error instanceof Error
+        ? industriesQuery.error.message
+        : c.failedToLoadCategories
+      : industriesQuery.data?.subcategoriesWarning ?? null
+
+  const refreshIndustries = async () => {
+    await queryClient.invalidateQueries({ queryKey: industriesQueryKey })
   }
-
-  useEffect(() => {
-    void loadFromBackend(page)
-  }, [page, debouncedSearch])
 
   const filteredIndustries = industries
 
@@ -347,7 +354,7 @@ export default function AdminIndustriesPage() {
               icon_color: "#000000",
             })
             setShowAddIndustryDialog(false)
-            await loadFromBackend()
+            await refreshIndustries()
             setErrorMessage(
               tgl.message || p.industryCreatedFeaturedFailed
             )
@@ -368,7 +375,7 @@ export default function AdminIndustriesPage() {
             icon_color: "#000000",
           })
           setShowAddIndustryDialog(false)
-          await loadFromBackend()
+          await refreshIndustries()
           setErrorMessage(c.industryCreatedHint)
           return
         }
@@ -388,7 +395,7 @@ export default function AdminIndustriesPage() {
         icon_color: "#000000",
       })
       setShowAddIndustryDialog(false)
-      await loadFromBackend()
+      await refreshIndustries()
     })()
   }
 
@@ -422,14 +429,14 @@ export default function AdminIndustriesPage() {
           )
           setShowEditIndustryDialog(false)
           setEditIndustryFeaturedAtOpen(null)
-          await loadFromBackend()
+          await refreshIndustries()
           return
         }
       }
 
       setShowEditIndustryDialog(false)
       setEditIndustryFeaturedAtOpen(null)
-      await loadFromBackend()
+      await refreshIndustries()
     })()
   }
 
@@ -440,7 +447,7 @@ export default function AdminIndustriesPage() {
         setErrorMessage(result.message || c.failedToDeleteCategory)
         return
       }
-      await loadFromBackend()
+      await refreshIndustries()
     })()
   }
 
@@ -456,7 +463,7 @@ export default function AdminIndustriesPage() {
         })
         return
       }
-      await loadFromBackend()
+      await refreshIndustries()
     })()
   }
 
@@ -492,7 +499,7 @@ export default function AdminIndustriesPage() {
 
       setNewCategory({ name: "", slug: "", description: "", tags: "", icon: "" })
       setShowAddCategoryDialog(false)
-      await loadFromBackend()
+      await refreshIndustries()
     })()
   }
 
@@ -526,7 +533,7 @@ export default function AdminIndustriesPage() {
       }
 
       setShowEditCategoryDialog(false)
-      await loadFromBackend()
+      await refreshIndustries()
     })()
   }
 
@@ -537,7 +544,7 @@ export default function AdminIndustriesPage() {
         setErrorMessage(result.message || c.failedToDeleteSubcategory)
         return
       }
-      await loadFromBackend()
+      await refreshIndustries()
     })()
   }
 
@@ -554,7 +561,7 @@ export default function AdminIndustriesPage() {
         return
       }
 
-      await loadFromBackend()
+      await refreshIndustries()
     })()
   }
 
@@ -571,7 +578,7 @@ export default function AdminIndustriesPage() {
         return
       }
 
-      await loadFromBackend()
+      await refreshIndustries()
     })()
   }
 
@@ -646,9 +653,9 @@ export default function AdminIndustriesPage() {
         </Badge>
       </div>
 
-      {errorMessage && (
+      {(errorMessage || loadError) && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          {errorMessage}
+          {errorMessage || loadError}
         </div>
       )}
 

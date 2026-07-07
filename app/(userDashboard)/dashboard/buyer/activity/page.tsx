@@ -1,44 +1,35 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { BuyerActivityList } from "@/components/buyer/buyer-activity-list"
 import { getBuyerActivity } from "@/lib/api/buyer-dashboard"
+import { queryKeys } from "@/lib/query-keys"
 import { useTranslation } from "@/lib/i18n"
 import { FileText, Factory, Heart, Loader2 } from "lucide-react"
 
+const ACTIVITY_LIMIT = 50
+
 export default function BuyerActivityPage() {
   const { t } = useTranslation()
-  const [loading, setLoading] = useState(true)
-  const [activities, setActivities] = useState<
-    Array<{
-      id: number
-      type: string
-      title: string
-      description: string
-      link?: string | null
-      time: string
-      time_at: string
-    }>
-  >([])
-  const [summary, setSummary] = useState({
-    suppliers_contacted: 0,
-    rfqs_submitted: 0,
-    suppliers_saved: 0,
+
+  const activityQuery = useQuery({
+    queryKey: queryKeys.buyerActivity(ACTIVITY_LIMIT),
+    queryFn: () => getBuyerActivity(ACTIVITY_LIMIT),
   })
 
-  useEffect(() => {
-    const fetchActivity = async () => {
-      setLoading(true)
-      const res = await getBuyerActivity(50)
-      if (res.success && res.data) {
-        setActivities(res.data.activities)
-        setSummary(res.data.summary)
+  const activities = activityQuery.data?.success ? activityQuery.data.data?.activities ?? [] : []
+  const summary = activityQuery.data?.success
+    ? activityQuery.data.data?.summary ?? {
+        suppliers_contacted: 0,
+        rfqs_submitted: 0,
+        suppliers_saved: 0,
       }
-      setLoading(false)
-    }
-
-    fetchActivity()
-  }, [])
+    : {
+        suppliers_contacted: 0,
+        rfqs_submitted: 0,
+        suppliers_saved: 0,
+      }
+  const loading = activityQuery.isLoading
 
   const getActivityLabel = (type: string) => {
     return t.buyer.activity.labels[type as keyof typeof t.buyer.activity.labels] || type

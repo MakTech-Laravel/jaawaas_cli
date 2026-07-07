@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import Swal from 'sweetalert2'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -56,33 +57,35 @@ import {
   Paperclip
 } from "lucide-react"
 
-import { getManufacturerRFQ, type ManufacturerRFQ } from "@/lib/api/rfqs"
+import { getManufacturerRFQ, submitManufacturerQuote } from "@/lib/api/rfqs"
+import { queryKeys } from "@/lib/query-keys"
 import { format } from "date-fns"
 import { useTranslation } from "@/lib/i18n"
 
 export default function InquiryDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const id = params.id as string
-  
-  const [inquiry, setInquiry] = useState<ManufacturerRFQ | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const { t } = useTranslation()
 
-  useEffect(() => {
-    async function loadInquiry() {
-      const response = await getManufacturerRFQ(id)
-      if (response.success && response.data) {
-        setInquiry(response.data)
-      }
-      setLoading(false)
-    }
-    loadInquiry()
-  }, [id])
-  
+  const inquiryQueryKey = queryKeys.manufacturerRfqDetail(id)
+
+  const inquiryQuery = useQuery({
+    queryKey: inquiryQueryKey,
+    queryFn: () => getManufacturerRFQ(id),
+    enabled: Boolean(id),
+  })
+
+  const submitQuoteMutation = useMutation({
+    mutationFn: (formData: FormData) => submitManufacturerQuote(id, formData),
+  })
+
+  const inquiry = inquiryQuery.data?.success ? inquiryQuery.data.data : null
+  const loading = inquiryQuery.isLoading
+  const isSubmitting = submitQuoteMutation.isPending
+
   const [showQuoteDialog, setShowQuoteDialog] = useState(false)
   const [reply, setReply] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [quoteSubmitted, setQuoteSubmitted] = useState(false)
   const [quoteData, setQuoteData] = useState({
     unitPrice: "",
@@ -167,16 +170,13 @@ export default function InquiryDetailPage() {
   }
 
   const handleSubmitQuote = async () => {
-    setIsSubmitting(true)
-    
-    // Parse numeric fields safely
     const quoted_price = parseFloat(quoteData.unitPrice.replace(/[^0-9.]/g, '')) || 0
     const minimum_order_quantity = parseInt(quoteData.moq.replace(/[^0-9]/g, ''), 10) || 0
     const lead_time_days = parseInt(quoteData.leadTime.replace(/[^0-9]/g, ''), 10) || 0
-    
+
     const formData = new FormData()
     formData.append('quoted_price', quoted_price.toString())
-    formData.append('quote_currency_code', 'USD') // Assuming USD for now
+    formData.append('quote_currency_code', 'USD')
     formData.append('minimum_order_quantity', minimum_order_quantity.toString())
     formData.append('lead_time_days', lead_time_days.toString())
     formData.append('lead_time', quoteData.leadTime)
@@ -186,11 +186,11 @@ export default function InquiryDetailPage() {
     formData.append('sample_cost', quoteData.sampleCost)
     formData.append('sample_lead_time', quoteData.sampleLeadTime)
     formData.append('quote_packaging_details', quoteData.packagingDetails)
-    
-    quoteData.certifications.forEach(cert => {
+
+    quoteData.certifications.forEach((cert) => {
       formData.append('quote_certifications[]', cert)
     })
-    
+
     formData.append('quote_notes', quoteData.notes)
 
     uploadedImages.forEach((img, index) => {
@@ -202,8 +202,7 @@ export default function InquiryDetailPage() {
     })
 
     try {
-      const { submitManufacturerQuote } = await import("@/lib/api/rfqs")
-      const response = await submitManufacturerQuote(id, formData)
+      const response = await submitQuoteMutation.mutateAsync(formData)
 
       if (response.success) {
         setShowQuoteDialog(false)
@@ -213,9 +212,9 @@ export default function InquiryDetailPage() {
           icon: 'success',
           confirmButtonColor: 'var(--primary)',
           confirmButtonText: 'Great!'
-        }).then(() => {
-          // Refresh the inquiry data
-          window.location.reload()
+        }).then(async () => {
+          await queryClient.invalidateQueries({ queryKey: inquiryQueryKey })
+          await queryClient.invalidateQueries({ queryKey: queryKeys.manufacturerRfqs() })
         })
       } else {
         Swal.fire({
@@ -233,8 +232,6 @@ export default function InquiryDetailPage() {
         icon: 'error',
         confirmButtonColor: 'var(--destructive)',
       })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 

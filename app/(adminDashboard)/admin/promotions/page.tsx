@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -57,6 +58,7 @@ import {
   type Promotion
 } from "@/lib/api/admin-promotions"
 import { fetchPlans, type PricingPlan } from "@/lib/api/admin-pricing"
+import { queryKeys } from "@/lib/query-keys"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/lib/i18n"
 
@@ -64,12 +66,58 @@ export default function PromotionsPage() {
   const { t } = useTranslation()
   const p = t.admin.pages.promotions
   const c = t.admin.common
-  const [promotions, setPromotions] = useState<Promotion[]>([])
-  const [plans, setPlans] = useState<PricingPlan[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
   const router = useRouter()
+  const queryClient = useQueryClient()
+
+  const promotionsQueryKey = queryKeys.adminPromotions()
+
+  const promotionsQuery = useQuery({
+    queryKey: promotionsQueryKey,
+    queryFn: fetchAdminPromotions,
+  })
+
+  const plansQuery = useQuery({
+    queryKey: queryKeys.adminPricingPlans(),
+    queryFn: fetchPlans,
+  })
+
+  const toggleMutation = useMutation({
+    mutationFn: (id: number | string) => toggleAdminPromotionStatus(id),
+  })
+
+  const resetMutation = useMutation({
+    mutationFn: resetAdminPromotions,
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number | string
+      payload: {
+        plan_id: number
+        slots: number
+        duration_months: number
+        promotion_title: string
+        short_description: string
+        button_text: string
+        cta_button_text: string
+        highlight_text: string
+        expires_at: string | null
+        status: boolean
+      }
+    }) => updateAdminPromotion(id, payload),
+  })
+
+  const promotions = promotionsQuery.data?.success ? promotionsQuery.data.data : []
+  const plans = plansQuery.data ?? []
+  const loading = promotionsQuery.isLoading
+  const error =
+    promotionsQuery.data?.success === false
+      ? promotionsQuery.data.message || p.loadFailed
+      : null
 
   const [showResetDialog, setShowResetDialog] = useState(false)
   const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(null)
@@ -88,36 +136,8 @@ export default function PromotionsPage() {
     expires_at: string | null
     status: boolean
   } | null>(null)
-  const [submitting, setSubmitting] = useState(false)
 
-  const loadPromotions = async (cancelled = false) => {
-    setLoading(true)
-    setError(null)
-    const res = await fetchAdminPromotions()
-    if (cancelled) return
-    if (res.success) {
-      setPromotions(res.data)
-    } else {
-      setError(res.message || p.loadFailed)
-    }
-    setLoading(false)
-  }
-
-  const loadPlans = async () => {
-    try {
-      const data = await fetchPlans()
-      setPlans(data)
-    } catch (err) {
-      console.error("Failed to load plans", err)
-    }
-  }
-
-  useEffect(() => {
-    let cancelled = false
-    void loadPromotions(cancelled)
-    void loadPlans()
-    return () => { cancelled = true }
-  }, [])
+  const submitting = updateMutation.isPending
 
   const handleToggleActive = async (promo: Promotion) => {
     toast({
@@ -125,14 +145,26 @@ export default function PromotionsPage() {
       description: !promo.status ? c.turningPromotionOn : c.turningPromotionOff,
     })
 
-    const res = await toggleAdminPromotionStatus(promo.id)
+    const res = await toggleMutation.mutateAsync(promo.id)
     
     if (res.success) {
+      queryClient.setQueryData(promotionsQueryKey, (previous: {
+        success: boolean
+        message?: string
+        data: Promotion[]
+      } | undefined) => {
+        if (!previous?.success) return previous
+        return {
+          ...previous,
+          data: previous.data.map((item) =>
+            item.id === promo.id ? { ...item, status: !item.status } : item
+          ),
+        }
+      })
       toast({
         title: c.success,
         description: res.message || (!promo.status ? c.promotionActivated : c.promotionDeactivated),
       })
-      void loadPromotions()
     } else {
       toast({
         title: c.error,
@@ -151,13 +183,13 @@ export default function PromotionsPage() {
       description: p.resettingCounters,
     })
     
-    const res = await resetAdminPromotions()
+    const res = await resetMutation.mutateAsync()
     if (res.success) {
       toast({
         title: c.success,
         description: res.message || c.countersResetSuccess,
       })
-      void loadPromotions()
+      void queryClient.invalidateQueries({ queryKey: promotionsQueryKey })
     } else {
       toast({
         title: c.error,
@@ -186,8 +218,7 @@ export default function PromotionsPage() {
 
   const handleUpdatePromotion = async () => {
     if (!editPromoData) return
-    
-    setSubmitting(true)
+
     const payload = {
       plan_id: editPromoData.plan_id,
       slots: editPromoData.slots,
@@ -201,8 +232,7 @@ export default function PromotionsPage() {
       status: editPromoData.status,
     }
 
-    const res = await updateAdminPromotion(editPromoData.id, payload)
-    setSubmitting(false)
+    const res = await updateMutation.mutateAsync({ id: editPromoData.id, payload })
 
     if (res.success) {
       toast({
@@ -210,7 +240,7 @@ export default function PromotionsPage() {
         description: res.message || c.promotionUpdated,
       })
       setShowEditDialog(false)
-      void loadPromotions()
+      void queryClient.invalidateQueries({ queryKey: promotionsQueryKey })
     } else {
       toast({
         title: c.error,

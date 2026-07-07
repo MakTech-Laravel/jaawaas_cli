@@ -3,6 +3,7 @@ import { DM_Sans, DM_Serif_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/lib/auth-context'
 import { I18nProvider } from '@/lib/i18n'
+import { AppQueryProvider } from '@/lib/query-provider'
 import { DeferredToaster } from '@/components/deferred-toaster'
 import { FavoritesProvider } from '@/lib/favorites-context'
 import './globals.css'
@@ -51,11 +52,13 @@ export default function RootLayout({
     <html lang="en" dir="ltr" suppressHydrationWarning className={`${dmSans.variable} ${dmSerif.variable}`}>
       <body className="font-sans antialiased">
         <I18nProvider>
-          <AuthProvider>
-            <FavoritesProvider>
-              {children}
-            </FavoritesProvider>
-          </AuthProvider>
+          <AppQueryProvider>
+            <AuthProvider>
+              <FavoritesProvider>
+                {children}
+              </FavoritesProvider>
+            </AuthProvider>
+          </AppQueryProvider>
         </I18nProvider>
         <DeferredToaster />
         <Analytics />

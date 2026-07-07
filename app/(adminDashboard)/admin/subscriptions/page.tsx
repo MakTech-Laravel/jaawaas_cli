@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Card, CardContent } from "@/components/ui/card"
@@ -37,6 +38,7 @@ import { useTranslation } from "@/lib/i18n"
 import { format } from "date-fns"
 import { SubscriptionDetailModal } from "@/components/admin/subscription-detail-modal"
 import { AdminPagination } from "@/components/admin/admin-pagination"
+import { queryKeys } from "@/lib/query-keys"
 
 const statusConfig: Record<string, { color: string }> = {
   active: { color: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" },
@@ -54,19 +56,9 @@ export default function AdminSubscriptionsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   
-  const [loading, setLoading] = useState(true)
-  const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([])
-  const [stats, setStats] = useState<AdminSubscriptionStats | null>(null)
   const [page, setPage] = useState(1)
-  const [meta, setMeta] = useState<{
-    current_page: number
-    last_page: number
-    per_page: number
-    total: number
-    from?: number
-    to?: number
-  } | null>(null)
   const perPage = 15
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   
   const [selectedSubId, setSelectedSubId] = useState<number | string | null>(null)
 
@@ -75,36 +67,42 @@ export default function AdminSubscriptionsPage() {
   }, [searchQuery, statusFilter])
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      
-      const [subsRes, statsRes] = await Promise.all([
-        getAdminSubscriptions({
-          page,
-          per_page: perPage,
-          search: searchQuery || undefined,
-          status: statusFilter !== "all" ? statusFilter : undefined,
-        }),
-        getAdminSubscriptionStats(),
-      ])
-
-      if (subsRes.success) {
-        setSubscriptions(subsRes.data)
-        setMeta(subsRes.meta ?? null)
-      }
-      if (statsRes.success) {
-        setStats(statsRes.data)
-      }
-
-      setLoading(false)
-    }
-
     const timeoutId = setTimeout(() => {
-      fetchData()
+      setDebouncedSearchQuery(searchQuery)
     }, 300)
-
     return () => clearTimeout(timeoutId)
-  }, [searchQuery, statusFilter, page])
+  }, [searchQuery])
+
+  const subscriptionsQuery = useQuery({
+    queryKey: queryKeys.adminSubscriptions(page, perPage, statusFilter, debouncedSearchQuery),
+    queryFn: () =>
+      getAdminSubscriptions({
+        page,
+        per_page: perPage,
+        search: debouncedSearchQuery || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+      }),
+    placeholderData: (previousData) => previousData,
+  })
+
+  const statsQuery = useQuery({
+    queryKey: queryKeys.adminSubscriptionStats(),
+    queryFn: () => getAdminSubscriptionStats(),
+  })
+
+  const loading = subscriptionsQuery.isLoading
+  const subscriptions: AdminSubscription[] = subscriptionsQuery.data?.success
+    ? subscriptionsQuery.data.data
+    : []
+  const stats: AdminSubscriptionStats | null =
+    statsQuery.data?.success && statsQuery.data.data ? statsQuery.data.data : null
+  const meta = subscriptionsQuery.data?.success ? subscriptionsQuery.data.meta ?? null : null
+
+  useEffect(() => {
+    if (page > 1 && meta && page > meta.last_page) {
+      setPage(meta.last_page)
+    }
+  }, [meta, page])
 
   return (
     <div className="space-y-6">

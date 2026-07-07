@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
@@ -83,6 +84,10 @@ import {
   deleteAdminCertification,
   getAdminCertifications,
 } from "@/lib/api/admin-certifications"
+import { queryKeys } from "@/lib/query-keys"
+
+const CERTIFICATIONS_PER_PAGE = 12
+const TYPES_PER_PAGE = 12
 
 type CertificateVisualStatus = "valid" | "expiring" | "expired" | "unknown"
 
@@ -183,6 +188,7 @@ export default function AdminCertificateTypePage() {
   const p = t.admin.pages.certificatetype
   const c = t.admin.common
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   const typeStatusConfig = useMemo(
     () => ({
@@ -238,30 +244,91 @@ export default function AdminCertificateTypePage() {
 
   const [activeTab, setActiveTab] = useState("certificates")
 
-  const [groupedCertifications, setGroupedCertifications] = useState<GroupedCertification[]>([])
-  const [certificationsLoading, setCertificationsLoading] = useState(true)
   const [certificationsSearch, setCertificationsSearch] = useState("")
   const [certificationsPage, setCertificationsPage] = useState(1)
-  const [certificationsPerPage] = useState(12)
-  const [certificationsTotalPages, setCertificationsTotalPages] = useState(1)
-  const [certificationsTotalItems, setCertificationsTotalItems] = useState(0)
   const [deletingCertificationId, setDeletingCertificationId] = useState<
     string | number | null
   >(null)
-  const [isDeletingCertification, setIsDeletingCertification] = useState(false)
 
-  const [types, setTypes] = useState<CertificateType[]>([])
-  const [typesLoading, setTypesLoading] = useState(true)
+  const certificationsQueryKey = queryKeys.adminCertifications(
+    certificationsPage,
+    CERTIFICATIONS_PER_PAGE
+  )
+
+  const certificationsQuery = useQuery({
+    queryKey: certificationsQueryKey,
+    queryFn: () => getAdminCertifications("", certificationsPage, CERTIFICATIONS_PER_PAGE),
+    placeholderData: (previousData) => previousData,
+  })
+
+  const groupedCertifications = useMemo(() => {
+    if (!certificationsQuery.data?.success) {
+      return []
+    }
+    return groupCertificationsByManufacturer(
+      certificationsQuery.data.data,
+      c.unknownManufacturer
+    )
+  }, [certificationsQuery.data, c.unknownManufacturer])
+
+  const certificationsTotalPages =
+    certificationsQuery.data?.pagination?.last_page ?? 1
+  const certificationsTotalItems =
+    certificationsQuery.data?.pagination?.total ??
+    certificationsQuery.data?.data?.length ??
+    0
+  const certificationsLoading =
+    certificationsQuery.isLoading && !certificationsQuery.data
+
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editingType, setEditingType] = useState<CertificateType | null>(null)
   const [deletingTypeId, setDeletingTypeId] = useState<string | number | null>(null)
   const [typeSearchQuery, setTypeSearchQuery] = useState("")
-  const [isTypeSubmitting, setIsTypeSubmitting] = useState(false)
   const [typeCurrentPage, setTypeCurrentPage] = useState(1)
-  const [typesPerPage] = useState(12)
-  const [typeTotalPages, setTypeTotalPages] = useState(1)
-  const [typeTotalItems, setTypeTotalItems] = useState(0)
+
+  const typesQueryKey = queryKeys.adminCertificateTypes(
+    typeCurrentPage,
+    TYPES_PER_PAGE,
+    typeSearchQuery
+  )
+
+  const typesQuery = useQuery({
+    queryKey: typesQueryKey,
+    queryFn: () => getAdminCertificateTypes(typeSearchQuery, typeCurrentPage, TYPES_PER_PAGE),
+    placeholderData: (previousData) => previousData,
+  })
+
+  const types = typesQuery.data?.success ? typesQuery.data.data : []
+  const typeTotalPages = typesQuery.data?.pagination?.last_page ?? 1
+  const typeTotalItems =
+    typesQuery.data?.pagination?.total ?? typesQuery.data?.data?.length ?? 0
+  const typesLoading = typesQuery.isLoading && !typesQuery.data
+
+  const createTypeMutation = useMutation({
+    mutationFn: createAdminCertificateType,
+  })
+  const updateTypeMutation = useMutation({
+    mutationFn: ({
+      typeId,
+      input,
+    }: {
+      typeId: string | number
+      input: { name: string; slug: string; status: "active" | "inactive" }
+    }) => updateAdminCertificateType(typeId, input),
+  })
+  const deleteTypeMutation = useMutation({
+    mutationFn: deleteAdminCertificateType,
+  })
+  const deleteCertMutation = useMutation({
+    mutationFn: deleteAdminCertification,
+  })
+
+  const isTypeSubmitting =
+    createTypeMutation.isPending ||
+    updateTypeMutation.isPending ||
+    deleteTypeMutation.isPending
+  const isDeletingCertification = deleteCertMutation.isPending
 
   const [newType, setNewType] = useState({
     name: "",
@@ -275,101 +342,40 @@ export default function AdminCertificateTypePage() {
   })
 
   useEffect(() => {
-    void loadAdminCertificates()
-  }, [certificationsPage])
+    const response = certificationsQuery.data
+    if (response && !response.success) {
+      toast({
+        title: c.error,
+        description: response.message || c.failedToLoadCerts,
+        variant: "destructive",
+      })
+    }
+  }, [certificationsQuery.data, c.error, c.failedToLoadCerts, toast])
 
   useEffect(() => {
-    void loadCertificateTypes()
-  }, [typeCurrentPage, typeSearchQuery])
-
-  const loadAdminCertificates = async (
-    page: number = certificationsPage,
-    search: string = certificationsSearch
-  ) => {
-    setCertificationsLoading(true)
-    try {
-      // Don't pass search to API - let backend return all results for this page
-      // Client-side filtering will handle manufacturer search
-      const response = await getAdminCertifications("", page, certificationsPerPage)
-      if (response.success) {
-        const grouped = groupCertificationsByManufacturer(response.data, c.unknownManufacturer)
-        setGroupedCertifications(grouped)
-        if (response.pagination) {
-          setCertificationsTotalPages(response.pagination.last_page)
-          setCertificationsTotalItems(response.pagination.total)
-        } else {
-          setCertificationsTotalPages(1)
-          setCertificationsTotalItems(response.data.length)
-        }
-      } else {
-        setGroupedCertifications([])
-        toast({
-          title: c.error,
-          description: response.message || c.failedToLoadCerts,
-          variant: "destructive",
-        })
-      }
-    } catch (_error) {
-      setGroupedCertifications([])
+    const response = typesQuery.data
+    if (response && !response.success) {
       toast({
         title: c.error,
-        description: c.unexpectedErrorLoadingCerts,
+        description: response.message || c.failedToLoadCertTypes,
         variant: "destructive",
       })
-    } finally {
-      setCertificationsLoading(false)
     }
-  }
-
-  const loadCertificateTypes = async (
-    page: number = typeCurrentPage,
-    search: string = typeSearchQuery
-  ) => {
-    setTypesLoading(true)
-    try {
-      const response = await getAdminCertificateTypes(search, page, typesPerPage)
-      if (response.success) {
-        setTypes(response.data)
-        if (response.pagination) {
-          setTypeTotalPages(response.pagination.last_page)
-          setTypeTotalItems(response.pagination.total)
-        } else {
-          setTypeTotalPages(1)
-          setTypeTotalItems(response.data.length)
-        }
-      } else {
-        toast({
-          title: c.error,
-          description: response.message || c.failedToLoadCertTypes,
-          variant: "destructive",
-        })
-      }
-    } catch (_error) {
-      toast({
-        title: c.error,
-        description: c.unexpectedError,
-        variant: "destructive",
-      })
-    } finally {
-      setTypesLoading(false)
-    }
-  }
+  }, [typesQuery.data, c.error, c.failedToLoadCertTypes, toast])
 
   const handleDeleteCertification = async () => {
     if (!deletingCertificationId) {
       return
     }
 
-    setIsDeletingCertification(true)
     try {
-      const response = await deleteAdminCertification(deletingCertificationId)
+      const response = await deleteCertMutation.mutateAsync(deletingCertificationId)
       if (response.success) {
         toast({
           title: c.success,
           description: response.message || p.certDeletedSuccess,
         })
 
-        // Check if we need to go to previous page
         const totalCertsInGroups = groupedCertifications.reduce(
           (acc, group) => acc + group.certifications.length,
           0
@@ -379,7 +385,7 @@ export default function AdminCertificateTypePage() {
         if (shouldGoToPreviousPage) {
           setCertificationsPage((prev) => Math.max(1, prev - 1))
         } else {
-          await loadAdminCertificates(certificationsPage, certificationsSearch)
+          await queryClient.invalidateQueries({ queryKey: certificationsQueryKey })
         }
       } else {
         toast({
@@ -395,21 +401,19 @@ export default function AdminCertificateTypePage() {
         variant: "destructive",
       })
     } finally {
-      setIsDeletingCertification(false)
       setDeletingCertificationId(null)
     }
   }
 
   const deleteType = async (id: string | number) => {
-    setIsTypeSubmitting(true)
     try {
-      const response = await deleteAdminCertificateType(id)
+      const response = await deleteTypeMutation.mutateAsync(id)
       if (response.success) {
         toast({
           title: c.success,
           description: response.message || c.certTypeDeleted,
         })
-        await loadCertificateTypes(typeCurrentPage, typeSearchQuery)
+        await queryClient.invalidateQueries({ queryKey: typesQueryKey })
       } else {
         toast({
           title: c.error,
@@ -424,7 +428,6 @@ export default function AdminCertificateTypePage() {
         variant: "destructive",
       })
     } finally {
-      setIsTypeSubmitting(false)
       setDeletingTypeId(null)
     }
   }
@@ -444,9 +447,8 @@ export default function AdminCertificateTypePage() {
         ? newType.status
         : "active"
 
-    setIsTypeSubmitting(true)
     try {
-      const response = await createAdminCertificateType({
+      const response = await createTypeMutation.mutateAsync({
         name: newType.name,
         slug: newType.slug,
         status,
@@ -460,7 +462,9 @@ export default function AdminCertificateTypePage() {
           title: c.success,
           description: response.message || c.certTypeCreated,
         })
-        await loadCertificateTypes(1, typeSearchQuery)
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.adminCertificateTypes(1, TYPES_PER_PAGE, typeSearchQuery),
+        })
       } else {
         toast({
           title: c.error,
@@ -474,8 +478,6 @@ export default function AdminCertificateTypePage() {
         description: c.unexpectedError,
         variant: "destructive",
       })
-    } finally {
-      setIsTypeSubmitting(false)
     }
   }
 
@@ -504,12 +506,14 @@ export default function AdminCertificateTypePage() {
         ? editType.status
         : "active"
 
-    setIsTypeSubmitting(true)
     try {
-      const response = await updateAdminCertificateType(editingType.id, {
-        name: editType.name,
-        slug: editType.slug,
-        status,
+      const response = await updateTypeMutation.mutateAsync({
+        typeId: editingType.id,
+        input: {
+          name: editType.name,
+          slug: editType.slug,
+          status,
+        },
       })
 
       if (response.success) {
@@ -519,7 +523,7 @@ export default function AdminCertificateTypePage() {
           title: c.success,
           description: response.message || c.certTypeUpdated,
         })
-        await loadCertificateTypes(typeCurrentPage, typeSearchQuery)
+        await queryClient.invalidateQueries({ queryKey: typesQueryKey })
       } else {
         toast({
           title: c.error,
@@ -533,8 +537,6 @@ export default function AdminCertificateTypePage() {
         description: c.unexpectedError,
         variant: "destructive",
       })
-    } finally {
-      setIsTypeSubmitting(false)
     }
   }
 
@@ -623,7 +625,7 @@ export default function AdminCertificateTypePage() {
             </div>
             <Button
               variant="outline"
-              onClick={() => void loadAdminCertificates(certificationsPage, certificationsSearch)}
+              onClick={() => void certificationsQuery.refetch()}
               disabled={certificationsLoading}
             >
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -877,7 +879,7 @@ export default function AdminCertificateTypePage() {
             </div>
             <Button
               variant="outline"
-              onClick={() => void loadCertificateTypes(typeCurrentPage, typeSearchQuery)}
+              onClick={() => void typesQuery.refetch()}
               disabled={typesLoading}
             >
               <RefreshCw className="mr-2 h-4 w-4" />

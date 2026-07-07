@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import {
   formatCurrency,
   formatOrderDate,
@@ -11,7 +11,8 @@ import {
   type OrderStatus,
 } from "@/lib/orders-context"
 import { useMessages } from "@/lib/messages-context"
-import { getManufacturerOrder, summarizeOrderItems, updateManufacturerOrderStatus, type ApiOrder, type OrderStatusUpdate } from "@/lib/api/orders"
+import { getManufacturerOrder, summarizeOrderItems, updateManufacturerOrderStatus, type OrderDetailResponse, type OrderStatusUpdate } from "@/lib/api/orders"
+import { queryKeys, queryKeyFamilies } from "@/lib/query-keys"
 import { OrderLineItemsTable } from "@/components/orders/order-line-items-table"
 import { useTranslation } from "@/lib/i18n"
 import { Badge } from "@/components/ui/badge"
@@ -60,18 +61,47 @@ interface DetailConfig {
 }
 
 export function SellerOrderDetail({ orderId, config }: { orderId: string; config: DetailConfig }) {
-  const router = useRouter()
   const { postOrderUpdate } = useMessages()
   const { t } = useTranslation()
-  
-  const [order, setOrder] = useState<ApiOrder | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+  const numericId = Number.parseInt(orderId, 10)
+  const isValidId = !Number.isNaN(numericId)
+  const orderQueryKey = queryKeys.manufacturerOrderDetail(orderId)
+
+  const orderQuery = useQuery({
+    queryKey: orderQueryKey,
+    queryFn: () => getManufacturerOrder(numericId),
+    enabled: isValidId && Boolean(orderId),
+  })
+
+  const updateStatusMutation = useMutation({
+    mutationFn: (payload: {
+      status: string
+      notes?: string
+      photos: File[]
+      attachments: File[]
+    }) =>
+      updateManufacturerOrderStatus(numericId, {
+        status: payload.status,
+        notes: payload.notes,
+        photos: payload.photos,
+        attachments: payload.attachments,
+      }),
+  })
+
+  const order = orderQuery.data?.success ? orderQuery.data.data : null
+  const isLoading = orderQuery.isLoading
+  const error = !isValidId
+    ? t.mfg.orderDetails.notFound || "Invalid order ID"
+    : orderQuery.data?.success === false
+      ? orderQuery.data.message || t.mfg.orderDetails.notFound || "Failed to load order details"
+      : !isLoading && !order
+        ? t.mfg.orderDetails.notFound || "Failed to load order details"
+        : null
 
   const [showForm, setShowForm] = useState(false)
   const [newStatus, setNewStatus] = useState<string>("in-production")
   const [note, setNote] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
   
   // Real file attachment state
   const [photos, setPhotos] = useState<File[]>([])
@@ -79,7 +109,14 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
   const photoInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const isSubmitting = updateStatusMutation.isPending
   const isService = config.kind === "service"
+
+  useEffect(() => {
+    if (order?.status) {
+      setNewStatus(order.status)
+    }
+  }, [order?.status])
 
   const getLocalizedStatusLabel = (s: string) => {
     switch (s) {
@@ -93,28 +130,16 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
     }
   }
 
-  useEffect(() => {
-    async function fetchOrder() {
-      setIsLoading(true)
-      const numericId = parseInt(orderId, 10)
-      if (isNaN(numericId)) {
-        setError(t.mfg.orderDetails.notFound || "Invalid order ID")
-        setIsLoading(false)
-        return
-      }
-
-      const res = await getManufacturerOrder(numericId)
-      if (res.success && res.data) {
-        setOrder(res.data)
-        setNewStatus(res.data.status)
-      } else {
-        setError(res.message || t.mfg.orderDetails.notFound || "Failed to load order details")
-      }
-      setIsLoading(false)
-    }
-
-    fetchOrder()
-  }, [orderId, t])
+  if (!isValidId) {
+    return (
+      <div className="mx-auto max-w-3xl py-12 text-center sm:py-16">
+        <h1 className="font-serif text-xl font-medium text-foreground">{t.mfg.orderDetails.notFound}</h1>
+        <Button asChild variant="outline" className="mt-4">
+          <Link href={config.basePath}>{t.mfg.orderDetails.backToList}</Link>
+        </Button>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (
@@ -145,26 +170,29 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
   })
 
   const submitUpdate = async () => {
+    if (!order) return
     if (!note.trim() && order.status === newStatus) return
-    
-    setIsSubmitting(true)
+
     const trimmedNote = note.trim()
-    
-    // Passing the real selected files
-    const res = await updateManufacturerOrderStatus(order.id, {
+
+    const res = await updateStatusMutation.mutateAsync({
       status: newStatus,
       notes: trimmedNote || undefined,
       photos,
       attachments,
     })
-    
+
     if (res.success && res.data) {
-      setOrder(res.data)
-      
-      // Deliver the status change into the buyer↔seller message thread
+      queryClient.setQueryData(orderQueryKey, (previous: OrderDetailResponse | undefined) => {
+        if (!previous) return previous
+        return { ...previous, success: true, data: res.data }
+      })
+      void queryClient.invalidateQueries({ queryKey: queryKeyFamilies.manufacturerOrders })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.manufacturerOrderStats() })
+
       try {
-        postOrderUpdate(res.data as any, {
-          status: newStatus as any,
+        postOrderUpdate(res.data as unknown as Parameters<typeof postOrderUpdate>[0], {
+          status: newStatus as OrderStatus,
           note: trimmedNote,
           photos: photos.map((f) => f.name),
           files: attachments.map((f) => f.name),
@@ -173,7 +201,7 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
       } catch (e) {
         console.error("Failed to post message", e)
       }
-      
+
       setNote("")
       setPhotos([])
       setAttachments([])
@@ -181,8 +209,6 @@ export function SellerOrderDetail({ orderId, config }: { orderId: string; config
     } else {
       alert(res.message || "Failed to post update")
     }
-    
-    setIsSubmitting(false)
   }
 
   return (

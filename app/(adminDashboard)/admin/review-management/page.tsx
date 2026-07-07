@@ -1,6 +1,7 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -39,6 +40,7 @@ import {
   fetchAllManufacturerAdditionalInformationRequests,
   type AdditionalInformationRequestStatus,
 } from "@/lib/api/admin-manufacturer-additional-information"
+import { queryKeys } from "@/lib/query-keys"
 import { useTranslation } from "@/lib/i18n"
 import AdditionalInformationReviewPanel, {
   VerificationRequestStatusBadge,
@@ -52,11 +54,8 @@ export default function ReviewManagementPage() {
   const c = t.admin.common
   const rs = t.admin.reviewStatus
   const { toast } = useToast()
-  const [requests, setRequests] = useState<AdditionalInformationRequest[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalItems, setTotalItems] = useState(0)
   const [statusFilter, setStatusFilter] = useState<AdditionalInformationRequestStatus>("open")
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
@@ -69,41 +68,42 @@ export default function ReviewManagementPage() {
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  const loadRequests = useCallback(async () => {
-    try {
-      setLoading(true)
-      const response = await fetchAllManufacturerAdditionalInformationRequests(
-        currentPage,
-        PER_PAGE,
-        {
-          status: statusFilter === "open" ? "open" : statusFilter,
-          unverifiedOnly: false,
-          search: debouncedSearch || undefined,
-        }
-      )
-      setRequests(response.data || [])
-      if (response.meta) {
-        setTotalPages(response.meta.last_page)
-        setTotalItems(response.meta.total)
-      }
-    } catch {
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [debouncedSearch, statusFilter])
+
+  const requestsQueryKey = queryKeys.adminReviewManagement(
+    currentPage,
+    PER_PAGE,
+    statusFilter,
+    debouncedSearch
+  )
+
+  const requestsQuery = useQuery({
+    queryKey: requestsQueryKey,
+    queryFn: () =>
+      fetchAllManufacturerAdditionalInformationRequests(currentPage, PER_PAGE, {
+        status: statusFilter === "open" ? "open" : statusFilter,
+        unverifiedOnly: false,
+        search: debouncedSearch || undefined,
+      }),
+    placeholderData: (previousData) => previousData,
+  })
+
+  useEffect(() => {
+    if (requestsQuery.isError) {
       toast({
         title: c.error,
         description: p.loadFailed,
         variant: "destructive",
       })
-    } finally {
-      setLoading(false)
     }
-  }, [currentPage, statusFilter, debouncedSearch, toast, c.error, p.loadFailed])
+  }, [requestsQuery.isError, toast, c.error, p.loadFailed])
 
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [debouncedSearch, statusFilter])
-
-  useEffect(() => {
-    loadRequests()
-  }, [loadRequests])
+  const requests = requestsQuery.data?.data ?? []
+  const loading = requestsQuery.isLoading
+  const totalPages = requestsQuery.data?.meta?.last_page ?? 1
+  const totalItems = requestsQuery.data?.meta?.total ?? 0
 
   const openPanel = (request: AdditionalInformationRequest) => {
     setSelectedRequest(request)
@@ -378,7 +378,7 @@ export default function ReviewManagementPage() {
           }}
           request={selectedRequest}
           onReviewComplete={() => {
-            void loadRequests()
+            void queryClient.invalidateQueries({ queryKey: requestsQueryKey })
           }}
         />
       )}

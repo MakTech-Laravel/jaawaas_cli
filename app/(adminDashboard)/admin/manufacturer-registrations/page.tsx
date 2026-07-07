@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -45,6 +46,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/lib/i18n"
 import type { ManufacturerApplication, ManufacturerRegistrationResponse } from "@/lib/api/admin-manufacturer-registrations"
 import { fetchManufacturerRegistrations, deleteManufacturer, approveManufacturer, rejectManufacturer, createManufacturerSupportTicket } from "@/lib/api/admin-manufacturer-registrations"
+import { queryKeys } from "@/lib/query-keys"
 import { ManufacturerApplicationDetailDialog } from "@/components/admin/manufacturer-application-detail-dialog"
 import RequestReviewDialog from "@/components/admin/request-review-dialog"
 import RequestAdditionalInfoDialog from "@/components/admin/request-additional-info-dialog"
@@ -94,21 +96,18 @@ export default function ManufacturerRegistrationsPage() {
   const p = t.admin.pages.mfgRegistrations
   const c = t.admin.common
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const [currentPage, setCurrentPage] = useState(1)
-  const [data, setData] = useState<ManufacturerRegistrationResponse | null>(null)
-  const [loading, setLoading] = useState(true)
   
   const [viewOpen, setViewOpen] = useState(false)
   const [viewTarget, setViewTarget] = useState<ManufacturerApplication | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<ManufacturerApplication | null>(null)
-  const [deletingId, setDeletingId] = useState<number | string | null>(null)
   const [messageTarget, setMessageTarget] = useState<ManufacturerApplication | null>(null)
   const [supportSubject, setSupportSubject] = useState("")
   const [supportMessage, setSupportMessage] = useState("")
   const [supportDepartment, setSupportDepartment] = useState("account")
   const [supportPriority, setSupportPriority] = useState("medium")
   const [showSupportDialog, setShowSupportDialog] = useState(false)
-  const [creatingSupport, setCreatingSupport] = useState(false)
   const [infoTarget, setInfoTarget] = useState<ManufacturerApplication | null>(null)
   const [showInfoDialog, setShowInfoDialog] = useState(false)
   const [rejectTarget, setRejectTarget] = useState<ManufacturerApplication | null>(null)
@@ -116,33 +115,74 @@ export default function ManufacturerRegistrationsPage() {
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [reviewTarget, setReviewTarget] = useState<ManufacturerApplication | null>(null)
   const [showReviewDialog, setShowReviewDialog] = useState(false)
-  const [approvingId, setApprovingId] = useState<number | string | null>(null)
-  const [rejectingId, setRejectingId] = useState<number | string | null>(null)
 
-  // Fetch data from API
+  const registrationsQueryKey = queryKeys.adminManufacturerRegistrations(currentPage, PER_PAGE)
+
+  const registrationsQuery = useQuery({
+    queryKey: registrationsQueryKey,
+    queryFn: () => fetchManufacturerRegistrations(currentPage, "pending", PER_PAGE),
+    placeholderData: (previousData) => previousData,
+  })
+
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true)
-        const response = await fetchManufacturerRegistrations(
-          currentPage,
-          "pending",
-          PER_PAGE
-        )
-        setData(response)
-      } catch (err) {
-        toast({
-          title: c.error,
-          description: p.loadFailed,
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
-      }
+    if (registrationsQuery.isError) {
+      toast({
+        title: c.error,
+        description: p.loadFailed,
+        variant: "destructive",
+      })
     }
+  }, [registrationsQuery.isError, toast, c.error, p.loadFailed])
 
-    loadData()
-  }, [currentPage, toast])
+  const approveMutation = useMutation({
+    mutationFn: (id: string | number) => approveManufacturer(id),
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string | number; reason: string }) =>
+      rejectManufacturer(id, reason),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string | number) => deleteManufacturer(id),
+  })
+
+  const supportTicketMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string | number
+      payload: {
+        subject: string
+        message: string
+        department_type: string
+        priority: string
+      }
+    }) => createManufacturerSupportTicket(id, payload),
+  })
+
+  const data = registrationsQuery.data ?? null
+  const loading = registrationsQuery.isLoading
+  const approvingId = approveMutation.isPending ? approveMutation.variables ?? null : null
+  const rejectingId = rejectMutation.isPending ? rejectMutation.variables?.id ?? null : null
+  const deletingId = deleteMutation.isPending ? deleteMutation.variables ?? null : null
+  const creatingSupport = supportTicketMutation.isPending
+
+  const patchRegistrationsCache = (
+    updater: (rows: ManufacturerApplication[]) => ManufacturerApplication[]
+  ) => {
+    queryClient.setQueryData(registrationsQueryKey, (previous: ManufacturerRegistrationResponse | undefined) => {
+      if (!previous) return previous
+      const nextData = updater(previous.data)
+      const removedCount = previous.data.length - nextData.length
+      const nextMeta =
+        previous.meta && removedCount > 0
+          ? { ...previous.meta, total: Math.max((previous.meta.total ?? 0) - removedCount, 0) }
+          : previous.meta
+      return { ...previous, data: nextData, meta: nextMeta }
+    })
+  }
 
   const rows = data?.data || []
   const meta = data?.meta
@@ -165,19 +205,15 @@ export default function ManufacturerRegistrationsPage() {
     }
 
     try {
-      setApprovingId(row.id)
-      await approveManufacturer(row.id)
+      await approveMutation.mutateAsync(row.id)
 
       toast({
         title: c.success,
         description: c.approvedDesc.replace("{name}", displayName(row)),
       })
 
-      // Refresh data
-      const response = await fetchManufacturerRegistrations(currentPage, "pending", PER_PAGE)
-      setData(response)
+      patchRegistrationsCache((prev) => prev.filter((item) => item.id !== row.id))
 
-      // Close detail modal if open for this row
       if (viewTarget?.id === row.id) {
         setViewOpen(false)
         setViewTarget(null)
@@ -189,8 +225,6 @@ export default function ManufacturerRegistrationsPage() {
         description: errorMsg,
         variant: "destructive",
       })
-    } finally {
-      setApprovingId(null)
     }
   }
 
@@ -217,12 +251,14 @@ export default function ManufacturerRegistrationsPage() {
     }
 
     try {
-      setCreatingSupport(true)
-      const response = await createManufacturerSupportTicket(messageTarget.id, {
-        subject: supportSubject.trim(),
-        message: supportMessage.trim(),
-        department_type: supportDepartment,
-        priority: supportPriority,
+      const response = await supportTicketMutation.mutateAsync({
+        id: messageTarget.id,
+        payload: {
+          subject: supportSubject.trim(),
+          message: supportMessage.trim(),
+          department_type: supportDepartment,
+          priority: supportPriority,
+        },
       })
 
       toast({
@@ -243,8 +279,6 @@ export default function ManufacturerRegistrationsPage() {
         description: errorMsg,
         variant: "destructive",
       })
-    } finally {
-      setCreatingSupport(false)
     }
   }
 
@@ -272,8 +306,7 @@ export default function ManufacturerRegistrationsPage() {
     }
 
     try {
-      setRejectingId(rejectTarget.id)
-      await rejectManufacturer(rejectTarget.id, rejectReason)
+      await rejectMutation.mutateAsync({ id: rejectTarget.id, reason: rejectReason })
 
       toast({
         title: c.success,
@@ -281,18 +314,16 @@ export default function ManufacturerRegistrationsPage() {
       })
 
       setShowRejectDialog(false)
+      const rejectedId = rejectTarget.id
       setRejectTarget(null)
       setRejectReason("")
 
-      // Close detail modal if open for this row
-      if (viewTarget?.id === rejectTarget.id) {
+      if (viewTarget?.id === rejectedId) {
         setViewOpen(false)
         setViewTarget(null)
       }
 
-      // Refresh data
-      const response = await fetchManufacturerRegistrations(currentPage, "pending", PER_PAGE)
-      setData(response)
+      patchRegistrationsCache((prev) => prev.filter((item) => item.id !== rejectedId))
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : c.failedToRejectManufacturer
       toast({
@@ -300,8 +331,6 @@ export default function ManufacturerRegistrationsPage() {
         description: errorMsg,
         variant: "destructive",
       })
-    } finally {
-      setRejectingId(null)
     }
   }
 
@@ -309,10 +338,10 @@ export default function ManufacturerRegistrationsPage() {
     if (!deleteTarget) return
     
     try {
-      setDeletingId(deleteTarget.id)
       const name = displayCompany(deleteTarget)
-      
-      await deleteManufacturer(deleteTarget.id)
+      const deletedId = deleteTarget.id
+
+      await deleteMutation.mutateAsync(deletedId)
       
       toast({
         title: c.success,
@@ -320,14 +349,12 @@ export default function ManufacturerRegistrationsPage() {
       })
       
       setDeleteTarget(null)
-      if (viewTarget?.id === deleteTarget.id) {
+      if (viewTarget?.id === deletedId) {
         setViewOpen(false)
         setViewTarget(null)
       }
       
-      // Refresh data
-      const response = await fetchManufacturerRegistrations(currentPage, "pending", PER_PAGE)
-      setData(response)
+      patchRegistrationsCache((prev) => prev.filter((item) => item.id !== deletedId))
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : c.failedToDeleteManufacturer
       toast({
@@ -335,8 +362,6 @@ export default function ManufacturerRegistrationsPage() {
         description: errorMsg,
         variant: "destructive",
       })
-    } finally {
-      setDeletingId(null)
     }
   }
 

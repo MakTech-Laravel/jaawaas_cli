@@ -1,13 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { getAdminDashboard, AdminDashboardData } from "@/lib/api/admin-dashboard"
+import { getAdminDashboard, AdminDashboardData, type GetAdminDashboardResponse } from "@/lib/api/admin-dashboard"
 import { approveManufacturer, rejectManufacturer } from "@/lib/api/admin-manufacturer-registrations"
+import { queryKeys } from "@/lib/query-keys"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/lib/i18n"
 import {
@@ -56,27 +58,30 @@ export default function AdminDashboardPage() {
   const p = t.admin.pages.dashboard
   const c = t.admin.common
   const { toast } = useToast()
-  const [data, setData] = useState<AdminDashboardData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
+  const dashboardQueryKey = queryKeys.adminDashboard()
+
+  const dashboardQuery = useQuery({
+    queryKey: dashboardQueryKey,
+    queryFn: getAdminDashboard,
+  })
+
+  const data = dashboardQuery.data?.success ? dashboardQuery.data.data : null
+  const loading = dashboardQuery.isLoading
   const [processingId, setProcessingId] = useState<string | null>(null)
+
+  const patchDashboard = (updater: (prev: AdminDashboardData) => AdminDashboardData) => {
+    queryClient.setQueryData(dashboardQueryKey, (previous: GetAdminDashboardResponse | undefined) => {
+      if (!previous?.data) return previous
+      return { ...previous, data: updater(previous.data) }
+    })
+  }
 
   // Modals state
   const [showReviewDialog, setShowReviewDialog] = useState(false)
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [currentItem, setCurrentItem] = useState<any | null>(null)
   const [rejectReason, setRejectReason] = useState("")
-
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      setLoading(true)
-      const res = await getAdminDashboard()
-      if (res.success && res.data) {
-        setData(res.data)
-      }
-      setLoading(false)
-    }
-    fetchDashboard()
-  }, [])
 
   const openReview = (item: any) => {
     setCurrentItem(item)
@@ -105,14 +110,14 @@ export default function AdminDashboardPage() {
         })
       }
 
-      setData({
-        ...data,
-        pending_approvals: data.pending_approvals.filter((i) => i.id !== id)
-      })
-    } catch (error: any) {
+      patchDashboard((prev) => ({
+        ...prev,
+        pending_approvals: prev.pending_approvals.filter((i) => i.id !== id),
+      }))
+    } catch (error: unknown) {
       toast({
         title: c.error,
-        description: error.message || c.approveFailed,
+        description: error instanceof Error ? error.message : c.approveFailed,
         variant: "destructive"
       })
     } finally {
@@ -141,17 +146,17 @@ export default function AdminDashboardPage() {
         })
       }
 
-      setData({
-        ...data,
-        pending_approvals: data.pending_approvals.filter((i) => i.id !== currentItem.id)
-      })
+      patchDashboard((prev) => ({
+        ...prev,
+        pending_approvals: prev.pending_approvals.filter((i) => i.id !== currentItem.id),
+      }))
       setShowRejectDialog(false)
       setCurrentItem(null)
       setRejectReason("")
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: c.error,
-        description: error.message || c.rejectFailed,
+        description: error instanceof Error ? error.message : c.rejectFailed,
         variant: "destructive"
       })
     } finally {

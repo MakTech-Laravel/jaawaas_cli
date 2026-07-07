@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
+import { type ReactNode } from "react"
 import {
   ORDER_STATUS_LABELS,
   ORDER_STATUS_FLOW,
@@ -17,6 +18,7 @@ import {
   type ApiOrder,
   type OrderStatusUpdate,
 } from "@/lib/api/orders"
+import { queryKeys } from "@/lib/query-keys"
 import { OrderLineItemsTable } from "@/components/orders/order-line-items-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -220,9 +222,8 @@ async function fetchOrderByRole(role: OrderDetailRole, numericId: number) {
 
 export function OrderDetailView({ orderId, role, basePath }: OrderDetailViewProps) {
   const { t } = useTranslation()
-  const [order, setOrder] = useState<ApiOrder | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const numericId = Number.parseInt(orderId, 10)
+  const isValidId = !Number.isNaN(numericId)
 
   const labels =
     role === "admin"
@@ -255,29 +256,37 @@ export function OrderDetailView({ orderId, role, basePath }: OrderDetailViewProp
           messageManufacturer: "Message Manufacturer",
         }
 
-  useEffect(() => {
-    async function fetchOrder() {
-      setIsLoading(true)
-      const numericId = Number.parseInt(orderId, 10)
-      if (Number.isNaN(numericId)) {
-        setError(labels.invalidId)
-        setIsLoading(false)
-        return
-      }
+  const orderQueryKey =
+    role === "admin"
+      ? queryKeys.adminOrderDetail(orderId)
+      : queryKeys.buyerOrderDetail(orderId)
 
-      const res = await fetchOrderByRole(role, numericId)
-      if (res.success && res.data) {
-        setOrder(res.data)
-        setError(null)
-      } else {
-        setOrder(null)
-        setError(res.message || labels.failedToLoad)
-      }
-      setIsLoading(false)
-    }
+  const orderQuery = useQuery({
+    queryKey: orderQueryKey,
+    queryFn: () => fetchOrderByRole(role, numericId),
+    enabled: isValidId && Boolean(orderId),
+  })
 
-    void fetchOrder()
-  }, [orderId, role])
+  const order = orderQuery.data?.success ? orderQuery.data.data : null
+  const isLoading = orderQuery.isLoading
+  const error = !isValidId
+    ? labels.invalidId
+    : orderQuery.data?.success === false
+      ? orderQuery.data.message || labels.failedToLoad
+      : !isLoading && !order
+        ? labels.notFound
+        : null
+
+  if (!isValidId) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center space-y-4">
+        <p className="text-muted-foreground">{labels.invalidId}</p>
+        <Button asChild variant="outline">
+          <Link href={basePath}>{labels.back}</Link>
+        </Button>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (
