@@ -452,6 +452,7 @@ export default function AdminSettingsPage() {
                 <p className="text-sm text-muted-foreground">{t.settings.languageRegionDesc}</p>
                 <LanguageSelector />
               </div>
+              {/* Commented out per user request - Default Language Selector
               <div>
                 <label className="text-sm font-medium text-foreground">
                   {t.settings.defaultLanguage}
@@ -475,6 +476,7 @@ export default function AdminSettingsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              */}
               <div>
                 <label className="text-sm font-medium text-foreground">
                   {t.settings.defaultCurrency}
