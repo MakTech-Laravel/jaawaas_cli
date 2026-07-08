@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { AdminDialogContent } from "@/components/admin/admin-dialog-content"
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -128,7 +128,7 @@ export default function RequestAdditionalInfoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <AdminDialogContent size="md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileQuestion className="h-5 w-5 text-secondary" />
@@ -200,7 +200,7 @@ export default function RequestAdditionalInfoDialog({
             )}
           </Button>
         </DialogFooter>
-      </DialogContent>
+      </AdminDialogContent>
     </Dialog>
   )
 }

@@ -13,9 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { AdminDialogContent } from "@/components/admin/admin-dialog-content"
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -544,7 +544,7 @@ export default function AdminSuppliersPage() {
 
       {/* Review Dialog */}
       <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <AdminDialogContent mobile="fullscreen" size="xl">
           <DialogHeader>
             <DialogTitle>{p.supplierDetails}</DialogTitle>
             <DialogDescription>{p.supplierDetailsDesc}</DialogDescription>
@@ -593,7 +593,7 @@ export default function AdminSuppliersPage() {
               {c.close}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
 
       <RequestAdditionalInfoDialog
@@ -607,7 +607,7 @@ export default function AdminSuppliersPage() {
 
       {/* Reject Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <DialogContent>
+        <AdminDialogContent size="md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
@@ -641,12 +641,12 @@ export default function AdminSuppliersPage() {
               )}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
 
       {/* Create Support Dialog */}
       <Dialog open={showSupportDialog} onOpenChange={setShowSupportDialog}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <AdminDialogContent size="md">
           <DialogHeader>
             <DialogTitle>{support.createSupport}</DialogTitle>
             <DialogDescription>{support.createSupportDescription}</DialogDescription>
@@ -761,7 +761,7 @@ export default function AdminSuppliersPage() {
               )}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
     </div>
   )

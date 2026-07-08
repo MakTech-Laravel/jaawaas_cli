@@ -21,9 +21,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { AdminDialogContent } from "@/components/admin/admin-dialog-content"
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -788,13 +788,14 @@ export default function AdminUsersPage() {
 
       {/* User Details Dialog */}
       <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
-        <DialogContent>
-          <DialogHeader>
+        <AdminDialogContent mobile="fullscreen" size="lg" variant="structured">
+          <DialogHeader className="shrink-0 border-b border-border px-5 py-4 text-left sm:px-6">
             <DialogTitle>{p.userDetails}</DialogTitle>
             <DialogDescription>
               {p.userDetailsDesc}
             </DialogDescription>
           </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
           {detailLoading && (
             <div className="py-6 text-center text-sm text-muted-foreground">{p.loadingDetails}</div>
           )}
@@ -890,7 +891,8 @@ export default function AdminUsersPage() {
               </div>
             </div>
           )}
-          <DialogFooter>
+          </div>
+          <DialogFooter className="shrink-0 gap-2 border-t border-border px-5 py-4 sm:px-6">
             <Button variant="outline" onClick={() => setShowUserDialog(false)}>{c.close}</Button>
             <Button onClick={contactUser} disabled={contactingUserId !== null}>
               {contactingUserId ? (
@@ -906,11 +908,11 @@ export default function AdminUsersPage() {
               )}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
       {/* Deactivate single user dialog */}
       <Dialog open={deactivateOpen} onOpenChange={setDeactivateOpen}>
-        <DialogContent>
+        <AdminDialogContent size="md">
           <DialogHeader>
             <DialogTitle>{p.deactivateUser}</DialogTitle>
             <DialogDescription>{p.deactivateDesc}</DialogDescription>
@@ -932,12 +934,12 @@ export default function AdminUsersPage() {
               {c.deactivate}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
 
       {/* Delete single user dialog */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent>
+        <AdminDialogContent size="md">
           <DialogHeader>
             <DialogTitle>{p.deleteUser}</DialogTitle>
             <DialogDescription>{p.deleteUserDesc}</DialogDescription>
@@ -959,12 +961,12 @@ export default function AdminUsersPage() {
               {c.delete}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
 
       {/* Bulk deactivate dialog */}
       <Dialog open={bulkDeactivateOpen} onOpenChange={setBulkDeactivateOpen}>
-        <DialogContent>
+        <AdminDialogContent size="md">
           <DialogHeader>
             <DialogTitle>{p.bulkDeactivateTitle}</DialogTitle>
             <DialogDescription>{p.bulkDeactivateDesc}</DialogDescription>
@@ -980,7 +982,7 @@ export default function AdminUsersPage() {
               {c.deactivate}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
     </div>
   )

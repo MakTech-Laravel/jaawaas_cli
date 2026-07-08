@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { AdminDialogContent } from "@/components/admin/admin-dialog-content"
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -98,9 +98,11 @@ export function ManufacturerApplicationDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
+      <AdminDialogContent
         showCloseButton
-        className="flex max-h-[min(92dvh,56rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+        variant="structured"
+        mobile="fullscreen"
+        size="lg"
       >
         <DialogHeader className="shrink-0 space-y-4 border-b border-border bg-linear-to-r from-secondary/5 to-transparent px-4 pb-6 pt-6 text-left sm:px-6">
           <div className="flex gap-4">
@@ -258,7 +260,7 @@ export function ManufacturerApplicationDetailDialog({
             </div>
           </div>
         )}
-      </DialogContent>
+      </AdminDialogContent>
     </Dialog>
   )
 }
