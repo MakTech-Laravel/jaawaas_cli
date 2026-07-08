@@ -277,8 +277,154 @@ export default function AdminReviewsPage() {
         </Select>
       </div>
 
-      {/* Reviews Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      {/* Mobile Reviews Cards */}
+      <div className="block sm:hidden space-y-4">
+        {loadingReviews ? (
+          <div className="rounded-xl border border-border bg-card p-8 flex flex-col items-center justify-center">
+            <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="mt-4 text-sm text-muted-foreground">{p.loading}</p>
+          </div>
+        ) : reviews.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card p-8 text-center">
+            <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground/50" />
+            <h3 className="mt-4 font-semibold text-foreground">{p.noReviews}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">{c.tryAdjustFilters}</p>
+          </div>
+        ) : (
+          reviews.map((review) => {
+            const config = statusConfig[review.status]
+            const StatusIcon = config ? config.icon : MessageSquare
+            
+            return (
+              <div key={review.id} className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+                <div className="p-4 flex flex-col gap-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-semibold text-foreground">{review.reviewer.full_name}</div>
+                      <div className="text-sm text-muted-foreground">{review.reviewer.company_name}</div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedReview(review)
+                          setShowViewDialog(true)
+                        }}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          {c.viewDetails}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {review.status !== "published" && (
+                          <DropdownMenuItem onClick={() => updateReviewStatus(review.id, "published")}>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            {c.approve}
+                          </DropdownMenuItem>
+                        )}
+                        {review.status !== "hidden" && (
+                          <DropdownMenuItem onClick={() => updateReviewStatus(review.id, "hidden")}>
+                            <EyeOff className="mr-2 h-4 w-4" />
+                            {c.hide}
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => setDeleteReviewId(review.id)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {c.delete}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  
+                  <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{p.tableSupplier}</span>
+                      <span className="font-medium text-foreground">{review.supplier.company_name}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{p.tableRating}</span>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        <span className="font-medium">{review.rating}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{p.tableDate}</span>
+                      <span className="font-medium text-foreground">{formatDate(review.created_at)}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="text-sm">
+                    {review.title && <p className="font-medium text-foreground mb-1">{review.title}</p>}
+                    <p className="text-muted-foreground line-clamp-3">{review.comment}</p>
+                  </div>
+                  
+                  <div className="border-t border-border/50 pt-3 flex items-center justify-between">
+                    <Badge className={config ? config.color : "bg-gray-100 text-gray-700"}>
+                      <StatusIcon className="mr-1 h-3 w-3" />
+                      {config ? config.label : review.status}
+                    </Badge>
+                    <Button 
+                      variant="link" 
+                      className="h-auto p-0 text-primary text-sm font-medium"
+                      onClick={() => {
+                        setSelectedReview(review)
+                        setShowViewDialog(true)
+                      }}
+                    >
+                      {c.viewDetails}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )
+          })
+        )}
+        
+        {/* Mobile Pagination */}
+        {!loadingReviews && reviews.length > 0 && (
+          <div className="rounded-xl border border-border bg-card px-4 py-3">
+            <div className="flex flex-col gap-3">
+              <div className="text-sm text-center text-muted-foreground">
+                {p.showingReviews
+                  .replace("{from}", String((page - 1) * perPage + 1))
+                  .replace("{to}", String(Math.min(page * perPage, totalReviews)))
+                  .replace("{total}", String(totalReviews))}
+              </div>
+              <div className="flex items-center justify-between">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  {c.previous}
+                </Button>
+                <div className="text-sm text-muted-foreground font-medium">
+                  {page} / {lastPage}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page >= lastPage}
+                >
+                  {c.next}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Reviews Table */}
+      <div className="hidden sm:block rounded-xl border border-border bg-card overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -434,7 +580,7 @@ export default function AdminReviewsPage() {
 
       {/* View Review Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{c.reviewDetails}</DialogTitle>
             <DialogDescription>
@@ -443,7 +589,7 @@ export default function AdminReviewsPage() {
           </DialogHeader>
           {selectedReview && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">{c.reviewer}</p>
                   <p className="font-medium">{selectedReview.reviewer.full_name}</p>
@@ -486,7 +632,7 @@ export default function AdminReviewsPage() {
               {selectedReview.order && (
                 <div className="rounded-lg bg-muted p-4">
                   <p className="text-sm font-medium text-foreground">{c.orderInformation}</p>
-                  <div className="mt-2 grid grid-cols-3 gap-4 text-sm">
+                  <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground">{p.orderCategory}</p>
                       <p>{selectedReview.product?.category || c.na}</p>

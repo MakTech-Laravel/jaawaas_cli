@@ -708,9 +708,253 @@ export default function AdminIndustriesPage() {
         />
       </div>
 
-      {/* Industries Tree */}
-      <div className="rounded-xl border border-border bg-card">
-        <div className="border-b border-border px-4 py-3">
+      {/* Mobile Industries Cards */}
+      <div className="block sm:hidden space-y-4">
+        {filteredIndustries.map((industry) => (
+          <div key={industry.id} className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+            <div className="p-4 flex flex-col gap-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-border bg-muted overflow-hidden" style={{ backgroundColor: industry.color || undefined }}>
+                    {industry.icon ? (
+                      <DynamicIcon name={industry.icon} size={24} />
+                    ) : (
+                      <Layers className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground line-clamp-1">{industry.name}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1">{industry.description || c.noDescription}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openAddCategory(industry)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        {p.addCategory}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setCurrentIndustry(industry)
+                        setEditIndustryFeaturedAtOpen(industry.featured)
+                        setShowEditIndustryDialog(true)
+                      }}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        {p.editIndustry}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => toggleFeatured(industry.id)}>
+                        {industry.featured ? c.removeFromMainCategories : c.addToMainCategories}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-destructive"
+                        onClick={() => deleteIndustry(industry.id)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {c.deleteIndustry}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-sm text-muted-foreground border-t border-border/50 pt-3">
+                <div className="flex flex-col">
+                  <span className="font-medium text-foreground">{industry.supplierCount.toLocaleString()}</span>
+                  <span className="text-xs">{p.tableSuppliers}</span>
+                </div>
+                <div className="flex flex-col text-center">
+                  <span className="font-medium text-foreground">{industry.categories.length}</span>
+                  <span className="text-xs">{p.tableCategories}</span>
+                </div>
+                <div className="flex flex-col items-end">
+                  {industry.featured ? (
+                    <Badge className="bg-amber-100 text-amber-700 h-6">{p.mainCategory}</Badge>
+                  ) : (
+                    <span className="h-6"></span>
+                  )}
+                </div>
+              </div>
+
+              <Button 
+                variant="outline" 
+                className="w-full justify-between mt-2" 
+                onClick={() => toggleIndustry(industry.id)}
+              >
+                <span>{expandedIndustries.has(industry.id) ? "Hide Categories" : "View Categories"}</span>
+                {expandedIndustries.has(industry.id) ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+
+            {/* Mobile Categories (Expanded) */}
+            {expandedIndustries.has(industry.id) && (
+              <div className="bg-muted/10 border-t border-border">
+                {industry.categories.length > 0 ? (
+                  industry.categories.map((category, catIdx) => (
+                    <div key={category.id} className="border-b border-border/50 last:border-0">
+                      <div className="p-3 flex flex-col gap-2">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-blue-100">
+                              <FolderOpen className="h-4 w-4 text-blue-700" />
+                            </div>
+                            <div>
+                              <span className="font-medium text-sm text-foreground">{category.name}</span>
+                              <p className="text-xs text-muted-foreground">{c.subcategoriesCount.replace("{count}", String(category.subcategories.length))}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => openEditCategory(industry, category)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit Category
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => moveCategoryUp(industry.id, category.id)} disabled={catIdx === 0}>
+                                  <ChevronDown className="mr-2 h-4 w-4 rotate-180" />
+                                  Move Up
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => moveCategoryDown(industry.id, category.id)} disabled={catIdx === industry.categories.length - 1}>
+                                  <ChevronDown className="mr-2 h-4 w-4" />
+                                  Move Down
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="text-destructive"
+                                  onClick={() => deleteCategory(industry.id, category.id)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  {c.deleteSubcategory}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="w-full justify-between h-8 text-xs text-muted-foreground" 
+                          onClick={() => toggleCategory(category.id)}
+                        >
+                          <span>{expandedCategories.has(category.id) ? "Hide subcategories" : "View subcategories"}</span>
+                          {expandedCategories.has(category.id) ? (
+                            <ChevronDown className="h-3 w-3" />
+                          ) : (
+                            <ChevronRight className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </div>
+
+                      {/* Mobile Subcategories (Expanded) */}
+                      {expandedCategories.has(category.id) && category.subcategories.length > 0 && (
+                        <div className="bg-muted/20 px-3 py-2 space-y-1">
+                          {category.subcategories.map((subcategory, subIdx) => (
+                            <div key={subcategory.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors">
+                              <div className="flex items-center gap-2">
+                                <div className="flex h-5 w-5 items-center justify-center rounded bg-emerald-100 shrink-0">
+                                  <Tag className="h-2.5 w-2.5 text-emerald-700" />
+                                </div>
+                                <span className="text-sm line-clamp-1">{subcategory.name}</span>
+                              </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+                                    <MoreVertical className="h-3 w-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => openEditSubcategory(industry, category, subcategory)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    {c.editSubcategory}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => moveSubcategoryUp(industry.id, category.id, subcategory.id)} disabled={subIdx === 0}>
+                                    <ChevronDown className="mr-2 h-4 w-4 rotate-180" />
+                                    Move Up
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => moveSubcategoryDown(industry.id, category.id, subcategory.id)} disabled={subIdx === category.subcategories.length - 1}>
+                                    <ChevronDown className="mr-2 h-4 w-4" />
+                                    Move Down
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    className="text-destructive"
+                                    onClick={() => deleteSubcategory(industry.id, category.id, subcategory.id)}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    {c.deleteSubcategory}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center">
+                    <p className="text-sm text-muted-foreground mb-3">{p.noCategories}</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => openAddCategory(industry)}
+                      className="w-full"
+                    >
+                      <Plus className="mr-2 h-3 w-3" />
+                      {c.addFirstCategory}
+                    </Button>
+                  </div>
+                )}
+                {industry.categories.length > 0 && (
+                  <div className="p-3 bg-muted/5">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full text-muted-foreground border border-dashed border-muted-foreground/30"
+                      onClick={() => openAddCategory(industry)}
+                    >
+                      <Plus className="mr-2 h-3 w-3" />
+                      {p.addCategory}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+        {filteredIndustries.length === 0 && !isLoading && (
+          <div className="rounded-xl border border-border bg-card p-8 text-center">
+            <Layers className="mx-auto h-12 w-12 text-muted-foreground/50" />
+            <p className="mt-4 text-muted-foreground">No industries found.</p>
+          </div>
+        )}
+        <div className="rounded-xl border border-border bg-card">
+          <AdminPagination
+            page={page}
+            meta={meta}
+            itemCount={filteredIndustries.length}
+            onPageChange={setPage}
+            className="px-4 py-3"
+          />
+        </div>
+      </div>
+
+      {/* Desktop Industries Tree */}
+      <div className="hidden sm:block rounded-xl border border-border bg-card overflow-x-auto">
+        <div className="min-w-[800px]">
+          <div className="border-b border-border px-4 py-3">
           <div className="grid grid-cols-12 text-sm font-medium text-muted-foreground">
             <div className="col-span-5">{p.tableName}</div>
             <div className="col-span-2">{p.tableCategories}</div>
@@ -965,6 +1209,7 @@ export default function AdminIndustriesPage() {
               )}
             </div>
           ))}
+        </div>
         </div>
 
         <AdminPagination

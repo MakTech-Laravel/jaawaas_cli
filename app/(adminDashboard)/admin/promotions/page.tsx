@@ -329,13 +329,13 @@ export default function PromotionsPage() {
         return (
           <Card key={promo.id}>
             <CardHeader>
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary/10">
                     <Sparkles className="h-6 w-6 text-secondary" />
                   </div>
                   <div>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex flex-wrap items-center gap-2">
                       {promo.promotion_title}
                       {promo.status ? (
                         <Badge className="bg-secondary text-secondary-foreground">{c.active}</Badge>
@@ -343,11 +343,11 @@ export default function PromotionsPage() {
                         <Badge variant="secondary">{c.inactive}</Badge>
                       )}
                     </CardTitle>
-                    <CardDescription>{promo.short_description}</CardDescription>
+                    <CardDescription className="wrap-break-word">{promo.short_description}</CardDescription>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 mr-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-2 mr-2 md:mr-4">
                     <Label htmlFor={`active-toggle-${promo.id}`} className="text-sm text-muted-foreground">{c.active}</Label>
                     <Switch
                       id={`active-toggle-${promo.id}`}
@@ -521,15 +521,17 @@ export default function PromotionsPage() {
       </Dialog>
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{c.editPromotionSettings}</DialogTitle>
-            <DialogDescription>
-              {p.editPromotionDescAlt}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-xl flex flex-col max-h-[95dvh] gap-0 p-0 overflow-hidden">
+          <div className="p-6 pb-4">
+            <DialogHeader>
+              <DialogTitle>{c.editPromotionSettings}</DialogTitle>
+              <DialogDescription>
+                {p.editPromotionDescAlt}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
           {editPromoData && (
-            <div className="space-y-4 py-2">
+            <div className="flex-1 overflow-y-auto px-6 py-2 space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="edit-title">{c.promotionTitle}</Label>
                 <Input
@@ -644,7 +646,8 @@ export default function PromotionsPage() {
               </div>
             </div>
           )}
-          <DialogFooter className="mt-4">
+          <div className="p-6 pt-4 mt-auto border-t bg-card">
+            <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={submitting}>
               {c.cancel}
             </Button>
@@ -662,6 +665,7 @@ export default function PromotionsPage() {
               )}
             </Button>
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -101,7 +101,7 @@ export default function AdminOrdersPage() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:grid-cols-4">
           <AdminStatCard 
             icon={Layers} 
             title={p.totalOrders} 
@@ -162,8 +162,82 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      {/* Mobile Orders Cards */}
+      <div className="block sm:hidden space-y-4">
+        {ordersError && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{ordersError}</div>
+        )}
+        {isLoading ? (
+          <div className="rounded-xl border border-border bg-card p-8 flex flex-col items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="mt-4 text-sm text-muted-foreground">{p.loading || "Loading..."}</p>
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card p-8 text-center">
+            <PackageCheck className="mx-auto h-12 w-12 text-muted-foreground/50" />
+            <p className="mt-4 text-sm text-muted-foreground">{p.noMatching}</p>
+          </div>
+        ) : (
+          orders.map((o) => (
+            <Link key={o.id} href={`/admin/orders/${o.id}`} className="block rounded-xl border border-border bg-card overflow-hidden shadow-sm hover:border-primary/50 transition-colors">
+              <div className="p-4 flex flex-col gap-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="font-mono text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-md">{o.orderNumber}</span>
+                  </div>
+                  <Badge className={statusColors[o.status] || statusColors.created} variant="secondary">
+                    {getOrderStatusLabel(o.status)}
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary")}>
+                    <Package className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="font-semibold text-foreground line-clamp-1">{o.title}</p>
+                    <p className="text-sm text-muted-foreground">{c.productOrder}</p>
+                  </div>
+                </div>
+
+                <div className="bg-muted/30 rounded-lg p-3 space-y-2 mt-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{p.tableBuyer}</span>
+                    <span className="font-medium text-foreground truncate max-w-[150px] text-right">{o.buyerCompany || o.buyerName}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{p.tableSeller}</span>
+                    <span className="font-medium text-foreground truncate max-w-[150px] text-right">{o.manufacturerName}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{p.tableValue}</span>
+                    <span className="font-semibold text-foreground">{formatCurrency(o.totalAmount, o.currencyCode)}</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-border/50 pt-3 text-xs text-muted-foreground text-center">
+                  {formatOrderDate(o.createdAt)}
+                </div>
+              </div>
+            </Link>
+          ))
+        )}
+        
+        {/* Mobile Pagination */}
+        {!isLoading && orders.length > 0 && (
+          <div className="rounded-xl border border-border bg-card px-4 py-3">
+            <AdminPagination
+              page={page}
+              meta={meta}
+              itemCount={orders.length}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden sm:block overflow-hidden rounded-xl border border-border bg-card">
         {ordersError && (
           <div className="border-b border-red-200 bg-red-50 p-3 text-sm text-red-700">{ordersError}</div>
         )}

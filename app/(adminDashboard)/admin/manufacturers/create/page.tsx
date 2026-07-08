@@ -530,7 +530,7 @@ export default function AdminCreateManufacturerPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>{c.businessType}</Label>
                 <Select 
@@ -559,7 +559,7 @@ export default function AdminCreateManufacturerPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>{c.numberOfEmployees}</Label>
                 <Select 
@@ -669,7 +669,7 @@ export default function AdminCreateManufacturerPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>{c.country} *</Label>
                 <Select 
@@ -709,7 +709,7 @@ export default function AdminCreateManufacturerPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>{c.postalCode}</Label>
                 <Input 
@@ -882,7 +882,7 @@ export default function AdminCreateManufacturerPage() {
               {c.previous}
             </Button>
             <Button 
-              className="w-32" 
+              className="w-auto px-6" 
               onClick={handleSubmit}
               disabled={isSaving}
             >

@@ -15,7 +15,8 @@ import {
   DollarSign,
   Globe,
   BarChart3,
-  Loader2
+  Loader2,
+  type LucideIcon
 } from "lucide-react"
 import {
   BarChart,
@@ -36,7 +37,7 @@ import { getAdminAnalyticsMetrics, getAdminAnalyticsGrowth, getAdminAnalyticsCou
 import { useTranslation } from "@/lib/i18n"
 import { queryKeys } from "@/lib/query-keys"
 
-const metricIcons: Record<string, React.ComponentType<any>> = {
+const metricIcons: Record<string, LucideIcon> = {
   total_revenue: DollarSign,
   active_users: Users,
   active_suppliers: Factory,
@@ -110,7 +111,7 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
           Array.from({ length: 6 }).map((_, idx) => (
             <Card key={idx} className="animate-pulse px-6 py-4 flex flex-col justify-between h-[120px]">
@@ -145,17 +146,17 @@ export default function AdminAnalyticsPage() {
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Real Chart */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
               {p.platformGrowth}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-80 w-full flex items-center justify-center">
+          <CardContent className="px-2 sm:px-6 pb-2">
+            <div className="h-80 w-full min-w-0 flex items-center justify-center">
               {isChartLoading ? (
                 <div className="flex flex-col items-center justify-center gap-2">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -167,8 +168,8 @@ export default function AdminAnalyticsPage() {
                     data={growthData}
                     margin={{
                       top: 20,
-                      right: 30,
-                      left: 20,
+                      right: 10,
+                      left: 0,
                       bottom: 5,
                     }}
                   >
