@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { AdminDialogContent } from "@/components/admin/admin-dialog-content"
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -48,7 +48,7 @@ export function SubscriptionDetailModal({ subscriptionId, isOpen, onClose }: Sub
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <AdminDialogContent mobile="fullscreen" size="lg">
         <DialogHeader>
           <DialogTitle>{c.title}</DialogTitle>
         </DialogHeader>
@@ -170,7 +170,7 @@ export function SubscriptionDetailModal({ subscriptionId, isOpen, onClose }: Sub
             </div>
           </div>
         ) : null}
-      </DialogContent>
+      </AdminDialogContent>
     </Dialog>
   )
 }

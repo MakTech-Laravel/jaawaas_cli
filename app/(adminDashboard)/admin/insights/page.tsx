@@ -27,9 +27,9 @@ import { Switch } from "@/components/ui/switch"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
+import { AdminDialogContent } from "@/components/admin/admin-dialog-content"
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -676,7 +676,7 @@ export default function AdminInsightsPage() {
 
       {/* Edit/Create Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <AdminDialogContent mobile="fullscreen" size="xl">
           <DialogHeader>
             <DialogTitle>
               {editingArticle ? p.editArticle : p.createNewArticle}
@@ -862,12 +862,12 @@ export default function AdminInsightsPage() {
               {isSubmittingArticle ? (editingArticle ? c.saving : c.creating) : (editingArticle ? c.saveChanges : c.createArticle)}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
 
       {/* Delete Confirmation */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent>
+        <AdminDialogContent size="md">
           <DialogHeader>
             <DialogTitle>{c.deleteArticle}</DialogTitle>
             <DialogDescription>
@@ -882,12 +882,12 @@ export default function AdminInsightsPage() {
               {c.delete}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
 
       {/* Categories Management Dialog */}
       <Dialog open={showCategoriesDialog} onOpenChange={setShowCategoriesDialog}>
-        <DialogContent className="max-w-lg">
+        <AdminDialogContent size="md">
           <DialogHeader>
             <DialogTitle>{c.manageArticleCategories}</DialogTitle>
             <DialogDescription>{p.manageCategoriesDesc}</DialogDescription>
@@ -958,12 +958,12 @@ export default function AdminInsightsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCategoriesDialog(false)}>{c.close}</Button>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
 
       {/* Article Preview Dialog */}
       <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <AdminDialogContent mobile="fullscreen" size="lg">
           <DialogHeader>
             <DialogTitle>{c.articlePreview}</DialogTitle>
           </DialogHeader>
@@ -1057,7 +1057,7 @@ export default function AdminInsightsPage() {
               </Button>
             )}
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
     </div>
   )

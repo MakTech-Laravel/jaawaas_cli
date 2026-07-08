@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { format } from "date-fns"
+import { AdminDialogContent } from "@/components/admin/admin-dialog-content"
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -246,9 +246,11 @@ export default function AdditionalInformationReviewPanel({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent
+        <AdminDialogContent
           showCloseButton
-          className="flex max-h-[min(92dvh,56rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+          variant="structured"
+          mobile="fullscreen"
+          size="lg"
         >
           <DialogHeader className="shrink-0 space-y-3 border-b border-border bg-linear-to-r from-secondary/5 to-transparent px-5 pb-5 pt-5 text-left sm:px-6">
             <div className="flex items-start justify-between gap-3">
@@ -526,7 +528,7 @@ export default function AdditionalInformationReviewPanel({
               )}
             </div>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
 
       <RequestAdditionalInfoDialog

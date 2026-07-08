@@ -28,9 +28,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { AdminDialogContent } from "@/components/admin/admin-dialog-content"
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -471,7 +471,7 @@ export default function AdminContactsPage() {
 
       {/* Message Viewer Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+        <AdminDialogContent variant="structured" mobile="fullscreen" size="lg">
           <div className="p-6 border-b border-border bg-muted/30">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
@@ -547,7 +547,7 @@ export default function AdminContactsPage() {
               )}
             </div>
           </div>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
     </div>
   )

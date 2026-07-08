@@ -11,9 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { AdminDialogContent } from "@/components/admin/admin-dialog-content"
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -396,7 +396,7 @@ export default function AdminReportsPage() {
           }
         }}
       >
-        <DialogContent className="flex max-h-[min(92dvh,56rem)] w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl sm:w-full lg:max-w-3xl">
+        <AdminDialogContent variant="structured" mobile="fullscreen" size="lg" className="lg:max-w-3xl">
           <DialogHeader className="shrink-0 border-b border-border px-4 py-4 text-left sm:px-6 sm:py-5">
             <DialogTitle className="font-serif font-medium text-xl sm:text-2xl">{p.reportDetailsTitle}</DialogTitle>
           </DialogHeader>
@@ -549,7 +549,7 @@ export default function AdminReportsPage() {
                 </div>
               </div>
             )}
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
     </div>
   )

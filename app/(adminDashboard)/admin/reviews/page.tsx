@@ -29,9 +29,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { AdminDialogContent } from "@/components/admin/admin-dialog-content"
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -538,7 +538,7 @@ export default function AdminReviewsPage() {
 
       {/* View Review Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <AdminDialogContent mobile="fullscreen" size="lg">
           <DialogHeader>
             <DialogTitle>{c.reviewDetails}</DialogTitle>
             <DialogDescription>
@@ -624,7 +624,7 @@ export default function AdminReviewsPage() {
               {c.close}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
 
       {/* Delete Confirmation */}

@@ -12,9 +12,9 @@ import { approveManufacturer, rejectManufacturer } from "@/lib/api/admin-manufac
 import { queryKeys } from "@/lib/query-keys"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/lib/i18n"
+import { AdminDialogContent } from "@/components/admin/admin-dialog-content"
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -323,13 +323,14 @@ export default function AdminDashboardPage() {
 
       {/* Review Dialog */}
       <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <AdminDialogContent mobile="fullscreen" size="md" variant="structured">
+          <DialogHeader className="shrink-0 border-b border-border px-5 py-4 text-left sm:px-6">
             <DialogTitle>{p.reviewApplication}</DialogTitle>
             <DialogDescription>
               {p.reviewApplicationDesc}
             </DialogDescription>
           </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
           {currentItem && (
             <div className="space-y-4">
               <div className="flex items-start gap-4">
@@ -371,7 +372,8 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           )}
-          <DialogFooter className="flex-col sm:flex-row gap-2">
+          </div>
+          <DialogFooter className="shrink-0 flex-col gap-2 border-t border-border px-5 py-4 sm:flex-row sm:px-6">
             <Button 
               variant="outline" 
               onClick={() => {
@@ -400,12 +402,12 @@ export default function AdminDashboardPage() {
               {c.approve}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
 
       {/* Reject Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <DialogContent>
+        <AdminDialogContent size="md">
           <DialogHeader>
             <DialogTitle>{p.rejectApplication}</DialogTitle>
             <DialogDescription>
@@ -439,7 +441,7 @@ export default function AdminDashboardPage() {
               )}
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </AdminDialogContent>
       </Dialog>
     </div>
   )
