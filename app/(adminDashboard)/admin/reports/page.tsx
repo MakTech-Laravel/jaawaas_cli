@@ -38,7 +38,7 @@ import {
   type AdminSupplierReport,
 } from "@/lib/api/admin-supplier-reports"
 import type { SupplierReportStatus } from "@/lib/api/supplier-reports"
-import { ListPagination } from "@/components/common/list-pagination"
+import { AdminPagination } from "@/components/admin/admin-pagination"
 import { queryKeys } from "@/lib/query-keys"
 
 const REPORTS_PER_PAGE = 15
@@ -366,22 +366,23 @@ export default function AdminReportsPage() {
               </div>
             </div>
           ))}
-          <ListPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            total={totalReports}
-            from={paginationFrom}
-            to={paginationTo}
-            perPage={REPORTS_PER_PAGE}
+          <AdminPagination
+            page={currentPage}
+            meta={{
+              current_page: currentPage,
+              last_page: totalPages,
+              total: totalReports,
+              from: paginationFrom,
+              to: paginationTo,
+              per_page: REPORTS_PER_PAGE,
+            }}
+            itemCount={reports.length}
             loading={loading}
             onPageChange={goToPage}
-            labels={{
-              previous: c.previous,
-              next: c.next,
-              pageOf: c.pageOf,
-              perPage: c.perPage,
-              showingResults: c.showing,
-            }}
+            showPerPage
+            perPage={REPORTS_PER_PAGE}
+            variant="card"
+            className="mt-2"
           />
         </div>
       )}

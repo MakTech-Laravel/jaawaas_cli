@@ -225,14 +225,13 @@ export default function AdminOrdersPage() {
         
         {/* Mobile Pagination */}
         {!isLoading && orders.length > 0 && (
-          <div className="rounded-xl border border-border bg-card px-4 py-3">
-            <AdminPagination
-              page={page}
-              meta={meta}
-              itemCount={orders.length}
-              onPageChange={setPage}
-            />
-          </div>
+          <AdminPagination
+            page={page}
+            meta={meta}
+            itemCount={orders.length}
+            onPageChange={setPage}
+            variant="card"
+          />
         )}
       </div>
 
@@ -330,14 +329,13 @@ export default function AdminOrdersPage() {
             </tbody>
           </table>
 
-          <div className="border-t border-border px-4 py-3">
-            <AdminPagination
-              page={page}
-              meta={meta}
-              itemCount={orders.length}
-              onPageChange={setPage}
-            />
-          </div>
+          <AdminPagination
+            page={page}
+            meta={meta}
+            itemCount={orders.length}
+            onPageChange={setPage}
+            variant="footer"
+          />
         </div>
       </div>
     </div>

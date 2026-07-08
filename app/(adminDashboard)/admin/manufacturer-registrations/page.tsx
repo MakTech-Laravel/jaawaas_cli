@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
+import { AdminPagination } from "@/components/admin/admin-pagination"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -62,8 +63,6 @@ import {
   MoreVertical,
   FileQuestion,
   X,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   ScanEye,
   HelpCircle,
@@ -186,8 +185,6 @@ export default function ManufacturerRegistrationsPage() {
 
   const rows = data?.data || []
   const meta = data?.meta
-  const hasNextPage = meta && currentPage < meta.last_page
-  const hasPrevPage = currentPage > 1
 
   const openView = (row: ManufacturerApplication) => {
     setViewTarget(row)
@@ -576,6 +573,13 @@ export default function ManufacturerRegistrationsPage() {
                 </TableBody>
               </Table>
             </div>
+            <AdminPagination
+              page={currentPage}
+              meta={meta}
+              itemCount={rows.length}
+              onPageChange={setCurrentPage}
+              variant="footer"
+            />
           </Card>
 
           {/* Mobile: cards */}
@@ -613,54 +617,13 @@ export default function ManufacturerRegistrationsPage() {
                 </CardContent>
               </Card>
             ))}
-          </div>
-
-          {/* Pagination */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-muted-foreground">
-              {meta && (
-                <>
-                  {c.showing
-                    .replace("{from}", String(meta.from))
-                    .replace("{to}", String(meta.to))
-                    .replace("{total}", String(meta.total))}
-                </>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={!hasPrevPage}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="flex items-center gap-1">
-                {meta?.links?.map((link, idx) => {
-                  if (!link.url) return null
-                  return (
-                    <Button
-                      key={idx}
-                      variant={link.active ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(link.page || 1)}
-                      className="w-8"
-                    >
-                      {link.label}
-                    </Button>
-                  )
-                })}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={!hasNextPage}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+            <AdminPagination
+              page={currentPage}
+              meta={meta}
+              itemCount={rows.length}
+              onPageChange={setCurrentPage}
+              variant="card"
+            />
           </div>
         </>
       )}

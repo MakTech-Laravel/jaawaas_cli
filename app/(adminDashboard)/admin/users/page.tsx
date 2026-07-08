@@ -45,6 +45,7 @@ import {
   Shield
   ,Loader2
 } from "lucide-react"
+import { AdminPagination } from "@/components/admin/admin-pagination"
 import { useTranslation } from "@/lib/i18n"
 
 type UserStatus = "active" | "pending" | "suspended" | "deactivated" | "deleted"
@@ -645,38 +646,13 @@ export default function AdminUsersPage() {
           </div>
         )}
 
-        {/* Mobile Pagination */}
-        <div className="px-4 py-3">
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
-            <div className="text-sm text-muted-foreground order-last sm:order-first">
-              {c.showing
-                .replace("{from}", String(meta?.from ?? (users.length ? 1 : 0)))
-                .replace("{to}", String(meta?.to ?? users.length))
-                .replace("{total}", String(meta?.total ?? users.length))}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={!!meta ? meta.current_page <= 1 : page <= 1}
-              >
-                {c.previous}
-              </Button>
-              <div className="text-sm font-medium text-muted-foreground mx-1">
-                {c.pageOf.replace("{page}", String(meta?.current_page ?? page)).replace("{lastPage}", String(meta?.last_page ?? 1))}
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={!!meta ? meta.current_page >= meta.last_page : users.length < perPage}
-              >
-                {c.next}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <AdminPagination
+          page={page}
+          meta={meta}
+          itemCount={users.length}
+          onPageChange={setPage}
+          variant="card"
+        />
       </div>
 
       {/* Desktop: table */}
@@ -799,38 +775,13 @@ export default function AdminUsersPage() {
             <p className="mt-4 text-muted-foreground">{p.noUsers}</p>
           </div>
         )}
-        {/* Pagination */}
-        <div className="px-4 py-3 border-t border-border">
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
-            <div className="text-sm text-muted-foreground order-last sm:order-first">
-              {c.showing
-                .replace("{from}", String(meta?.from ?? (users.length ? 1 : 0)))
-                .replace("{to}", String(meta?.to ?? users.length))
-                .replace("{total}", String(meta?.total ?? users.length))}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={!!meta ? meta.current_page <= 1 : page <= 1}
-              >
-                {c.previous}
-              </Button>
-              <div className="text-sm font-medium text-muted-foreground mx-1">
-                {c.pageOf.replace("{page}", String(meta?.current_page ?? page)).replace("{lastPage}", String(meta?.last_page ?? 1))}
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={!!meta ? meta.current_page >= meta.last_page : users.length < perPage}
-              >
-                {c.next}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <AdminPagination
+          page={page}
+          meta={meta}
+          itemCount={users.length}
+          onPageChange={setPage}
+          variant="footer"
+        />
       </div>
         </>
       )}

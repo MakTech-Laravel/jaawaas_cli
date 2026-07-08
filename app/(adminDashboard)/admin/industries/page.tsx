@@ -940,15 +940,13 @@ export default function AdminIndustriesPage() {
             <p className="mt-4 text-muted-foreground">No industries found.</p>
           </div>
         )}
-        <div className="rounded-xl border border-border bg-card">
-          <AdminPagination
-            page={page}
-            meta={meta}
-            itemCount={filteredIndustries.length}
-            onPageChange={setPage}
-            className="px-4 py-3"
-          />
-        </div>
+        <AdminPagination
+          page={page}
+          meta={meta}
+          itemCount={filteredIndustries.length}
+          onPageChange={setPage}
+          variant="card"
+        />
       </div>
 
       {/* Desktop Industries Tree */}
@@ -1217,7 +1215,7 @@ export default function AdminIndustriesPage() {
           meta={meta}
           itemCount={filteredIndustries.length}
           onPageChange={setPage}
-          className="border-t border-border px-4 py-3"
+          variant="footer"
         />
       </div>
 

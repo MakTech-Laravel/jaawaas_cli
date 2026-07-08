@@ -364,7 +364,8 @@ export default function AdminProductsPage() {
             meta={meta}
             itemCount={products.length}
             onPageChange={(nextPage) => updateQueryParams({ page: nextPage })}
-            className="py-4"
+            variant="card"
+            className="mt-2"
           />
         </>
       )}

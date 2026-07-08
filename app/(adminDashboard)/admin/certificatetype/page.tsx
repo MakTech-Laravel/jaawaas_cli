@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { AdminPagination } from "@/components/admin/admin-pagination"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -807,40 +808,24 @@ export default function AdminCertificateTypePage() {
                 )}
               </div>
 
-              {certificationsTotalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 py-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setCertificationsPage((prev) => Math.max(1, prev - 1))
-                    }
-                    disabled={certificationsPage === 1 || certificationsLoading}
-                  >
-                    {c.previous}
-                  </Button>
-                  <span className="text-sm text-muted-foreground">
-                    {p.pageTotal
-                      .replace("{page}", String(certificationsPage))
-                      .replace("{lastPage}", String(certificationsTotalPages))
-                      .replace("{total}", String(certificationsTotalItems))}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setCertificationsPage((prev) =>
-                        Math.min(certificationsTotalPages, prev + 1)
-                      )
-                    }
-                    disabled={
-                      certificationsPage === certificationsTotalPages || certificationsLoading
-                    }
-                  >
-                    {c.next}
-                  </Button>
-                </div>
-              )}
+              <AdminPagination
+                page={certificationsPage}
+                meta={{
+                  current_page: certificationsPage,
+                  last_page: certificationsTotalPages,
+                  total: certificationsTotalItems,
+                }}
+                onPageChange={setCertificationsPage}
+                loading={certificationsLoading}
+                hideWhenSinglePage
+                showSummary={false}
+                align="center"
+                pageLabel={p.pageTotal
+                  .replace("{page}", String(certificationsPage))
+                  .replace("{lastPage}", String(certificationsTotalPages))
+                  .replace("{total}", String(certificationsTotalItems))}
+                className="py-4"
+              />
             </>
           )}
         </TabsContent>
@@ -999,34 +984,24 @@ export default function AdminCertificateTypePage() {
                 ))}
               </div>
 
-              {typeTotalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 py-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTypeCurrentPage((prev) => Math.max(1, prev - 1))}
-                    disabled={typeCurrentPage === 1 || typesLoading}
-                  >
-                    {c.previous}
-                  </Button>
-                  <span className="text-sm text-muted-foreground">
-                    {p.pageTotal
-                      .replace("{page}", String(typeCurrentPage))
-                      .replace("{lastPage}", String(typeTotalPages))
-                      .replace("{total}", String(typeTotalItems))}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setTypeCurrentPage((prev) => Math.min(typeTotalPages, prev + 1))
-                    }
-                    disabled={typeCurrentPage === typeTotalPages || typesLoading}
-                  >
-                    {c.next}
-                  </Button>
-                </div>
-              )}
+              <AdminPagination
+                page={typeCurrentPage}
+                meta={{
+                  current_page: typeCurrentPage,
+                  last_page: typeTotalPages,
+                  total: typeTotalItems,
+                }}
+                onPageChange={setTypeCurrentPage}
+                loading={typesLoading}
+                hideWhenSinglePage
+                showSummary={false}
+                align="center"
+                pageLabel={p.pageTotal
+                  .replace("{page}", String(typeCurrentPage))
+                  .replace("{lastPage}", String(typeTotalPages))
+                  .replace("{total}", String(typeTotalItems))}
+                className="py-4"
+              />
             </>
           )}
         </TabsContent>

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
+import { AdminPagination } from "@/components/admin/admin-pagination"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -455,37 +456,16 @@ export default function AdminContactsPage() {
             )}
           </div>
           
-          {/* Pagination */}
-          {(lastPage > 1 || total > 0) && (
-            <div className="flex items-center justify-between border-t border-border p-4 bg-muted/20">
-              <div className="text-sm text-muted-foreground">
-                {p.showingSubmissions.replace("{shown}", String(contacts.length)).replace("{total}", String(total))}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => updateQueryParams({ page: Math.max(1, page - 1) })}
-                  className="bg-background"
-                >
-                  {c.previous}
-                </Button>
-                <div className="flex items-center justify-center min-w-12 text-sm font-medium bg-background border border-border h-9 rounded-md">
-                  {page} / {Math.max(1, lastPage)}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === lastPage || lastPage === 0}
-                  onClick={() => updateQueryParams({ page: Math.min(lastPage, page + 1) })}
-                  className="bg-background"
-                >
-                  {c.next}
-                </Button>
-              </div>
-            </div>
-          )}
+          <AdminPagination
+            page={page}
+            meta={{ lastPage, total, currentPage: page }}
+            itemCount={contacts.length}
+            onPageChange={(nextPage) => updateQueryParams({ page: nextPage })}
+            variant="footer"
+            summaryText={p.showingSubmissions
+              .replace("{shown}", String(contacts.length))
+              .replace("{total}", String(total))}
+          />
         </div>
       )}
 

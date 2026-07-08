@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { AdminPagination } from "@/components/admin/admin-pagination"
 import { AdminStatCard } from "@/components/admin/admin-stat-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -133,7 +134,6 @@ export default function AdminReviewsPage() {
   )
   const meta: AdminReviewsMeta | null = reviewsQuery.data?.success ? reviewsQuery.data.meta : null
   const totalReviews = meta?.total ?? 0
-  const lastPage = meta?.lastPage ?? 1
   const perPage = meta?.perPage ?? 15
 
   const updateReviewStatus = async (reviewId: number, status: BackendReview["status"]) => {
@@ -387,39 +387,18 @@ export default function AdminReviewsPage() {
           })
         )}
         
-        {/* Mobile Pagination */}
         {!loadingReviews && reviews.length > 0 && (
-          <div className="rounded-xl border border-border bg-card px-4 py-3">
-            <div className="flex flex-col gap-3">
-              <div className="text-sm text-center text-muted-foreground">
-                {p.showingReviews
-                  .replace("{from}", String((page - 1) * perPage + 1))
-                  .replace("{to}", String(Math.min(page * perPage, totalReviews)))
-                  .replace("{total}", String(totalReviews))}
-              </div>
-              <div className="flex items-center justify-between">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                >
-                  {c.previous}
-                </Button>
-                <div className="text-sm text-muted-foreground font-medium">
-                  {page} / {lastPage}
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= lastPage}
-                >
-                  {c.next}
-                </Button>
-              </div>
-            </div>
-          </div>
+          <AdminPagination
+            page={page}
+            meta={meta}
+            itemCount={reviews.length}
+            onPageChange={setPage}
+            variant="card"
+            summaryText={p.showingReviews
+              .replace("{from}", String((page - 1) * perPage + 1))
+              .replace("{to}", String(Math.min(page * perPage, totalReviews)))
+              .replace("{total}", String(totalReviews))}
+          />
         )}
       </div>
 
@@ -542,39 +521,18 @@ export default function AdminReviewsPage() {
           </TableBody>
         </Table>
 
-        {/* Pagination */}
         {!loadingReviews && reviews.length > 0 && (
-          <div className="px-4 py-3 border-t">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                {p.showingReviews
-                  .replace("{from}", String((page - 1) * perPage + 1))
-                  .replace("{to}", String(Math.min(page * perPage, totalReviews)))
-                  .replace("{total}", String(totalReviews))}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                >
-                  {c.previous}
-                </Button>
-                <div className="text-sm text-muted-foreground">
-                  {c.pageOf.replace("{page}", String(page)).replace("{lastPage}", String(lastPage))}
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= lastPage}
-                >
-                  {c.next}
-                </Button>
-              </div>
-            </div>
-          </div>
+          <AdminPagination
+            page={page}
+            meta={meta}
+            itemCount={reviews.length}
+            onPageChange={setPage}
+            variant="footer"
+            summaryText={p.showingReviews
+              .replace("{from}", String((page - 1) * perPage + 1))
+              .replace("{to}", String(Math.min(page * perPage, totalReviews)))
+              .replace("{total}", String(totalReviews))}
+          />
         )}
       </div>
 
