@@ -51,6 +51,17 @@ export type LoginResult =
       success: false
       redirectTo: ""
       message?: string
+      requiresEmailVerification: true
+      verificationToken: string
+      codeExpiryTime: number
+      pendingReview: boolean
+      manufactureStatus?: string | null
+      role: UserRole
+    }
+  | {
+      success: false
+      redirectTo: ""
+      message?: string
       requiresTwoFactor: true
       twoFactorToken: string
       role: UserRole
@@ -213,6 +224,36 @@ function isAuthTokenPayload(data: LoginResponse["data"]): data is import("@/lib/
   )
 }
 
+function readVerificationChallenge(payload: unknown): {
+  verificationToken: string
+  codeExpiryTime: number
+} | null {
+  if (!payload || typeof payload !== "object") {
+    return null
+  }
+
+  const source = payload as Record<string, unknown>
+  const nested =
+    source.data && typeof source.data === "object"
+      ? (source.data as Record<string, unknown>)
+      : null
+
+  const tokenCandidate = nested?.verification_token ?? source.verification_token
+  if (typeof tokenCandidate !== "string" || !tokenCandidate.trim()) {
+    return null
+  }
+
+  const expiryCandidate = nested?.code_expiry_time ?? source.code_expiry_time
+  const codeExpiryTime = typeof expiryCandidate === "number" && Number.isFinite(expiryCandidate)
+    ? expiryCandidate
+    : 10
+
+  return {
+    verificationToken: tokenCandidate.trim(),
+    codeExpiryTime,
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null)
   const [token, setTokenState] = useState<string | null>(null)
@@ -290,6 +331,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const loginPayload: LoginInput = { email, password, role }
       const response = await loginRequest(loginPayload)
+
+      // Backend may return success=true with verification challenge payload.
+      // Redirect user to OTP flow instead of allowing a broken dashboard session.
+      const verificationChallenge = readVerificationChallenge(response)
+      if (verificationChallenge) {
+        return {
+          success: false,
+          redirectTo: "",
+          requiresEmailVerification: true,
+          verificationToken: verificationChallenge.verificationToken,
+          codeExpiryTime: verificationChallenge.codeExpiryTime,
+          pendingReview: false,
+          manufactureStatus: null,
+          role,
+          message: response.message || "Please verify your email before signing in.",
+        }
+      }
 
       if (response.success && response.data?.access_token && response.data?.user) {
         setToken(response.data.access_token)

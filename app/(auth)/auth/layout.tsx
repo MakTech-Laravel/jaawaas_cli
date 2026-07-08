@@ -136,8 +136,8 @@ export default function AuthLayout({
 
         {/* Form Container */}
         <div
-          className={`flex justify-center p-6 lg:p-12 ${
-            isRegisterPage ? "items-start lg:py-8" : "flex-1 items-center"
+          className={`flex flex-1 justify-center p-6 lg:p-12 ${
+            isRegisterPage ? "items-center lg:py-8" : "items-center"
           }`}
         >
           <div className="w-full max-w-md">
