@@ -537,7 +537,7 @@ export default function AdminSuppliersPage() {
             meta={meta as PaginationMeta | null}
             itemCount={filteredSuppliers.length}
             onPageChange={setCurrentPage}
-            className="px-1"
+            variant="card"
           />
         </div>
       )}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
+import { AdminPagination } from "@/components/admin/admin-pagination"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -28,8 +29,6 @@ import {
   Shield,
   Clock,
   Eye,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   Building2,
   Filter,
@@ -102,8 +101,7 @@ export default function ReviewManagementPage() {
 
   const requests = requestsQuery.data?.data ?? []
   const loading = requestsQuery.isLoading
-  const totalPages = requestsQuery.data?.meta?.last_page ?? 1
-  const totalItems = requestsQuery.data?.meta?.total ?? 0
+  const meta = requestsQuery.data?.meta ?? null
 
   const openPanel = (request: AdditionalInformationRequest) => {
     setSelectedRequest(request)
@@ -289,6 +287,13 @@ export default function ReviewManagementPage() {
                 </TableBody>
               </Table>
             </div>
+            <AdminPagination
+              page={currentPage}
+              meta={meta}
+              itemCount={requests.length}
+              onPageChange={setCurrentPage}
+              variant="footer"
+            />
           </Card>
 
           <div className="flex flex-col gap-3 sm:hidden">
@@ -336,35 +341,13 @@ export default function ReviewManagementPage() {
                 </CardContent>
               </Card>
             ))}
-          </div>
-
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              {totalItems === 1
-                ? c.reviewsTotal.replace("{count}", String(totalItems))
-                : c.reviewsTotalPlural.replace("{count}", String(totalItems))}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((page) => page - 1)}
-                disabled={currentPage <= 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                {c.pageOf.replace("{page}", String(currentPage)).replace("{lastPage}", String(totalPages))}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((page) => page + 1)}
-                disabled={currentPage >= totalPages}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+            <AdminPagination
+              page={currentPage}
+              meta={meta}
+              itemCount={requests.length}
+              onPageChange={setCurrentPage}
+              variant="card"
+            />
           </div>
         </>
       )}

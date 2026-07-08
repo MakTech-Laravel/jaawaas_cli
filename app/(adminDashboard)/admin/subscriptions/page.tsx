@@ -342,14 +342,13 @@ export default function AdminSubscriptionsPage() {
         </table>
         </div>
 
-        <div className="border-t border-border px-4 py-3">
-          <AdminPagination
-            page={page}
-            meta={meta}
-            itemCount={subscriptions.length}
-            onPageChange={setPage}
-          />
-        </div>
+        <AdminPagination
+          page={page}
+          meta={meta}
+          itemCount={subscriptions.length}
+          onPageChange={setPage}
+          variant="footer"
+        />
       </div>
 
       <SubscriptionDetailModal

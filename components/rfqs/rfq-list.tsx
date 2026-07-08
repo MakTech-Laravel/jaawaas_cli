@@ -355,7 +355,7 @@ export function RfqList({ config }: { config: RfqListConfig }) {
             meta={adminMeta}
             itemCount={filtered.length}
             onPageChange={setPage}
-            className="pt-2"
+            variant="card"
           />
         </div>
       ) : (
