@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, type ReactNode } from "react"
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
@@ -24,7 +24,7 @@ const DEFAULT_CARD_COLORS = [
 ]
 
 // Map industry icons
-const industryIcons: Record<string, React.ReactNode> = {
+const industryIcons: Record<string, ReactNode> = {
   "electronics-electrical": <Cpu className={industryIconClass} />,
   "machinery-equipment": <Cog className={industryIconClass} />,
   "textiles-apparel": <Shirt className={industryIconClass} />,

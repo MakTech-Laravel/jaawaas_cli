@@ -150,10 +150,12 @@ export default function SignUpPage() {
           return
         }
 
+        const redirectTo = "redirectTo" in result ? (result as any).redirectTo : "/"
+
         // If the registration returned an active session (not pending review)
         // and the selected role is buyer, redirect straight to the dashboard.
         if (!result.pendingReview && formData.role === "buyer") {
-          router.push(result.redirectTo)
+          router.push(redirectTo)
           return
         }
 
@@ -169,7 +171,7 @@ export default function SignUpPage() {
                 (t?.auth?.reviewPlans || "Your account has been created. Review plans next, or go straight to your dashboard."),
               manufactureStatus: null as string | null,
               isLoggedIn: true as const,
-              dashboardPath: result.redirectTo,
+              dashboardPath: redirectTo,
             }
 
         sessionStorage.setItem(REGISTER_SUCCESS_STORAGE_KEY, JSON.stringify(payload))
@@ -653,15 +655,7 @@ export default function SignUpPage() {
               className="mt-0.5"
             />
             <Label htmlFor="terms" className="text-sm font-normal leading-snug">
-              {t?.auth?.agreeToTerms || "I agree to the"}
-              {" "}
-              <Link href="/terms" className="text-secondary hover:underline">
-                {t?.auth?.termsOfService || "Terms of Service"}
-              </Link>
-              {" and "}
-              <Link href="/privacy" className="text-secondary hover:underline">
-                {t?.auth?.privacyPolicy || "Privacy Policy"}
-              </Link>
+              {t?.auth?.agreeToTerms || "I agree to the Terms of Service and Privacy Policy"}
             </Label>
           </div>
         </div>

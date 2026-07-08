@@ -703,7 +703,7 @@ function NewConversationForm({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Attachments</label>
+            <label className="block text-sm font-medium text-foreground">Attachments</label>
             <SupportComposerAttachments
               files={files}
               onRemove={(index) => onFilesChange(files.filter((_, i) => i !== index))}
@@ -720,16 +720,18 @@ function NewConversationForm({
                 }
               }}
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Paperclip className="h-4 w-4" />
-              Add files
-            </Button>
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip className="h-4 w-4" />
+                Add files
+              </Button>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground">
