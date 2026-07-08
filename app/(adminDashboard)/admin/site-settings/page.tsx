@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -428,7 +428,7 @@ export default function SiteSettingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">{p.title}</h1>
           <p className="text-muted-foreground">
@@ -443,16 +443,16 @@ export default function SiteSettingsPage() {
       </div>
 
       <Tabs defaultValue="social" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="social" className="gap-2">
+        <TabsList className="flex flex-col sm:grid sm:grid-cols-3 h-auto gap-2 w-full">
+          <TabsTrigger value="social" className="gap-2 w-full">
             <Share2 className="h-4 w-4" />
             {p.socialMedia}
           </TabsTrigger>
-          <TabsTrigger value="legal" className="gap-2">
+          <TabsTrigger value="legal" className="gap-2 w-full">
             <FileText className="h-4 w-4" />
             {p.legalPages}
           </TabsTrigger>
-          <TabsTrigger value="about" className="gap-2">
+          <TabsTrigger value="about" className="gap-2 w-full">
             <Info className="h-4 w-4" />
             {p.aboutUs}
           </TabsTrigger>
@@ -497,32 +497,34 @@ export default function SiteSettingsPage() {
                   return (
                     <div
                       key={link.id}
-                      className={`flex items-center gap-4 rounded-lg border p-4 transition-colors ${
+                      className={`flex flex-col sm:flex-row sm:items-center gap-4 rounded-lg border p-4 transition-colors ${
                         link.enabled ? "bg-card" : "bg-muted/50 opacity-60"
                       }`}
                     >
-                      <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <IconComponent className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-foreground">{link.platform}</span>
-                          {link.enabled ? (
-                            <Badge variant="secondary" className="text-xs">{p.active}</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">{p.hidden}</Badge>
-                          )}
+                      <div className="flex items-center gap-4 w-full sm:w-auto flex-1 min-w-0">
+                        <GripVertical className="h-5 w-5 shrink-0 text-muted-foreground cursor-grab" />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                          <IconComponent className="h-5 w-5 text-primary" />
                         </div>
-                        <Input
-                          value={link.url}
-                          onChange={(e) => updateSocialUrl(link.id, e.target.value)}
-                          placeholder={c.urlPlaceholder}
-                          disabled={!link.enabled}
-                          className="mt-2 text-sm"
-                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-foreground">{link.platform}</span>
+                            {link.enabled ? (
+                              <Badge variant="secondary" className="text-xs">{p.active}</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">{p.hidden}</Badge>
+                            )}
+                          </div>
+                          <Input
+                            value={link.url}
+                            onChange={(e) => updateSocialUrl(link.id, e.target.value)}
+                            placeholder={c.urlPlaceholder}
+                            disabled={!link.enabled}
+                            className="mt-2 text-sm"
+                          />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-end sm:justify-start gap-2 shrink-0">
                         <Button variant="ghost" size="icon" onClick={() => moveSocialLink(link.id, "up")}>
                           <ArrowUp className="h-4 w-4" />
                         </Button>
@@ -539,7 +541,7 @@ export default function SiteSettingsPage() {
 
               <div className="rounded-lg bg-primary p-6">
                 <p className="text-sm text-primary-foreground/60 mb-3">{p.footerPreview}</p>
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-4">
                   {socialLinks.filter(l => l.enabled && l.url.trim()).sort((a, b) => a.order - b.order).map(link => {
                     const IconComponent = getIconComponent(link.icon, iconOptions)
                     return (
@@ -597,12 +599,12 @@ export default function SiteSettingsPage() {
 
             <Card className="lg:col-span-3">
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
                     <CardTitle>{currentLegalPage?.title}</CardTitle>
                     <CardDescription>{p.editLegalDesc}</CardDescription>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <a href={`/${currentLegalPage?.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
                       {c.previewLabel} <ExternalLink className="h-3 w-3" />
                     </a>
@@ -680,12 +682,12 @@ export default function SiteSettingsPage() {
         <TabsContent value="about" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                   <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5" />{c.aboutUsPage}</CardTitle>
                   <CardDescription>{p.aboutUsDesc}</CardDescription>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <a href="/about" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
                     {c.previewLabel} <ExternalLink className="h-3 w-3" />
                   </a>

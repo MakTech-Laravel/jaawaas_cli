@@ -12,8 +12,6 @@ import DynamicIcon from "@/components/dynamic-icon"
 
 const industryIconClass = "h-6 w-6"
 
-// Default card color presets matching jawasmiavai's 8 featured industry cards.
-// Used as fallback when the backend does not send color values.
 const DEFAULT_CARD_COLORS = [
   { gradient: "from-blue-500/10 to-blue-600/5 group-hover:from-blue-500/20 group-hover:to-blue-600/10", iconColor: "#2563eb" },
   { gradient: "from-slate-500/10 to-slate-600/5 group-hover:from-slate-500/20 group-hover:to-slate-600/10", iconColor: "#475569" },

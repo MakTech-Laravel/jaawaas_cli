@@ -223,7 +223,7 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
   const [active, setActive] = useState<CustomerSupportTicketDetail | null>(null)
   
   const [reply, setReply] = useState("")
-  const [mobileThreadOpen, setMobileThreadOpen] = useState(false)
+  const [mobileThreadOpen, setMobileThreadOpen] = useState(!!initialTicketId)
   const [showContext, setShowContext] = useState(true)
 
   const [isLoadingList, setIsLoadingList] = useState(true)
@@ -415,9 +415,12 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
   }
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] flex-col gap-4">
+    <div className="flex h-[calc(100dvh-7rem)] lg:h-[calc(100vh-7rem)] flex-col gap-4">
       {/* Header + live KPIs */}
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <div className={cn(
+        "flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between",
+        mobileThreadOpen && "hidden lg:flex"
+      )}>
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <LifeBuoy className="h-5 w-5" />
@@ -599,12 +602,12 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
                   {active.status === "resolved" || active.status === "closed" ? (
                     <Button size="sm" className="gap-1.5" onClick={() => updateStatus(active.id, "open")}>
                       <RotateCcw className="h-4 w-4" />
-                      {s.reopen}
+                      <span className="hidden sm:inline">{s.reopen}</span>
                     </Button>
                   ) : (
                     <Button size="sm" className="gap-1.5" onClick={() => updateStatus(active.id, "resolved")}>
                       <CheckCircle2 className="h-4 w-4" />
-                      {s.markResolved}
+                      <span className="hidden sm:inline">{s.markResolved}</span>
                     </Button>
                   )}
                   <Select value={active.status} onValueChange={(v) => updateStatus(active.id, v as CustomerSupportTicketStatus)}>
@@ -697,8 +700,8 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
                   </div>
                 ) : (
                   <div className="rounded-xl border border-border bg-background focus-within:ring-2 focus-within:ring-ring">
-                    <div className="flex flex-wrap gap-1.5 border-b border-border px-2 py-2">
-                      <span className="mr-1 inline-flex items-center gap-1 px-1 text-[11px] font-medium text-muted-foreground">
+                    <div className="flex gap-1.5 overflow-x-auto whitespace-nowrap border-b border-border px-2 py-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                      <span className="mr-1 inline-flex shrink-0 items-center gap-1 px-1 text-[11px] font-medium text-muted-foreground">
                         <Sparkles className="h-3 w-3" />
                         {s.quickReplies}
                       </span>
@@ -706,7 +709,7 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
                         <button
                           key={key}
                           onClick={() => setReply((prevReply) => (prevReply ? `${prevReply} ${cannedReplies[i]}` : cannedReplies[i]))}
-                          className="max-w-[200px] truncate rounded-full border border-border bg-card px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          className="max-w-[200px] shrink-0 truncate rounded-full border border-border bg-card px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                           title={cannedReplies[i]}
                         >
                           {cannedReplies[i]}
@@ -724,7 +727,7 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
                           sendReply()
                         }
                       }}
-                      className="min-h-[60px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
+                      className="min-h-[60px] resize-none border-0 bg-transparent text-sm shadow-none focus-visible:ring-0"
                       rows={2}
                     />
                     <div className="flex items-center justify-between gap-2 px-2 pb-2">
@@ -743,7 +746,7 @@ export function AdminSupportChatView({ basePath, initialTicketId }: AdminSupport
                           variant="ghost"
                           className="h-8 w-8 text-muted-foreground hover:text-foreground"
                           onClick={() => fileInputRef.current?.click()}
-                          aria-label={s.attachFile || "Attach file"}
+                          aria-label={(s as any).attachFile || "Attach file"}
                         >
                           <Paperclip className="h-4 w-4" />
                         </Button>

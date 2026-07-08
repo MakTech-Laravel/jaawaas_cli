@@ -17,6 +17,7 @@ import {
   type ArticleStatus,
 } from "@/lib/api/admin-articles"
 import { useTranslation } from "@/lib/i18n"
+import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -452,7 +453,7 @@ export default function AdminInsightsPage() {
     ;(async () => {
       try {
         await deleteAdminArticle(deletingId)
-        toast({ title: c.deleted, description: p.articleDeleted ?? c.deletedSuccessfully })
+        toast({ title: c.deleted, description: (p as any).articleDeleted ?? c.deletedSuccessfully })
         setShowDeleteConfirm(false)
         setDeletingId(null)
         await fetchArticles()
@@ -597,21 +598,21 @@ export default function AdminInsightsPage() {
                   <p className="mt-1 text-sm text-muted-foreground line-clamp-1">
                     {article.excerpt}
                   </p>
-                  <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Tag className="h-3 w-3" />
+                  <div className="mt-2 flex flex-wrap items-center gap-4 gap-y-2 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
+                      <Tag className="h-3 w-3 shrink-0" />
                       {article.category}
                     </span>
-                    <span className="flex items-center gap-1">
-                      <User className="h-3 w-3" />
+                    <span className="flex items-center gap-1 whitespace-nowrap">
+                      <User className="h-3 w-3 shrink-0" />
                       {article.author}
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {article.publishedAt || article.createdAt}
+                    <span className="flex items-center gap-1 whitespace-nowrap">
+                      <Calendar className="h-3 w-3 shrink-0" />
+                      {article.publishedAt || article.createdAt ? format(new Date(article.publishedAt || article.createdAt), "MMM dd, yyyy") : "-"}
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Eye className="h-3 w-3" />
+                    <span className="flex items-center gap-1 whitespace-nowrap">
+                      <Eye className="h-3 w-3 shrink-0" />
                       {p.viewsLabel.replace("{count}", article.views.toLocaleString())}
                     </span>
                   </div>

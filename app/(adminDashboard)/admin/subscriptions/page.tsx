@@ -114,7 +114,7 @@ export default function AdminSubscriptionsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <AdminStatCard
           title={p.activeSubscriptions}
           value={stats ? stats.overview.total_active_subscriptions : "-"}
@@ -147,7 +147,7 @@ export default function AdminSubscriptionsPage() {
 
       {/* Filters */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative flex-1 w-full sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder={c.searchByCompany}
@@ -156,9 +156,9 @@ export default function AdminSubscriptionsPage() {
             className="pl-9"
           />
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 w-full sm:w-auto">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-36">
+            <SelectTrigger className="w-full sm:w-36">
               <SelectValue placeholder={c.status} />
             </SelectTrigger>
             <SelectContent>
@@ -173,10 +173,86 @@ export default function AdminSubscriptionsPage() {
         </div>
       </div>
 
-      {/* Subscriptions Table */}
+      {/* Subscriptions List (Cards on Mobile, Table on Desktop) */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-muted/50">
+        {/* Mobile Cards */}
+        <div className="grid grid-cols-1 gap-4 p-4 md:hidden">
+          {loading ? (
+             <div className="py-12 text-center">
+                <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">{p.loading}</p>
+             </div>
+          ) : subscriptions.length === 0 ? (
+             <div className="py-12 text-center">
+                <CreditCard className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                <p className="mt-4 text-muted-foreground">{p.noSubscriptions}</p>
+             </div>
+          ) : (
+            subscriptions.map((sub) => (
+              <div key={sub.id} className="flex flex-col gap-4 rounded-lg border border-border p-4 shadow-sm bg-card">
+                 <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                        <Factory className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{sub.manufacturer?.name || p.unknownCompany}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {sub.starts_at ? c.sinceLabel.replace("{date}", format(new Date(sub.starts_at), "MMM dd, yyyy")) : c.na}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge 
+                      variant="secondary"
+                      className={statusConfig[sub.status]?.color || "bg-secondary text-secondary-foreground"}
+                    >
+                      {sub.status_label || ss[sub.status as keyof typeof ss] || sub.status}
+                    </Badge>
+                 </div>
+                 
+                 <div className="grid grid-cols-2 gap-2 text-sm">
+                   <div>
+                     <p className="text-muted-foreground">{p.tablePlan}</p>
+                     <p className="font-medium">{sub.plan?.name || c.unknown}</p>
+                   </div>
+                   <div>
+                     <p className="text-muted-foreground">{p.tableAmount}</p>
+                     <p className="font-medium">
+                       ${sub.billing_interval === "year" 
+                          ? sub.plan?.yearly_price?.amount 
+                          : sub.plan?.monthly_price?.amount} 
+                       <span className="text-xs text-muted-foreground font-normal ml-1">
+                          {sub.billing_interval === "year" ? c.perYearShort : c.perMonthShort}
+                       </span>
+                     </p>
+                   </div>
+                   <div>
+                     <p className="text-muted-foreground">{p.tableBilling}</p>
+                     <p className="font-medium capitalize">{sub.billing_interval}</p>
+                   </div>
+                   <div>
+                     <p className="text-muted-foreground">{p.tableNextBilling}</p>
+                     <p className="font-medium">{sub.ends_at ? format(new Date(sub.ends_at), "MMM dd, yyyy") : "-"}</p>
+                   </div>
+                 </div>
+
+                 <Button 
+                   variant="outline" 
+                   className="w-full"
+                   onClick={() => setSelectedSubId(sub.id)}
+                 >
+                   <Eye className="mr-2 h-4 w-4" />
+                   {c.viewDetails}
+                 </Button>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left whitespace-nowrap min-w-[600px]">
+            <thead className="bg-muted/50">
             <tr>
               <th className="px-4 py-3 text-left text-sm font-medium text-foreground">{p.tableCompany}</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-foreground">{p.tablePlan}</th>
@@ -264,6 +340,7 @@ export default function AdminSubscriptionsPage() {
             )}
           </tbody>
         </table>
+        </div>
 
         <div className="border-t border-border px-4 py-3">
           <AdminPagination

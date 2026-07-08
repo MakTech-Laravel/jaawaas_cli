@@ -688,26 +688,28 @@ export default function AdminFaqPage() {
                       {({ attributes, listeners }) => (
                         <div className="rounded-lg border border-border">
                           {/* Category Header */}
-                          <div className="flex items-center gap-3 bg-muted/50 p-4">
-                            <div {...attributes} {...listeners} className="cursor-move">
-                              <GripVertical className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-muted/50 p-4">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div {...attributes} {...listeners} className="cursor-move shrink-0">
+                                <GripVertical className="h-4 w-4 text-muted-foreground" />
+                              </div>
+
+                              <button onClick={() => toggleCategory(category.id)} className="flex-1 flex items-center gap-2 text-left min-w-0">
+                                <ChevronDown
+                                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                                    expandedCategories.includes(category.id) ? "rotate-180" : ""
+                                  }`}
+                                />
+                                <span className="font-medium text-foreground truncate">{category.name}</span>
+                                <Badge variant="secondary" className="ml-2 shrink-0">
+                                  {category.faqs.length === 1
+                                    ? c.questionsCount.replace("{count}", String(category.faqs.length))
+                                    : c.questionsCountPlural.replace("{count}", String(category.faqs.length))}
+                                </Badge>
+                              </button>
                             </div>
 
-                            <button onClick={() => toggleCategory(category.id)} className="flex-1 flex items-center gap-2 text-left">
-                              <ChevronDown
-                                className={`h-4 w-4 text-muted-foreground transition-transform ${
-                                  expandedCategories.includes(category.id) ? "rotate-180" : ""
-                                }`}
-                              />
-                              <span className="font-medium text-foreground">{category.name}</span>
-                              <Badge variant="secondary" className="ml-2">
-                                {category.faqs.length === 1
-                                  ? c.questionsCount.replace("{count}", String(category.faqs.length))
-                                  : c.questionsCountPlural.replace("{count}", String(category.faqs.length))}
-                              </Badge>
-                            </button>
-
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center justify-end sm:justify-start gap-1 shrink-0">
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -775,17 +777,19 @@ export default function AdminFaqPage() {
                                       {category.faqs.map((faq, faqIndex) => (
                                         <SortableItem key={faq.id} id={faq.id}>
                                           {({ attributes, listeners }) => (
-                                            <div className="flex items-start gap-3 rounded-lg border border-border bg-background p-4">
-                                              <div {...attributes} {...listeners} className="cursor-move mt-1">
-                                                <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                            <div className="flex flex-col sm:flex-row sm:items-start gap-3 rounded-lg border border-border bg-background p-4">
+                                              <div className="flex items-start gap-3 flex-1 min-w-0">
+                                                <div {...attributes} {...listeners} className="cursor-move mt-1 shrink-0">
+                                                  <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                                </div>
+
+                                                <div className="flex-1 min-w-0">
+                                                  <p className="font-medium text-foreground wrap-break-word">{faq.question}</p>
+                                                  <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{faq.answer}</p>
+                                                </div>
                                               </div>
 
-                                              <div className="flex-1 min-w-0">
-                                                <p className="font-medium text-foreground">{faq.question}</p>
-                                                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{faq.answer}</p>
-                                              </div>
-
-                                              <div className="flex items-center gap-1 shrink-0">
+                                              <div className="flex items-center justify-end sm:justify-start gap-1 shrink-0 mt-2 sm:mt-0">
                                                 <Button
                                                   variant="ghost"
                                                   size="icon"
