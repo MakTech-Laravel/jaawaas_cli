@@ -170,7 +170,7 @@ export default function AdminOrdersPage() {
         {isLoading ? (
           <div className="rounded-xl border border-border bg-card p-8 flex flex-col items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="mt-4 text-sm text-muted-foreground">{p.loading || "Loading..."}</p>
+            <p className="mt-4 text-sm text-muted-foreground">{"Loading..."}</p>
           </div>
         ) : orders.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center">
@@ -341,4 +341,3 @@ export default function AdminOrdersPage() {
     </div>
   )
 }
-
