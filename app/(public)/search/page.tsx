@@ -94,7 +94,7 @@ function SearchContent() {
               Search SourceNest
             </h1>
             <form onSubmit={handleSearch} className="mt-8">
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                   <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -102,14 +102,14 @@ function SearchContent() {
                     placeholder="Search products, suppliers, industries..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-12 bg-background pl-12 text-base"
+                    className="h-12 bg-background pl-12 text-base w-full"
                   />
                 </div>
                 <Button 
                   type="submit"
                   size="lg"
                   variant="secondary" 
-                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 w-full sm:w-auto"
                 >
                   Search
                 </Button>
@@ -136,7 +136,7 @@ function SearchContent() {
                 )}
 
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList>
+                  <TabsList className="w-full flex-wrap h-auto justify-start gap-1 p-1 sm:justify-center">
                     <TabsTrigger value="all">All Results</TabsTrigger>
                     <TabsTrigger value="products">Products ({products.length})</TabsTrigger>
                     <TabsTrigger value="suppliers">Suppliers ({suppliers.length})</TabsTrigger>
@@ -160,7 +160,7 @@ function SearchContent() {
                             </Link>
                           </Button>
                         </div>
-                        <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 lg:gap-6">
+                        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
                           {products.slice(0, 3).map((product) => (
                             <Link
                               key={product.id}
@@ -309,7 +309,7 @@ function SearchContent() {
 
                   {/* Products Tab */}
                   <TabsContent value="products">
-                    <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 lg:gap-6">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
                       {products.map((product) => (
                         <Link
                           key={product.id}
