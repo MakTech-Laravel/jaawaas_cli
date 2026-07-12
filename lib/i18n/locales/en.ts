@@ -1157,6 +1157,16 @@ const en = {
       tryAgain: "Try Again",
       priceInfo: "{plan} Plan ({cycle})",
       processingTime: "💡 This typically takes 2-5 business days."
+    },
+    authGate: {
+      guestTitle: "Manufacturer account required",
+      guestDescription: "Pricing and subscriptions are for manufacturers only. Sign in to your manufacturer account, or create one to continue.",
+      wrongRoleTitle: "Switch to a manufacturer account",
+      wrongRoleDescription: "You're signed in with an account that isn't a manufacturer. Create a manufacturer account to subscribe, or contact support if you need help.",
+      signIn: "Sign in",
+      createManufacturer: "Create manufacturer account",
+      contactSupport: "Contact support",
+      close: "Not now"
     }
   },
 

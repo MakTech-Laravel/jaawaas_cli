@@ -6,6 +6,14 @@ import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { useTranslation } from "@/lib/i18n"
 import { PayPalButton } from "@/components/payment/paypal-button"
 import {
@@ -15,7 +23,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
-import { Check, X, ArrowRight, Shield, HelpCircle, Sparkles, Users, CheckCircle, AlertCircle, Loader2, XIcon } from "lucide-react"
+import { Check, X, ArrowRight, HelpCircle, Sparkles, Users, CheckCircle, AlertCircle, Loader2, XIcon, Factory, LogIn } from "lucide-react"
 import { fetchPublicPlans, type PublicPlan } from "@/lib/api/public-plans"
 import { fetchActivePromotion, enrollInPromotion, type ActivePromotion } from "@/lib/api/public-promotions"
 import { useAuth } from "@/lib/auth-context"
@@ -23,7 +31,6 @@ import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
 import { useSubscription, type PlanId, SubscriptionProvider } from "@/lib/subscription-context"
 import Swal from "sweetalert2"
-import { toast } from "sonner"
 
 interface PlanOption {
   id: string;
@@ -31,6 +38,8 @@ interface PlanOption {
   price: number;
   cycle: "monthly" | "yearly";
 }
+
+type AuthGateReason = "guest" | "wrongRole"
 
 export default function PricingPage() {
   return (
@@ -57,6 +66,41 @@ function PricingPageContent() {
 
   const [activePromotion, setActivePromotion] = useState<ActivePromotion | null>(null)
   const [promotionLoading, setPromotionLoading] = useState(true)
+
+  const [authGateOpen, setAuthGateOpen] = useState(false)
+  const [authGateReason, setAuthGateReason] = useState<AuthGateReason>("guest")
+  const [pendingPlanId, setPendingPlanId] = useState<string | null>(null)
+  const [pendingPromoId, setPendingPromoId] = useState<string | null>(null)
+
+  /** Only logged-in manufacturers may pay or enroll. Everyone else gets the auth gate modal. */
+  const ensureManufacturerAccess = (planId?: string, promoId?: string): boolean => {
+    if (!user) {
+      setAuthGateReason("guest")
+      setPendingPlanId(planId ?? null)
+      setPendingPromoId(promoId ?? null)
+      setAuthGateOpen(true)
+      return false
+    }
+    if (user.role !== "manufacturer") {
+      setAuthGateReason("wrongRole")
+      setPendingPlanId(planId ?? null)
+      setPendingPromoId(promoId ?? null)
+      setAuthGateOpen(true)
+      return false
+    }
+    return true
+  }
+
+  const signupHref = (() => {
+    const params = new URLSearchParams({ role: "manufacturer" })
+    if (pendingPlanId) params.set("plan", pendingPlanId)
+    if (pendingPromoId) params.set("promo", pendingPromoId)
+    return `/auth/signup?${params.toString()}`
+  })()
+
+  const signinHref = `/auth/signin?callbackUrl=${encodeURIComponent(
+    pendingPlanId ? `/pricing?plan=${encodeURIComponent(pendingPlanId)}` : "/pricing"
+  )}`
 
   useEffect(() => {
     let cancelled = false
@@ -98,11 +142,7 @@ function PricingPageContent() {
     setPaymentStatus("success")
     setTransactionId(id)
     setTimeout(() => {
-      if (user) {
-        router.push(`/dashboard/manufacturer/subscription?transactionId=${id}&planId=${selectedPlan?.id || ""}&cycle=${billingCycle}&price=${selectedPlan?.price || ""}`)
-      } else {
-        router.push(`/auth/signup?role=manufacturer&plan=${selectedPlan?.id || ""}&transactionId=${id}`)
-      }
+      router.push(`/dashboard/manufacturer/subscription?transactionId=${id}&planId=${selectedPlan?.id || ""}&cycle=${billingCycle}&price=${selectedPlan?.price || ""}`)
     }, 3000)
   }
 
@@ -250,84 +290,74 @@ function PricingPageContent() {
                   <Button
                     className="w-full gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90 py-6 text-base"
                     onClick={() => {
-                      if (user) {
-                        if (user.role === 'manufacturer') {
+                      const promoPlanId = activePromotion?.plan?.id?.toString()
+                      if (!ensureManufacturerAccess(promoPlanId, activePromotion?.id?.toString())) return
+
+                      Swal.fire({
+                        title: 'Apply Founding Manufacturer Promo?',
+                        text: 'You will receive a 6‑month free Growth plan. Continue?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: 'var(--color-secondary)',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: 'Yes, apply',
+                        cancelButtonText: 'Cancel'
+                      }).then(async (result) => {
+                        if (result.isConfirmed) {
                           Swal.fire({
-                            title: 'Apply Founding Manufacturer Promo?',
-                            text: 'You will receive a 6‑month free Growth plan. Continue?',
-                            icon: 'question',
-                            showCancelButton: true,
-                            confirmButtonColor: 'var(--color-secondary)',
-                            cancelButtonColor: '#d33',
-                            confirmButtonText: 'Yes, apply',
-                            cancelButtonText: 'Cancel'
-                          }).then(async (result) => {
-                            if (result.isConfirmed) {
-                              Swal.fire({
-                                title: 'Applying Promotion...',
-                                text: 'Please wait while we register your promotion...',
-                                allowOutsideClick: false,
-                                didOpen: () => {
-                                  Swal.showLoading()
-                                }
-                              })
+                            title: 'Applying Promotion...',
+                            text: 'Please wait while we register your promotion...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                              Swal.showLoading()
+                            }
+                          })
 
-                              try {
-                                if (activePromotion) {
-                                  const enrollRes = await enrollInPromotion(activePromotion.id)
-                                  if (enrollRes.success) {
-                                    const rawPlanName = activePromotion.plan.name.toLowerCase()
-                                    let matchedPlanId: PlanId = "growth"
-                                    if (rawPlanName.includes("starter")) matchedPlanId = "starter"
-                                    else if (rawPlanName.includes("growth")) matchedPlanId = "growth"
-                                    else if (rawPlanName.includes("enterprise")) matchedPlanId = "enterprise"
-                                    else if (rawPlanName.includes("free")) matchedPlanId = "free"
+                          try {
+                            if (activePromotion) {
+                              const enrollRes = await enrollInPromotion(activePromotion.id)
+                              if (enrollRes.success) {
+                                const rawPlanName = activePromotion.plan.name.toLowerCase()
+                                let matchedPlanId: PlanId = "growth"
+                                if (rawPlanName.includes("starter")) matchedPlanId = "starter"
+                                else if (rawPlanName.includes("growth")) matchedPlanId = "growth"
+                                else if (rawPlanName.includes("enterprise")) matchedPlanId = "enterprise"
+                                else if (rawPlanName.includes("free")) matchedPlanId = "free"
 
-                                    await upgradePlan(matchedPlanId)
+                                await upgradePlan(matchedPlanId)
 
-                                    Swal.fire({
-                                      icon: 'success',
-                                      title: 'Promotion Applied!',
-                                      text: enrollRes.message || 'Founding Manufacturer Promo Applied!',
-                                      confirmButtonColor: 'var(--color-secondary)'
-                                    }).then(() => {
-                                      if (user.manufacturerStatus === 'approved') {
-                                        router.push('/dashboard/manufacturer')
-                                      } else {
-                                        router.push('/review')
-                                      }
-                                    })
+                                Swal.fire({
+                                  icon: 'success',
+                                  title: 'Promotion Applied!',
+                                  text: enrollRes.message || 'Founding Manufacturer Promo Applied!',
+                                  confirmButtonColor: 'var(--color-secondary)'
+                                }).then(() => {
+                                  if (user?.manufacturerStatus === 'approved') {
+                                    router.push('/dashboard/manufacturer')
                                   } else {
-                                    Swal.fire({
-                                      icon: 'error',
-                                      title: 'Failed to Apply',
-                                      text: enrollRes.message || 'Failed to apply promo',
-                                      confirmButtonColor: '#d33'
-                                    })
+                                    router.push('/review')
                                   }
-                                }
-                              } catch (e: any) {
+                                })
+                              } else {
                                 Swal.fire({
                                   icon: 'error',
-                                  title: 'Error',
-                                  text: e?.message || 'Failed to apply promo',
+                                  title: 'Failed to Apply',
+                                  text: enrollRes.message || 'Failed to apply promo',
                                   confirmButtonColor: '#d33'
                                 })
                               }
                             }
-                          })
-                        } else {
-                          Swal.fire({
-                            icon: "info",
-                            title: "Buyer Account Detected",
-                            text: "You are currently logged in as a Buyer. To apply as a Manufacturer, please create a new manufacturer account or contact support.",
-                            confirmButtonColor: "var(--color-secondary)",
-                            confirmButtonText: "Got it"
-                          })
+                          } catch (e: unknown) {
+                            const message = e instanceof Error ? e.message : 'Failed to apply promo'
+                            Swal.fire({
+                              icon: 'error',
+                              title: 'Error',
+                              text: message,
+                              confirmButtonColor: '#d33'
+                            })
+                          }
                         }
-                      } else {
-                        router.push(activePromotion ? `/auth/signup?role=manufacturer&plan=${activePromotion.plan.id}&promo=${activePromotion.id}` : '/auth/signup?role=manufacturer')
-                      }
+                      })
                     }}
                     disabled={activePromotion?.stats?.is_full}
                   >
@@ -453,20 +483,10 @@ function PricingPageContent() {
                         )}
                         variant={plan.is_popular ? "default" : "outline"}
                         onClick={() => {
-                          if (user && user.role === 'buyer') {
-                            Swal.fire({
-                              icon: "info",
-                              title: "Buyer Account Detected",
-                              text: "You are currently logged in as a Buyer. To subscribe, please create a new manufacturer account or contact support.",
-                              confirmButtonColor: "var(--color-secondary)",
-                              confirmButtonText: "Got it"
-                            })
-                          } else if (planIsFree) {
-                            if (user) {
-                              router.push("/dashboard/manufacturer/subscription")
-                            } else {
-                              router.push("/auth/signup?role=manufacturer&plan=free")
-                            }
+                          if (!ensureManufacturerAccess(plan.id.toString())) return
+
+                          if (planIsFree) {
+                            router.push("/dashboard/manufacturer/subscription")
                           } else if (currentPrice > 0) {
                             handlePlanSelect(plan.id.toString(), plan.name, currentPrice)
                           } else {
@@ -685,9 +705,7 @@ function PricingPageContent() {
                       {t?.pricing?.payment?.transactionId || "Transaction ID:"} <span className="font-mono text-xs">{transactionId}</span>
                     </p>
                     <p className="mt-4 text-xs text-green-600">
-                      {user
-                        ? (t?.pricing?.payment?.redirectingDashboard || "Redirecting to your dashboard...")
-                        : (t?.pricing?.payment?.redirecting || "Redirecting to sign up...")}
+                      {t?.pricing?.payment?.redirectingDashboard || "Redirecting to your dashboard..."}
                     </p>
                   </div>
                 )}
@@ -750,6 +768,71 @@ function PricingPageContent() {
             </div>
           </div>
         )}
+        {/* Auth gate — must be a logged-in manufacturer before payment / enroll */}
+        <Dialog open={authGateOpen} onOpenChange={setAuthGateOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader className="sm:text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/10">
+                {authGateReason === "guest" ? (
+                  <LogIn className="h-6 w-6 text-secondary" />
+                ) : (
+                  <Factory className="h-6 w-6 text-secondary" />
+                )}
+              </div>
+              <DialogTitle className="text-xl sm:text-center">
+                {authGateReason === "guest"
+                  ? (t?.pricing?.authGate?.guestTitle || "Manufacturer account required")
+                  : (t?.pricing?.authGate?.wrongRoleTitle || "Switch to a manufacturer account")}
+              </DialogTitle>
+              <DialogDescription className="sm:text-center leading-relaxed">
+                {authGateReason === "guest"
+                  ? (t?.pricing?.authGate?.guestDescription ||
+                      "Pricing and subscriptions are for manufacturers only. Sign in to your manufacturer account, or create one to continue.")
+                  : (t?.pricing?.authGate?.wrongRoleDescription ||
+                      "You're signed in with an account that isn't a manufacturer. Create a manufacturer account to subscribe, or contact support if you need help.")}
+              </DialogDescription>
+            </DialogHeader>
+
+            <DialogFooter className="mt-2 flex-col gap-2 sm:flex-col">
+              {authGateReason === "guest" && (
+                <Button className="w-full gap-2" asChild>
+                  <Link href={signinHref} onClick={() => setAuthGateOpen(false)}>
+                    <LogIn className="h-4 w-4" />
+                    {t?.pricing?.authGate?.signIn || "Sign in"}
+                  </Link>
+                </Button>
+              )}
+              <Button
+                className={cn(
+                  "w-full gap-2",
+                  authGateReason === "guest" &&
+                    "bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                )}
+                asChild
+              >
+                <Link href={signupHref} onClick={() => setAuthGateOpen(false)}>
+                  <Factory className="h-4 w-4" />
+                  {t?.pricing?.authGate?.createManufacturer || "Create manufacturer account"}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              {authGateReason === "wrongRole" && (
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/contact?type=sales" onClick={() => setAuthGateOpen(false)}>
+                    {t?.pricing?.authGate?.contactSupport || "Contact support"}
+                  </Link>
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                className="w-full text-muted-foreground"
+                onClick={() => setAuthGateOpen(false)}
+              >
+                {t?.pricing?.authGate?.close || "Not now"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
       <Footer />
     </div>

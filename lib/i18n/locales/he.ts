@@ -1093,6 +1093,16 @@ const he = {
       tryAgain: "נסה שוב",
       priceInfo: "תוכנית {plan} ({cycle})",
       processingTime: "💡 זה בדרך כלל לוקח 2-5 ימי עסקים."
+    },
+    authGate: {
+      guestTitle: "נדרש חשבון יצרן",
+      guestDescription: "תמחור ומנויים מיועדים ליצרנים בלבד. התחבר לחשבון היצרן שלך, או צור חשבון חדש כדי להמשיך.",
+      wrongRoleTitle: "עבור לחשבון יצרן",
+      wrongRoleDescription: "אתה מחובר עם חשבון שאינו חשבון יצרן. צור חשבון יצרן כדי להירשם, או פנה לתמיכה אם אתה צריך עזרה.",
+      signIn: "התחברות",
+      createManufacturer: "צור חשבון יצרן",
+      contactSupport: "צור קשר עם התמיכה",
+      close: "לא עכשיו"
     }
   },
 
