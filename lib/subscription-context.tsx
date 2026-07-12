@@ -78,6 +78,7 @@ export interface Subscription {
   priceAmount?: string
   priceCurrency?: string
   autoRenew?: boolean
+  hasReusablePaymentMethod?: boolean
 }
 
 // Plan definitions
@@ -251,6 +252,11 @@ interface SubscriptionContextType {
   upgradePlan: (planId: PlanId) => Promise<boolean>
   downgradePlan: (planId: PlanId) => Promise<boolean>
   cancelSubscription: () => Promise<boolean>
+  setAutoRenew: (payload: {
+    enabled: boolean
+    vault_setup_token?: string
+    paypal_vault_id?: string
+  }) => Promise<{ success: boolean; message: string }>
   subscribeToPlan: (payload: {
     plan_id: number
     payment_method: string
@@ -258,6 +264,7 @@ interface SubscriptionContextType {
     payment_id: string
     auto_renew: boolean
     paid_amount: number
+    paypal_vault_id?: string
   }) => Promise<{ success: boolean; message: string }>
   upgradeSubscription: (payload: {
     plan_id: number
@@ -266,6 +273,7 @@ interface SubscriptionContextType {
     payment_id: string
     auto_renew: boolean
     paid_amount: number
+    paypal_vault_id?: string
   }) => Promise<{ success: boolean; message: string }>
   
   // Usage tracking
@@ -447,7 +455,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
             priceCurrency: subData.billing_interval === "year"
               ? (subData.plan?.yearly_price?.currency || "USD")
               : (subData.plan?.monthly_price?.currency || "USD"),
-            autoRenew: subData.auto_renew
+            autoRenew: subData.auto_renew,
+            hasReusablePaymentMethod: Boolean(subData.has_reusable_payment_method),
           })
           hasSubscription = true
         } else {
@@ -749,7 +758,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
               priceCurrency: subData.billing_interval === "year"
                 ? (subData.plan?.yearly_price?.currency || "USD")
                 : (subData.plan?.monthly_price?.currency || "USD"),
-              autoRenew: subData.auto_renew
+              autoRenew: subData.auto_renew,
+              hasReusablePaymentMethod: Boolean(subData.has_reusable_payment_method),
             })
           } else {
             setSubscription(null)
@@ -766,6 +776,55 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const setAutoRenew = async (payload: {
+    enabled: boolean
+    vault_setup_token?: string
+    paypal_vault_id?: string
+  }): Promise<{ success: boolean; message: string }> => {
+    try {
+      const response = await apiClient.post('/manufacturer/subscriptions/auto-renew', payload)
+      const success = response?.data?.success ?? false
+      const message = response?.data?.message || (payload.enabled ? "Auto-renew enabled" : "Auto-renew disabled")
+
+      if (success && response.data?.data) {
+        const subData = response.data.data
+        let mappedPlanId: PlanId = "growth"
+        if (subData.plan?.name) {
+          const name = subData.plan.name.toLowerCase()
+          if (["starter", "growth", "enterprise"].includes(name)) {
+            mappedPlanId = name as PlanId
+          }
+        }
+        setSubscription({
+          planId: mappedPlanId,
+          status: subData.status,
+          billingCycle: subData.billing_interval === "year" ? "yearly" : "monthly",
+          currentPeriodStart: subData.starts_at,
+          currentPeriodEnd: subData.ends_at,
+          cancelAtPeriodEnd: !subData.auto_renew,
+          daysRemaining: subData.days_remaining,
+          priceAmount: subData.billing_interval === "year"
+            ? subData.plan?.yearly_price?.amount
+            : subData.plan?.monthly_price?.amount,
+          priceCurrency: subData.billing_interval === "year"
+            ? (subData.plan?.yearly_price?.currency || "USD")
+            : (subData.plan?.monthly_price?.currency || "USD"),
+          autoRenew: subData.auto_renew,
+          hasReusablePaymentMethod: Boolean(subData.has_reusable_payment_method),
+        })
+      }
+
+      return { success, message }
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.errors?.auto_renew?.[0] ||
+        "Failed to update auto-renew"
+      console.error("[SubscriptionContext] Auto-renew toggle error:", error?.response?.data || error)
+      return { success: false, message }
+    }
+  }
+
   // Subscribe to plan via backend
   const subscribeToPlan = async (payload: {
     plan_id: number
@@ -774,6 +833,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     payment_id: string
     auto_renew: boolean
     paid_amount: number
+    paypal_vault_id?: string
   }): Promise<{ success: boolean; message: string }> => {
     try {
       console.log("[SubscriptionContext] POST /manufacturer/subscriptions/subscribe", payload)
@@ -812,7 +872,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
               priceCurrency: subData.billing_interval === "year"
                 ? (subData.plan?.yearly_price?.currency || "USD")
                 : (subData.plan?.monthly_price?.currency || "USD"),
-              autoRenew: subData.auto_renew
+              autoRenew: subData.auto_renew,
+              hasReusablePaymentMethod: Boolean(subData.has_reusable_payment_method),
             })
           } else {
             console.warn("[SubscriptionContext] Refetch returned no subscription data")
@@ -838,6 +899,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     payment_id: string
     auto_renew: boolean
     paid_amount: number
+    paypal_vault_id?: string
   }): Promise<{ success: boolean; message: string }> => {
     try {
       console.log("[SubscriptionContext] POST /manufacturer/subscriptions/upgrade", payload)
@@ -872,7 +934,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
               priceCurrency: subData.billing_interval === "year"
                 ? (subData.plan?.yearly_price?.currency || "USD")
                 : (subData.plan?.monthly_price?.currency || "USD"),
-              autoRenew: subData.auto_renew
+              autoRenew: subData.auto_renew,
+              hasReusablePaymentMethod: Boolean(subData.has_reusable_payment_method),
             })
           }
         } catch (refetchErr) {
@@ -931,6 +994,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       upgradePlan,
       downgradePlan,
       cancelSubscription,
+      setAutoRenew,
       subscribeToPlan,
       upgradeSubscription,
       incrementUsage,

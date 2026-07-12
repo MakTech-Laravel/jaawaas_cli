@@ -57,6 +57,7 @@ function PricingPageContent() {
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "success" | "error">("idle")
   const [transactionId, setTransactionId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [autoRenew, setAutoRenew] = useState(true)
   const router = useRouter()
   const { upgradePlan } = useSubscription()
 
@@ -136,13 +137,17 @@ function PricingPageContent() {
     setPaymentStatus("idle")
     setTransactionId(null)
     setErrorMessage(null)
+    setAutoRenew(true)
   }
 
-  const handlePaymentSuccess = (id: string) => {
+  const handlePaymentSuccess = (id: string, meta?: { vaultId?: string | null }) => {
     setPaymentStatus("success")
     setTransactionId(id)
+    const vaultParam = meta?.vaultId ? `&paypalVaultId=${encodeURIComponent(meta.vaultId)}` : ""
     setTimeout(() => {
-      router.push(`/dashboard/manufacturer/subscription?transactionId=${id}&planId=${selectedPlan?.id || ""}&cycle=${billingCycle}&price=${selectedPlan?.price || ""}`)
+      router.push(
+        `/dashboard/manufacturer/subscription?transactionId=${id}&planId=${selectedPlan?.id || ""}&cycle=${billingCycle}&price=${selectedPlan?.price || ""}&autoRenew=${autoRenew ? "1" : "0"}${vaultParam}`
+      )
     }, 3000)
   }
 
@@ -748,10 +753,31 @@ function PricingPageContent() {
                       </div>
                     </div>
 
-                    {/* PayPal Button */}
+                    <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4 rounded border-gray-300"
+                        checked={autoRenew}
+                        onChange={(e) => setAutoRenew(e.target.checked)}
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-gray-900">
+                          {t?.mfg?.subscription?.autoRenewTitle || "Auto-renew"}
+                        </span>
+                        <span className="mt-1 block text-xs text-gray-600 leading-relaxed">
+                          {autoRenew
+                            ? (t?.mfg?.subscription?.autoRenewVaultHint || "PayPal will ask to save your payment method for renewals.")
+                            : (t?.mfg?.subscription?.autoRenewManualHint || "One-time payment only. You can enable auto-renew later from this page.")}
+                        </span>
+                      </span>
+                    </label>
+
+                    {/* PayPal Button — remount when vault preference changes */}
                     <PayPalButton
+                      key={autoRenew ? "vault" : "one-time"}
                       amount={selectedPlan.price}
                       currency="USD"
+                      vault={autoRenew}
                       onSuccess={handlePaymentSuccess}
                       onError={handlePaymentError}
                     />

@@ -2033,7 +2033,17 @@ const zhPartial = {
         daysRemaining: "（剩余 {days} 天）",
         renewsOn: "您的订阅将于 {date} 续期",
         endsOn: "您的订阅将于 {date} 结束",
-        noActiveSubscription: "无有效的订阅计划"
+        noActiveSubscription: "无有效的订阅计划",
+        autoRenewTitle: "自动续订",
+        autoRenewEnabledDesc: "账单周期结束时将使用已保存的 PayPal 方式自动续订当前套餐。",
+        autoRenewDisabledDesc: "自动续订已关闭。本期结束后需手动付款，也可在此启用自动续订并保存 PayPal。",
+        autoRenewEnable: "启用自动续订",
+        autoRenewDisable: "关闭自动续订",
+        autoRenewSavePaypal: "保存 PayPal 用于自动续订",
+        autoRenewSavePaypalDesc: "授权一次 PayPal（现在不扣款）。仅用于续订当前套餐。",
+        autoRenewUpdated: "自动续订设置已更新",
+        autoRenewVaultHint: "PayPal 将请求保存付款方式以便续订。",
+        autoRenewManualHint: "仅一次付款。稍后可在此页面启用自动续订。",
       },
       loginHistory: {
         title: "登录历史",

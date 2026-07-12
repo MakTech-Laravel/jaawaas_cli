@@ -2035,7 +2035,17 @@ const ar = {
         daysRemaining: "(متبقي {days} يومًا)",
         renewsOn: "يتجدد اشتراكك في {date}",
         endsOn: "ينتهي اشتراكك في {date}",
-        noActiveSubscription: "لا توجد خطة اشتراك نشطة"
+        noActiveSubscription: "لا توجد خطة اشتراك نشطة",
+        autoRenewTitle: "التجديد التلقائي",
+        autoRenewEnabledDesc: "سيتم تجديد خطتك تلقائيًا في نهاية فترة الفوترة باستخدام طريقة PayPal المحفوظة.",
+        autoRenewDisabledDesc: "التجديد التلقائي متوقف. ستدفع يدويًا عند انتهاء هذه الفترة، أو فعّل التجديد التلقائي لحفظ طريقة PayPal.",
+        autoRenewEnable: "تفعيل التجديد التلقائي",
+        autoRenewDisable: "إيقاف التجديد التلقائي",
+        autoRenewSavePaypal: "حفظ PayPal للتجديد التلقائي",
+        autoRenewSavePaypalDesc: "فعّل PayPal مرة واحدة (بدون رسوم الآن). سنستخدمه فقط لتجديد خطتك الحالية.",
+        autoRenewUpdated: "تم تحديث إعدادات التجديد التلقائي",
+        autoRenewVaultHint: "سيطلب منك PayPal حفظ طريقة الدفع للتجديدات.",
+        autoRenewManualHint: "دفع لمرة واحدة فقط. يمكنك تفعيل التجديد التلقائي لاحقًا من هذه الصفحة.",
       },
       loginHistory: {
         title: "سجل تسجيل الدخول",
