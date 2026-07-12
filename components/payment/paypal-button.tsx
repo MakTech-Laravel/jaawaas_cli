@@ -138,6 +138,13 @@ export function PayPalButton({
             };
 
             if (vaultRef.current) {
+              const origin =
+                typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+              const currentPath =
+                typeof window !== 'undefined'
+                  ? `${window.location.origin}${window.location.pathname}`
+                  : `${origin}/pricing`;
+
               orderPayload.payment_source = {
                 paypal: {
                   attributes: {
@@ -146,6 +153,12 @@ export function PayPalButton({
                       usage_type: 'MERCHANT',
                       customer_type: 'CONSUMER',
                     },
+                  },
+                  experience_context: {
+                    return_url: currentPath,
+                    cancel_url: currentPath,
+                    shipping_preference: 'NO_SHIPPING',
+                    user_action: 'PAY_NOW',
                   },
                 },
               };
