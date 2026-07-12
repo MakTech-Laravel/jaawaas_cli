@@ -1099,6 +1099,16 @@ const zhPartial = {
       tryAgain: "重试",
       priceInfo: "{plan} 计划（{cycle}）",
       processingTime: "💡 这通常需要 2-5 个工作日。"
+    },
+    authGate: {
+      guestTitle: "需要制造商账户",
+      guestDescription: "定价和订阅仅面向制造商。请登录您的制造商账户，或创建一个账户以继续。",
+      wrongRoleTitle: "请使用制造商账户",
+      wrongRoleDescription: "您当前登录的账户不是制造商账户。请创建制造商账户以订阅，或联系支持获取帮助。",
+      signIn: "登录",
+      createManufacturer: "创建制造商账户",
+      contactSupport: "联系支持",
+      close: "稍后再说"
     }
   },
 
