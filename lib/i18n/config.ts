@@ -7,7 +7,10 @@ export type Locale = "en" | "es" | "ar" | "he";
 export type Direction = "ltr" | "rtl";
 
 export interface LocaleConfig {
-  /** BCP-47 language code sent as `Accept-Language` to the backend. */
+  /**
+   * Frontend UI locale code (localStorage / i18n keys).
+   * Chinese uses the legacy `es` slot; API requests map it to `zh_CN`.
+   */
   code: Locale;
   /** Native name shown in the language dropdown. */
   nativeName: string;

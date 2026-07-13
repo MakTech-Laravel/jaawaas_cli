@@ -58,7 +58,8 @@ function applyToDocument(locale: Locale, dir: Direction) {
   if (typeof document === "undefined") return;
 
   const html = document.documentElement;
-  html.setAttribute("lang", locale);
+  // UI still stores Chinese under the legacy "es" slot; expose real BCP-47 to the document.
+  html.setAttribute("lang", locale === "es" ? "zh-CN" : locale);
   html.setAttribute("dir", dir);
 }
 

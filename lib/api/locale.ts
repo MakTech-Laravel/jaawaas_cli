@@ -1,5 +1,5 @@
 /** API locale codes used for Accept-Language and CMS content saves. */
-const API_CONTENT_LOCALES = new Set(["en", "es", "ar", "he"])
+const API_CONTENT_LOCALES = new Set(["en", "ar", "he", "zh_CN"])
 
 /**
  * Read the raw locale code stored in the browser (frontend i18n code).
@@ -27,17 +27,22 @@ export function readRawLanguageFromStorage(): string {
 
 /**
  * Map a frontend locale code to the API content / Accept-Language code.
- * The `es` UI slot is Chinese; the backend uses `es` for Chinese CMS content.
+ *
+ * The UI still uses `es` as the Chinese language-slot code (localStorage / i18n).
+ * The backend stores and serves Chinese CMS/API content as `zh_CN`.
  */
 export function mapToApiLocale(code: string): string {
   const trimmed = code.trim()
+
+  // UI Chinese slot + legacy/storage Chinese codes → backend zh_CN
+  if (trimmed === "es" || trimmed === "zh" || trimmed.startsWith("zh")) {
+    return "zh_CN"
+  }
+
   if (API_CONTENT_LOCALES.has(trimmed)) {
     return trimmed
   }
-  // Legacy storage values (zh, zh_CN, etc.) → Chinese content locale
-  if (trimmed === "zh" || trimmed.startsWith("zh")) {
-    return "es"
-  }
+
   return "en"
 }
 
