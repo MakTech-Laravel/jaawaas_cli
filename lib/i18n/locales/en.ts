@@ -2094,7 +2094,17 @@ const en = {
         daysRemaining: "({days} days remaining)",
         renewsOn: "Your subscription renews on {date}",
         endsOn: "Your subscription will end on {date}",
-        noActiveSubscription: "No active subscription plan"
+        noActiveSubscription: "No active subscription plan",
+        autoRenewTitle: "Auto-renew",
+        autoRenewEnabledDesc: "Your plan will renew automatically at the end of the billing period using your saved PayPal method.",
+        autoRenewDisabledDesc: "Auto-renew is off. You will pay manually when this period ends, or enable auto-renew to save a PayPal method.",
+        autoRenewEnable: "Enable auto-renew",
+        autoRenewDisable: "Disable auto-renew",
+        autoRenewSavePaypal: "Save PayPal for auto-renew",
+        autoRenewSavePaypalDesc: "Authorize PayPal once (no charge now). We will use it only for renewals of your current plan.",
+        autoRenewUpdated: "Auto-renew settings updated",
+        autoRenewVaultHint: "PayPal will ask to save your payment method for renewals.",
+        autoRenewManualHint: "One-time payment only. You can enable auto-renew later from this page.",
       },
       loginHistory: {
         title: "Login History",

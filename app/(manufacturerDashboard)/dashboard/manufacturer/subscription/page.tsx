@@ -9,6 +9,8 @@ import { useSubscription, PlanId } from "@/lib/subscription-context"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { PayPalButton } from "@/components/payment/paypal-button"
+import { PayPalVaultSetupButton } from "@/components/payment/paypal-vault-setup-button"
+import { Switch } from "@/components/ui/switch"
 import Swal from "sweetalert2"
 import { useTranslation } from "@/lib/i18n"
 import { 
@@ -22,7 +24,8 @@ import {
   Loader2,
   X as XIcon,
   CheckCircle,
-  Shield
+  Shield,
+  RefreshCw
 } from "lucide-react"
 
 const localT = {
@@ -79,7 +82,11 @@ const localT = {
     doNotClose: "Please do not close this window.",
     upgradeFailed: "Upgrade Failed",
     tryAgain: "Try Again",
-    upgradeImmediately: "💡 Your plan will be upgraded immediately after payment confirmation."
+    upgradeImmediately: "💡 Your plan will be upgraded immediately after payment confirmation.",
+    autoRenewOnConfirm: "Disable auto-renew for your current plan? You keep access until {date}, then pay manually to continue.",
+    autoRenewOffConfirm: "Enable auto-renew for your current plan? Renewals will use your saved PayPal method.",
+    yesDisableAutoRenew: "Disable auto-renew",
+    yesEnableAutoRenew: "Enable auto-renew",
   },
   ar: {
     paymentSuccess: "تم تأكيد الدفع! اشتراكك نشط الآن.",
@@ -134,7 +141,11 @@ const localT = {
     doNotClose: "يرجى عدم إغلاق هذه النافذة.",
     upgradeFailed: "فشلت الترقية",
     tryAgain: "حاول مرة أخرى",
-    upgradeImmediately: "💡 سيتم ترقية خطتك فورًا بعد تأكيد الدفع."
+    upgradeImmediately: "💡 سيتم ترقية خطتك فورًا بعد تأكيد الدفع.",
+    autoRenewOnConfirm: "إيقاف التجديد التلقائي لخطتك الحالية؟ ستحتفظ بالوصول حتى {date}، ثم تدفع يدويًا للمتابعة.",
+    autoRenewOffConfirm: "تفعيل التجديد التلقائي لخطتك الحالية؟ سيتم استخدام PayPal المحفوظ للتجديد.",
+    yesDisableAutoRenew: "إيقاف التجديد التلقائي",
+    yesEnableAutoRenew: "تفعيل التجديد التلقائي",
   },
   he: {
     paymentSuccess: "התשלום אושר! המנוי שלך פעיל כעת.",
@@ -189,7 +200,11 @@ const localT = {
     doNotClose: "נא לא לסגור חלון זה.",
     upgradeFailed: "השדרוג נכשל",
     tryAgain: "נסה שוב",
-    upgradeImmediately: "💡 התוכנית שלך תשודרג מיד לאחר אישור התשלום."
+    upgradeImmediately: "💡 התוכנית שלך תשודרג מיד לאחר אישור התשלום.",
+    autoRenewOnConfirm: "לכבות חידוש אוטומטי לתוכנית הנוכחית? תשמור על גישה עד {date}, ואז תשלם ידנית כדי להמשיך.",
+    autoRenewOffConfirm: "להפעיל חידוש אוטומטי לתוכנית הנוכחית? החידושים ישתמשו ב-PayPal השמור.",
+    yesDisableAutoRenew: "כבה חידוש אוטומטי",
+    yesEnableAutoRenew: "הפעל חידוש אוטומטי",
   },
   es: {
     paymentSuccess: "付款已确认！您的订阅现已激活。",
@@ -244,7 +259,11 @@ const localT = {
     doNotClose: "请勿关闭此窗口。",
     upgradeFailed: "升级失败",
     tryAgain: "重试",
-    upgradeImmediately: "💡 付款确认后，您的计划将立即升级。"
+    upgradeImmediately: "💡 付款确认后，您的计划将立即升级。",
+    autoRenewOnConfirm: "关闭当前套餐的自动续订？您可使用至 {date}，之后需手动付款继续。",
+    autoRenewOffConfirm: "启用当前套餐的自动续订？续订将使用已保存的 PayPal 方式。",
+    yesDisableAutoRenew: "关闭自动续订",
+    yesEnableAutoRenew: "启用自动续订",
   }
 }
 
@@ -270,6 +289,7 @@ export default function SubscriptionPage() {
     subscribeToPlan,
     cancelSubscription,
     upgradeSubscription,
+    setAutoRenew,
   } = useSubscription()
 
   const formatDate = (dateString?: string) => {
@@ -290,6 +310,9 @@ export default function SubscriptionPage() {
   const [upgrading, setUpgrading] = useState<PlanId | null>(null)
   const [canceling, setCanceling] = useState(false)
   const [confirmingPayment, setConfirmingPayment] = useState(false)
+  const [togglingAutoRenew, setTogglingAutoRenew] = useState(false)
+  const [showVaultSetup, setShowVaultSetup] = useState(false)
+  const [upgradeAutoRenew, setUpgradeAutoRenew] = useState(true)
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
     subscription?.billingCycle || "monthly"
   )
@@ -322,6 +345,8 @@ export default function SubscriptionPage() {
     const planIdParam = searchParams.get('planId')
     const cycleParam = searchParams.get('cycle')
     const priceParam = searchParams.get('price')
+    const autoRenewParam = searchParams.get('autoRenew')
+    const paypalVaultIdParam = searchParams.get('paypalVaultId')
 
     if (transactionId && planIdParam) {
       processedRef.current = true
@@ -335,15 +360,28 @@ export default function SubscriptionPage() {
           const dbPlanId = parseInt(planIdParam, 10);
           const paidAmount = priceParam ? parseFloat(priceParam) : 0;
           const billingInterval = cycleParam === "yearly" ? "year" : "month";
+          const wantsAutoRenew = autoRenewParam !== "0";
 
-          const payload = {
+          const payload: {
+            plan_id: number
+            payment_method: string
+            billing_interval: string
+            payment_id: string
+            auto_renew: boolean
+            paid_amount: number
+            paypal_vault_id?: string
+          } = {
             plan_id: dbPlanId,
             payment_method: "paypal",
             billing_interval: billingInterval,
             payment_id: transactionId,
-            auto_renew: true,
-            paid_amount: paidAmount
+            auto_renew: wantsAutoRenew,
+            paid_amount: paidAmount,
           };
+
+          if (paypalVaultIdParam) {
+            payload.paypal_vault_id = paypalVaultIdParam;
+          }
 
           console.log("[Subscription] Confirming payment with payload:", payload);
 
@@ -492,7 +530,7 @@ export default function SubscriptionPage() {
   }
 
   // ── PayPal payment callbacks for upgrade ────────────────────────
-  const handleUpgradePaymentSuccess = async (paymentId: string) => {
+  const handleUpgradePaymentSuccess = async (paymentId: string, meta?: { vaultId?: string | null }) => {
     if (!selectedUpgradePlan) return
     setPaymentStatus("processing")
     
@@ -502,8 +540,9 @@ export default function SubscriptionPage() {
         payment_method: "paypal",
         billing_interval: selectedUpgradePlan.cycle === "yearly" ? "year" : "month",
         payment_id: paymentId,
-        auto_renew: true,
-        paid_amount: selectedUpgradePlan.price
+        auto_renew: upgradeAutoRenew,
+        paid_amount: selectedUpgradePlan.price,
+        ...(meta?.vaultId ? { paypal_vault_id: meta.vaultId } : {}),
       })
 
       if (res.success) {
@@ -511,6 +550,7 @@ export default function SubscriptionPage() {
         setTimeout(() => {
           setSelectedUpgradePlan(null)
           setPaymentStatus("idle")
+          setUpgradeAutoRenew(true)
         }, 3000)
       } else {
         setPaymentStatus("error")
@@ -532,6 +572,68 @@ export default function SubscriptionPage() {
     setSelectedUpgradePlan(null)
     setPaymentStatus("idle")
     setPaymentError(null)
+    setUpgradeAutoRenew(true)
+  }
+
+  const handleAutoRenewToggle = async (nextEnabled: boolean) => {
+    if (!subscription || togglingAutoRenew) return
+
+    if (nextEnabled && !subscription.hasReusablePaymentMethod) {
+      setShowVaultSetup(true)
+      return
+    }
+
+    const periodEndText = subscription.currentPeriodEnd ? formatDate(subscription.currentPeriodEnd) : "N/A"
+    const result = await Swal.fire({
+      title: nextEnabled
+        ? (t.mfg.subscription.autoRenewEnable || local.yesEnableAutoRenew)
+        : (t.mfg.subscription.autoRenewDisable || local.yesDisableAutoRenew),
+      html: nextEnabled
+        ? local.autoRenewOffConfirm
+        : local.autoRenewOnConfirm.replace("{date}", periodEndText),
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: nextEnabled ? "#0f172a" : "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: nextEnabled ? local.yesEnableAutoRenew : local.yesDisableAutoRenew,
+      cancelButtonText: local.cancel,
+    })
+
+    if (!result.isConfirmed) return
+
+    setTogglingAutoRenew(true)
+    try {
+      const res = await setAutoRenew({ enabled: nextEnabled })
+      if (res.success) {
+        toast.success(res.message || t.mfg.subscription.autoRenewUpdated)
+      } else {
+        toast.error(res.message)
+      }
+    } catch {
+      toast.error(local.unexpectedError)
+    } finally {
+      setTogglingAutoRenew(false)
+    }
+  }
+
+  const handleVaultSetupSuccess = async (vaultSetupToken: string) => {
+    setTogglingAutoRenew(true)
+    try {
+      const res = await setAutoRenew({
+        enabled: true,
+        vault_setup_token: vaultSetupToken,
+      })
+      if (res.success) {
+        setShowVaultSetup(false)
+        toast.success(res.message || t.mfg.subscription.autoRenewUpdated)
+      } else {
+        toast.error(res.message)
+      }
+    } catch {
+      toast.error(local.unexpectedError)
+    } finally {
+      setTogglingAutoRenew(false)
+    }
   }
 
   // ── Cancel subscription with confirmation ───────────────────────
@@ -679,6 +781,56 @@ export default function SubscriptionPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Auto-renew management for current plan */}
+      {subscription && (subscription.status === "active" || subscription.status === "past_due" || subscription.status === "trialing") && (
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <RefreshCw className="h-5 w-5 text-secondary" />
+                  {t.mfg.subscription.autoRenewTitle}
+                </CardTitle>
+                <CardDescription>
+                  {subscription.autoRenew
+                    ? t.mfg.subscription.autoRenewEnabledDesc
+                    : t.mfg.subscription.autoRenewDisabledDesc}
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">
+                  {subscription.autoRenew
+                    ? t.mfg.subscription.active
+                    : t.mfg.subscription.canceling}
+                </span>
+                <Switch
+                  checked={Boolean(subscription.autoRenew)}
+                  disabled={togglingAutoRenew}
+                  onCheckedChange={(checked) => {
+                    void handleAutoRenewToggle(checked)
+                  }}
+                />
+              </div>
+            </div>
+          </CardHeader>
+          {!subscription.autoRenew && !subscription.hasReusablePaymentMethod && (
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                {t.mfg.subscription.autoRenewSavePaypalDesc}
+              </p>
+              <Button
+                className="mt-3"
+                variant="outline"
+                onClick={() => setShowVaultSetup(true)}
+                disabled={togglingAutoRenew}
+              >
+                {t.mfg.subscription.autoRenewSavePaypal}
+              </Button>
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       {/* Plan Comparison */}
       <div>
@@ -1038,10 +1190,30 @@ export default function SubscriptionPage() {
                     </div>
                   </div>
 
-                  {/* PayPal Button */}
+                  <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 rounded border-gray-300"
+                      checked={upgradeAutoRenew}
+                      onChange={(e) => setUpgradeAutoRenew(e.target.checked)}
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-gray-900">
+                        {t.mfg.subscription.autoRenewTitle}
+                      </span>
+                      <span className="mt-1 block text-xs text-gray-600 leading-relaxed">
+                        {upgradeAutoRenew
+                          ? t.mfg.subscription.autoRenewVaultHint
+                          : t.mfg.subscription.autoRenewManualHint}
+                      </span>
+                    </span>
+                  </label>
+
                   <PayPalButton
+                    key={upgradeAutoRenew ? "upgrade-vault" : "upgrade-one-time"}
                     amount={selectedUpgradePlan.price}
                     currency="USD"
+                    vault={upgradeAutoRenew}
                     onSuccess={handleUpgradePaymentSuccess}
                     onError={handleUpgradePaymentError}
                   />
@@ -1053,6 +1225,47 @@ export default function SubscriptionPage() {
                     </p>
                   </div>
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showVaultSetup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4">
+          <div className="w-full max-w-sm rounded-lg bg-white shadow-xl overflow-hidden">
+            <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    {t.mfg.subscription.autoRenewSavePaypal}
+                  </h2>
+                  <p className="mt-1 text-xs sm:text-sm text-gray-600">
+                    {t.mfg.subscription.autoRenewSavePaypalDesc}
+                  </p>
+                </div>
+                <button
+                  onClick={() => !togglingAutoRenew && setShowVaultSetup(false)}
+                  className="shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                  disabled={togglingAutoRenew}
+                >
+                  <XIcon className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            <div className="px-4 sm:px-6 py-4 sm:py-6 space-y-4">
+              {togglingAutoRenew ? (
+                <div className="flex flex-col items-center justify-center py-8 gap-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+                  <p className="text-sm text-muted-foreground">{t.mfg.subscription.autoRenewEnable}...</p>
+                </div>
+              ) : (
+                <PayPalVaultSetupButton
+                  onSuccess={(token) => {
+                    void handleVaultSetupSuccess(token)
+                  }}
+                  onError={(error) => toast.error(error)}
+                />
               )}
             </div>
           </div>

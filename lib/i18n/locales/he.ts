@@ -2029,7 +2029,17 @@ const he = {
         daysRemaining: "(נותרו {days} ימים)",
         renewsOn: "המנוי שלך יתחדש ב-{date}",
         endsOn: "המנוי שלך יסתיים ב-{date}",
-        noActiveSubscription: "אין תוכנית מנוי פעילה"
+        noActiveSubscription: "אין תוכנית מנוי פעילה",
+        autoRenewTitle: "חידוש אוטומטי",
+        autoRenewEnabledDesc: "התוכנית שלך תחודש אוטומטית בסוף תקופת החיוב באמצעות שיטת PayPal השמורה.",
+        autoRenewDisabledDesc: "החידוש האוטומטי כבוי. תשלם ידנית בסוף התקופה, או הפעל חידוש אוטומטי כדי לשמור שיטת PayPal.",
+        autoRenewEnable: "הפעל חידוש אוטומטי",
+        autoRenewDisable: "כבה חידוש אוטומטי",
+        autoRenewSavePaypal: "שמור PayPal לחידוש אוטומטי",
+        autoRenewSavePaypalDesc: "אשר את PayPal פעם אחת (ללא חיוב כעת). נשתמש בזה רק לחידושי התוכנית הנוכחית.",
+        autoRenewUpdated: "הגדרות החידוש האוטומטי עודכנו",
+        autoRenewVaultHint: "PayPal יבקש לשמור את אמצעי התשלום לחידושים.",
+        autoRenewManualHint: "תשלום חד-פעמי בלבד. אפשר להפעיל חידוש אוטומטי מאוחר יותר בעמוד זה.",
       },
       loginHistory: {
         title: "היסטוריית התחברויות",
