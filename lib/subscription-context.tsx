@@ -260,7 +260,7 @@ interface SubscriptionContextType {
   subscribeToPlan: (payload: {
     plan_id: number
     payment_method: string
-    billing_interval: string
+    billing_interval: "yearly" | "monthly"
     payment_id: string
     auto_renew: boolean
     paid_amount: number
@@ -269,7 +269,7 @@ interface SubscriptionContextType {
   upgradeSubscription: (payload: {
     plan_id: number
     payment_method: string
-    billing_interval: string
+    billing_interval: "yearly" | "monthly"
     payment_id: string
     auto_renew: boolean
     paid_amount: number
@@ -282,6 +282,11 @@ interface SubscriptionContextType {
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined)
+
+/** GET responses may use "year"/"month"; POST subscribe/upgrade use "yearly"/"monthly". */
+function isYearlyBillingInterval(interval?: string | null): boolean {
+  return interval === "year" || interval === "yearly"
+}
 
 function transformBackendPlanToSubscriptionPlan(backendPlan: any): SubscriptionPlan {
   const mappedId = backendPlan.name.toLowerCase() as PlanId;
@@ -444,15 +449,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
           setSubscription({
             planId: mappedPlanId,
             status: subData.status,
-            billingCycle: subData.billing_interval === "year" ? "yearly" : "monthly",
+            billingCycle: isYearlyBillingInterval(subData.billing_interval) ? "yearly" : "monthly",
             currentPeriodStart: subData.starts_at,
             currentPeriodEnd: subData.ends_at,
             cancelAtPeriodEnd: !subData.auto_renew,
             daysRemaining: subData.days_remaining,
-            priceAmount: subData.billing_interval === "year"
+            priceAmount: isYearlyBillingInterval(subData.billing_interval)
               ? subData.plan?.yearly_price?.amount
               : subData.plan?.monthly_price?.amount,
-            priceCurrency: subData.billing_interval === "year"
+            priceCurrency: isYearlyBillingInterval(subData.billing_interval)
               ? (subData.plan?.yearly_price?.currency || "USD")
               : (subData.plan?.monthly_price?.currency || "USD"),
             autoRenew: subData.auto_renew,
@@ -747,15 +752,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
             setSubscription({
               planId: mappedPlanId,
               status: subData.status,
-              billingCycle: subData.billing_interval === "year" ? "yearly" : "monthly",
+              billingCycle: isYearlyBillingInterval(subData.billing_interval) ? "yearly" : "monthly",
               currentPeriodStart: subData.starts_at,
               currentPeriodEnd: subData.ends_at,
               cancelAtPeriodEnd: !subData.auto_renew,
               daysRemaining: subData.days_remaining,
-              priceAmount: subData.billing_interval === "year"
+              priceAmount: isYearlyBillingInterval(subData.billing_interval)
                 ? subData.plan?.yearly_price?.amount
                 : subData.plan?.monthly_price?.amount,
-              priceCurrency: subData.billing_interval === "year"
+              priceCurrency: isYearlyBillingInterval(subData.billing_interval)
                 ? (subData.plan?.yearly_price?.currency || "USD")
                 : (subData.plan?.monthly_price?.currency || "USD"),
               autoRenew: subData.auto_renew,
@@ -798,15 +803,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         setSubscription({
           planId: mappedPlanId,
           status: subData.status,
-          billingCycle: subData.billing_interval === "year" ? "yearly" : "monthly",
+          billingCycle: isYearlyBillingInterval(subData.billing_interval) ? "yearly" : "monthly",
           currentPeriodStart: subData.starts_at,
           currentPeriodEnd: subData.ends_at,
           cancelAtPeriodEnd: !subData.auto_renew,
           daysRemaining: subData.days_remaining,
-          priceAmount: subData.billing_interval === "year"
+          priceAmount: isYearlyBillingInterval(subData.billing_interval)
             ? subData.plan?.yearly_price?.amount
             : subData.plan?.monthly_price?.amount,
-          priceCurrency: subData.billing_interval === "year"
+          priceCurrency: isYearlyBillingInterval(subData.billing_interval)
             ? (subData.plan?.yearly_price?.currency || "USD")
             : (subData.plan?.monthly_price?.currency || "USD"),
           autoRenew: subData.auto_renew,
@@ -829,7 +834,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const subscribeToPlan = async (payload: {
     plan_id: number
     payment_method: string
-    billing_interval: string
+    billing_interval: "yearly" | "monthly"
     payment_id: string
     auto_renew: boolean
     paid_amount: number
@@ -861,15 +866,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
             setSubscription({
               planId: mappedPlanId,
               status: subData.status,
-              billingCycle: subData.billing_interval === "year" ? "yearly" : "monthly",
+              billingCycle: isYearlyBillingInterval(subData.billing_interval) ? "yearly" : "monthly",
               currentPeriodStart: subData.starts_at,
               currentPeriodEnd: subData.ends_at,
               cancelAtPeriodEnd: !subData.auto_renew,
               daysRemaining: subData.days_remaining,
-              priceAmount: subData.billing_interval === "year"
+              priceAmount: isYearlyBillingInterval(subData.billing_interval)
                 ? subData.plan?.yearly_price?.amount
                 : subData.plan?.monthly_price?.amount,
-              priceCurrency: subData.billing_interval === "year"
+              priceCurrency: isYearlyBillingInterval(subData.billing_interval)
                 ? (subData.plan?.yearly_price?.currency || "USD")
                 : (subData.plan?.monthly_price?.currency || "USD"),
               autoRenew: subData.auto_renew,
@@ -895,7 +900,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const upgradeSubscription = async (payload: {
     plan_id: number
     payment_method: string
-    billing_interval: string
+    billing_interval: "yearly" | "monthly"
     payment_id: string
     auto_renew: boolean
     paid_amount: number
@@ -923,15 +928,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
             setSubscription({
               planId: mappedPlanId,
               status: subData.status,
-              billingCycle: subData.billing_interval === "year" ? "yearly" : "monthly",
+              billingCycle: isYearlyBillingInterval(subData.billing_interval) ? "yearly" : "monthly",
               currentPeriodStart: subData.starts_at,
               currentPeriodEnd: subData.ends_at,
               cancelAtPeriodEnd: !subData.auto_renew,
               daysRemaining: subData.days_remaining,
-              priceAmount: subData.billing_interval === "year"
+              priceAmount: isYearlyBillingInterval(subData.billing_interval)
                 ? subData.plan?.yearly_price?.amount
                 : subData.plan?.monthly_price?.amount,
-              priceCurrency: subData.billing_interval === "year"
+              priceCurrency: isYearlyBillingInterval(subData.billing_interval)
                 ? (subData.plan?.yearly_price?.currency || "USD")
                 : (subData.plan?.monthly_price?.currency || "USD"),
               autoRenew: subData.auto_renew,

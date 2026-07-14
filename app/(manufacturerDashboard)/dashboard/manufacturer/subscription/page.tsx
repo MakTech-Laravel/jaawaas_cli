@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { useSubscription, PlanId } from "@/lib/subscription-context"
+import { useSubscription, PlanId, SubscriptionPlan } from "@/lib/subscription-context"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { PayPalButton } from "@/components/payment/paypal-button"
@@ -25,8 +25,12 @@ import {
   X as XIcon,
   CheckCircle,
   Shield,
-  RefreshCw
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
+
+const MAX_VISIBLE_FEATURES = 5
 
 const localT = {
   en: {
@@ -87,6 +91,8 @@ const localT = {
     autoRenewOffConfirm: "Enable auto-renew for your current plan? Renewals will use your saved PayPal method.",
     yesDisableAutoRenew: "Disable auto-renew",
     yesEnableAutoRenew: "Enable auto-renew",
+    showMore: "Show more",
+    showLess: "Show less",
   },
   ar: {
     paymentSuccess: "تم تأكيد الدفع! اشتراكك نشط الآن.",
@@ -146,6 +152,8 @@ const localT = {
     autoRenewOffConfirm: "تفعيل التجديد التلقائي لخطتك الحالية؟ سيتم استخدام PayPal المحفوظ للتجديد.",
     yesDisableAutoRenew: "إيقاف التجديد التلقائي",
     yesEnableAutoRenew: "تفعيل التجديد التلقائي",
+    showMore: "عرض المزيد",
+    showLess: "عرض أقل",
   },
   he: {
     paymentSuccess: "התשלום אושר! המנוי שלך פעיל כעת.",
@@ -205,6 +213,8 @@ const localT = {
     autoRenewOffConfirm: "להפעיל חידוש אוטומטי לתוכנית הנוכחית? החידושים ישתמשו ב-PayPal השמור.",
     yesDisableAutoRenew: "כבה חידוש אוטומטי",
     yesEnableAutoRenew: "הפעל חידוש אוטומטי",
+    showMore: "הצג עוד",
+    showLess: "הצג פחות",
   },
   es: {
     paymentSuccess: "付款已确认！您的订阅现已激活。",
@@ -264,6 +274,8 @@ const localT = {
     autoRenewOffConfirm: "启用当前套餐的自动续订？续订将使用已保存的 PayPal 方式。",
     yesDisableAutoRenew: "关闭自动续订",
     yesEnableAutoRenew: "启用自动续订",
+    showMore: "显示更多",
+    showLess: "收起",
   }
 }
 
@@ -273,6 +285,94 @@ interface UpgradePlanSelection {
   name: string
   price: number
   cycle: "monthly" | "yearly"
+}
+
+type LocalSubscriptionCopy = (typeof localT)[keyof typeof localT]
+
+function getPlanFeatureLabels(
+  planOption: SubscriptionPlan,
+  local: LocalSubscriptionCopy,
+  locale: string
+): string[] {
+  const labels: string[] = []
+
+  const productLimitFeature = planOption.rawFeatures?.find((f) => f.features?.key === "product_limit")
+  if (productLimitFeature?.label) {
+    labels.push(productLimitFeature.label)
+  } else if (planOption.limits.products === -1) {
+    labels.push(
+      local.unlimited + " " + (locale === "ar" ? "منتجات" : locale === "he" ? "מוצרים" : locale === "es" ? "产品" : "products")
+    )
+  } else {
+    labels.push(local.upToProducts.replace("{count}", String(planOption.limits.products)))
+  }
+
+  const inquiriesLimitFeature = planOption.rawFeatures?.find(
+    (f) => f.features?.key === "inquiries_limit" || f.features?.key === "inquiry_limit"
+  )
+  if (inquiriesLimitFeature?.label) {
+    labels.push(inquiriesLimitFeature.label)
+  } else if (planOption.limits.inquiriesPerMonth === -1) {
+    labels.push(
+      local.unlimited + " " + (locale === "ar" ? "استفسارات" : locale === "he" ? "פניות" : locale === "es" ? "询盘" : "inquiries")
+    )
+  } else {
+    labels.push(local.upToInquiries.replace("{count}", String(planOption.limits.inquiriesPerMonth)))
+  }
+
+  const messagesLimitFeature = planOption.rawFeatures?.find(
+    (f) => f.features?.key === "messages_limit" || f.features?.key === "message_limit"
+  )
+  if (messagesLimitFeature?.label) {
+    labels.push(messagesLimitFeature.label)
+  } else if (planOption.limits.messagesPerMonth === -1) {
+    labels.push(
+      local.unlimited + " " + (locale === "ar" ? "رسائل" : locale === "he" ? "הודעות" : locale === "es" ? "消息" : "messages")
+    )
+  } else {
+    labels.push(local.upToMessages.replace("{count}", String(planOption.limits.messagesPerMonth)))
+  }
+
+  const teamLimitFeature = planOption.rawFeatures?.find((f) => f.features?.key === "team_users_limit")
+  if (teamLimitFeature?.label) {
+    labels.push(teamLimitFeature.label)
+  } else if (planOption.limits.teamMembers === -1) {
+    labels.push(
+      local.unlimited + " " + (locale === "ar" ? "أعضاء الفريق" : locale === "he" ? "חברי צוות" : locale === "es" ? "团队成员" : "team members")
+    )
+  } else {
+    const pluralStr = planOption.limits.teamMembers !== 1 ? "s" : ""
+    labels.push(
+      local.teamMembersCount.replace("{count}", String(planOption.limits.teamMembers)).replace("{plural}", pluralStr)
+    )
+  }
+
+  if (planOption.rawFeatures) {
+    planOption.rawFeatures
+      .filter((f) => {
+        const key = f.features?.key
+        return (
+          key !== "product_limit" &&
+          key !== "team_users_limit" &&
+          key !== "inquiry_limit" &&
+          key !== "inquiries_limit" &&
+          key !== "message_limit" &&
+          key !== "messages_limit"
+        )
+      })
+      .forEach((feature) => {
+        const label = feature.label || feature.features?.name
+        if (label) labels.push(label)
+      })
+  } else {
+    if (planOption.features.advancedAnalytics) labels.push(local.advancedAnalytics)
+    if (planOption.features.prioritySearchVisibility) labels.push(local.priorityVisibility)
+    if (planOption.features.featuredSupplierBadge) labels.push(local.featuredSupplier)
+    if (planOption.features.dedicatedAccountManager) labels.push(local.dedicatedManager)
+    if (planOption.features.apiAccess) labels.push(local.apiAccess)
+  }
+
+  return labels
 }
 
 export default function SubscriptionPage() {
@@ -313,6 +413,7 @@ export default function SubscriptionPage() {
   const [togglingAutoRenew, setTogglingAutoRenew] = useState(false)
   const [showVaultSetup, setShowVaultSetup] = useState(false)
   const [upgradeAutoRenew, setUpgradeAutoRenew] = useState(true)
+  const [expandedPlanFeatures, setExpandedPlanFeatures] = useState<Partial<Record<PlanId, boolean>>>({})
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
     subscription?.billingCycle || "monthly"
   )
@@ -359,13 +460,14 @@ export default function SubscriptionPage() {
         try {
           const dbPlanId = parseInt(planIdParam, 10);
           const paidAmount = priceParam ? parseFloat(priceParam) : 0;
-          const billingInterval = cycleParam === "yearly" ? "year" : "month";
+          // Backend expects "yearly" | "monthly" on POST /manufacturer/subscriptions/subscribe
+          const billingInterval = cycleParam === "yearly" ? "yearly" : "monthly";
           const wantsAutoRenew = autoRenewParam !== "0";
 
           const payload: {
             plan_id: number
             payment_method: string
-            billing_interval: string
+            billing_interval: "yearly" | "monthly"
             payment_id: string
             auto_renew: boolean
             paid_amount: number
@@ -538,7 +640,7 @@ export default function SubscriptionPage() {
       const res = await upgradeSubscription({
         plan_id: selectedUpgradePlan.backendId,
         payment_method: "paypal",
-        billing_interval: selectedUpgradePlan.cycle === "yearly" ? "year" : "month",
+        billing_interval: selectedUpgradePlan.cycle,
         payment_id: paymentId,
         auto_renew: upgradeAutoRenew,
         paid_amount: selectedUpgradePlan.price,
@@ -865,7 +967,7 @@ export default function SubscriptionPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid items-stretch gap-6 lg:grid-cols-3">
           {allPlans.map((planOption) => {
             const isCurrentPlan = planOption.id === currentPlanId && (subscription?.billingCycle || "monthly") === billingCycle
             const isSamePlanDifferentCycle = planOption.id === currentPlanId && (subscription?.billingCycle || "monthly") !== billingCycle
@@ -878,29 +980,41 @@ export default function SubscriptionPage() {
             const displayPrice = billingCycle === "monthly" 
               ? planOption.monthlyPrice 
               : planOption.yearlyPrice
+
+            const featureLabels = getPlanFeatureLabels(planOption, local, locale)
+            const isFeaturesExpanded = Boolean(expandedPlanFeatures[planOption.id])
+            const hasMoreFeatures = featureLabels.length > MAX_VISIBLE_FEATURES
+            const visibleFeatures = isFeaturesExpanded
+              ? featureLabels
+              : featureLabels.slice(0, MAX_VISIBLE_FEATURES)
             
             return (
               <Card 
                 key={planOption.id} 
                 className={cn(
-                  "relative transition-all",
+                  "relative flex h-full flex-col gap-0 transition-all",
                   isCurrentPlan ? "border-secondary ring-1 ring-secondary" : "hover:border-secondary/50"
                 )}
               >
-                <CardHeader>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <CardTitle>{planOption.name}</CardTitle>
-                    {planOption.id === "growth" && !isCurrentPlan && (
-                      <Badge className="bg-secondary text-secondary-foreground">{t.mfg.subscription.popular}</Badge>
-                    )}
-                    {isCurrentPlan && (
-                      <Badge variant="outline" className="border-secondary text-secondary">{t.mfg.subscription.current}</Badge>
-                    )}
+                <CardHeader className="pb-4">
+                  <div className="flex min-h-7 items-start justify-between gap-2">
+                    <CardTitle className="text-lg">{planOption.name}</CardTitle>
+                    {isCurrentPlan ? (
+                      <Badge variant="outline" className="shrink-0 border-secondary text-secondary">
+                        {t.mfg.subscription.current}
+                      </Badge>
+                    ) : planOption.id === "growth" ? (
+                      <Badge className="shrink-0 bg-secondary text-secondary-foreground">
+                        {t.mfg.subscription.popular}
+                      </Badge>
+                    ) : null}
                   </div>
-                  <CardDescription>{planOption.description}</CardDescription>
+                  <CardDescription className="mt-2 line-clamp-2 min-h-10">
+                    {planOption.description}
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="mb-6">
+                <CardContent className="flex flex-1 flex-col pb-4">
+                  <div className="mb-5 min-h-14">
                     {displayPrice !== null && displayPrice !== undefined ? (
                       <>
                         <span className="text-2xl font-bold sm:text-3xl">
@@ -919,95 +1033,51 @@ export default function SubscriptionPage() {
                       <span className="text-xl font-semibold">Contact Sales</span>
                     )}
                   </div>
-                  <ul className="space-y-3">
-                    <li className="flex items-start gap-2 text-sm">
-                      <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
-                      {(() => {
-                        const productLimitFeature = planOption.rawFeatures?.find(f => f.features?.key === "product_limit");
-                        if (productLimitFeature?.label) return productLimitFeature.label;
-                        if (planOption.limits.products === -1) return local.unlimited + " " + (locale === "ar" ? "منتجات" : locale === "he" ? "מוצרים" : locale === "es" ? "产品" : "products");
-                        return local.upToProducts.replace('{count}', String(planOption.limits.products));
-                      })()}
-                    </li>
-                    <li className="flex items-start gap-2 text-sm">
-                      <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
-                      {(() => {
-                        const inquiriesLimitFeature = planOption.rawFeatures?.find(f => f.features?.key === "inquiries_limit" || f.features?.key === "inquiry_limit");
-                        if (inquiriesLimitFeature?.label) return inquiriesLimitFeature.label;
-                        if (planOption.limits.inquiriesPerMonth === -1) return local.unlimited + " " + (locale === "ar" ? "استفسارات" : locale === "he" ? "פניות" : locale === "es" ? "询盘" : "inquiries");
-                        return local.upToInquiries.replace('{count}', String(planOption.limits.inquiriesPerMonth));
-                      })()}
-                    </li>
-                    <li className="flex items-start gap-2 text-sm">
-                      <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
-                      {(() => {
-                        const messagesLimitFeature = planOption.rawFeatures?.find(f => f.features?.key === "messages_limit" || f.features?.key === "message_limit");
-                        if (messagesLimitFeature?.label) return messagesLimitFeature.label;
-                        if (planOption.limits.messagesPerMonth === -1) return local.unlimited + " " + (locale === "ar" ? "رسائل" : locale === "he" ? "הודעות" : locale === "es" ? "消息" : "messages");
-                        return local.upToMessages.replace('{count}', String(planOption.limits.messagesPerMonth));
-                      })()}
-                    </li>
-                    <li className="flex items-start gap-2 text-sm">
-                      <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
-                      {(() => {
-                        const teamLimitFeature = planOption.rawFeatures?.find(f => f.features?.key === "team_users_limit");
-                        if (teamLimitFeature?.label) return teamLimitFeature.label;
-                        if (planOption.limits.teamMembers === -1) return local.unlimited + " " + (locale === "ar" ? "أعضاء الفريق" : locale === "he" ? "חברי צוות" : locale === "es" ? "团队成员" : "team members");
-                        const pluralStr = planOption.limits.teamMembers !== 1 ? "s" : "";
-                        return local.teamMembersCount.replace('{count}', String(planOption.limits.teamMembers)).replace('{plural}', pluralStr);
-                      })()}
-                    </li>
-                    {planOption.rawFeatures ? (
-                      planOption.rawFeatures
-                        .filter((f) => {
-                          const key = f.features?.key;
-                          return key !== "product_limit" && key !== "team_users_limit" && key !== "inquiry_limit" && key !== "inquiries_limit" && key !== "message_limit" && key !== "messages_limit";
-                        })
-                        .map((feature) => (
-                          <li key={feature.id} className="flex items-start gap-2 text-sm">
-                            <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
-                            <span className="text-foreground">
-                              {feature.label || feature.features?.name}
-                            </span>
-                          </li>
-                        ))
-                    ) : (
-                      <>
-                        {planOption.features.advancedAnalytics && (
-                          <li className="flex items-start gap-2 text-sm">
-                            <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
-                            {local.advancedAnalytics}
-                          </li>
-                        )}
-                        {planOption.features.prioritySearchVisibility && (
-                          <li className="flex items-start gap-2 text-sm">
-                            <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
-                            {local.priorityVisibility}
-                          </li>
-                        )}
-                        {planOption.features.featuredSupplierBadge && (
-                          <li className="flex items-start gap-2 text-sm">
-                            <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
-                            {local.featuredSupplier}
-                          </li>
-                        )}
-                        {planOption.features.dedicatedAccountManager && (
-                          <li className="flex items-start gap-2 text-sm">
-                            <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
-                            {local.dedicatedManager}
-                          </li>
-                        )}
-                        {planOption.features.apiAccess && (
-                          <li className="flex items-start gap-2 text-sm">
-                            <Check className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
-                            {local.apiAccess}
-                          </li>
-                        )}
-                      </>
+
+                  <div
+                    className={cn(
+                      "flex flex-1 flex-col",
+                      !isFeaturesExpanded && "min-h-58"
                     )}
-                  </ul>
+                  >
+                    <ul className="space-y-2.5">
+                      {visibleFeatures.map((label, index) => (
+                        <li key={`${planOption.id}-feature-${index}`} className="flex items-start gap-2 text-sm">
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+                          <span className="leading-snug text-foreground">{label}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {hasMoreFeatures ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedPlanFeatures((prev) => ({
+                            ...prev,
+                            [planOption.id]: !isFeaturesExpanded,
+                          }))
+                        }
+                        className="mt-3 inline-flex items-center gap-1 self-start text-sm font-medium text-secondary hover:underline"
+                      >
+                        {isFeaturesExpanded ? (
+                          <>
+                            {local.showLess}
+                            <ChevronUp className="h-4 w-4" />
+                          </>
+                        ) : (
+                          <>
+                            {local.showMore}
+                            <ChevronDown className="h-4 w-4" />
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="mt-3 h-5" aria-hidden />
+                    )}
+                  </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="mt-auto pt-0">
                   {isCurrentPlan ? (
                     <Button variant="outline" className="w-full" disabled>
                       <Check className="mr-2 h-4 w-4" />
