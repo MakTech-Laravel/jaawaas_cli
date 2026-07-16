@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { useQuery } from "@tanstack/react-query"
 import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
@@ -135,13 +134,10 @@ export default function BlogPage() {
                   >
                     <div className="grid lg:grid-cols-5">
                       <div className="relative lg:col-span-3 h-64 sm:h-80 lg:h-full min-h-[320px] overflow-hidden bg-muted">
-                        <Image
+                        <img
                           src={featuredArticle.imageUrl}
                           alt={featuredArticle.title}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          sizes="(max-width: 1024px) 100vw, 60vw"
-                          priority
+                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-linear-to-r from-transparent to-card/20" />
                       </div>
@@ -201,12 +197,10 @@ export default function BlogPage() {
                           className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-300 hover:shadow-lg hover:border-primary/30 hover:-translate-y-1"
                         >
                           <div className="relative h-52 overflow-hidden bg-muted">
-                            <Image
+                            <img
                               src={article.imageUrl}
                               alt={article.title}
-                              fill
-                              className="object-cover transition-transform duration-500 group-hover:scale-105"
-                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                             <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                           </div>

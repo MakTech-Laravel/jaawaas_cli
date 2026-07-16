@@ -22,6 +22,7 @@ export interface ApiArticle {
   status: string
   published_at: string | null
   views?: number
+  image?: string | null
   image_url?: string | null
   category?: { id: number; name: string; slug?: string } | null
 }
@@ -31,8 +32,9 @@ const IMAGE_FALLBACK_BY_SLUG: Record<string, string> = Object.fromEntries(
 )
 
 function resolveImageUrl(article: ApiArticle): string {
-  if (article.image_url) {
-    return article.image_url
+  const apiImage = article.image ?? article.image_url
+  if (apiImage) {
+    return apiImage
   }
 
   return IMAGE_FALLBACK_BY_SLUG[article.slug] ?? "/blog/article_sourcing_platform.png"

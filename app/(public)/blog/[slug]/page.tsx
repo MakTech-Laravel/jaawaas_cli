@@ -3,7 +3,6 @@
 import React, { useMemo } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
 import { useQuery } from "@tanstack/react-query"
 import { SiteHeader } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
@@ -142,13 +141,10 @@ export default function BlogArticlePage() {
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="relative mt-8 lg:mt-10 w-full h-72 sm:h-96 lg:h-[460px] overflow-hidden rounded-xl shadow-xl border border-border bg-muted">
-            <Image
+            <img
               src={article.imageUrl}
               alt={article.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 1280px) 100vw, 1280px"
-              priority
+              className="absolute inset-0 h-full w-full object-cover"
             />
           </div>
 
@@ -220,12 +216,10 @@ export default function BlogArticlePage() {
                     className="group block rounded-xl border border-border bg-card overflow-hidden transition-all duration-200 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5"
                   >
                     <div className="relative h-32 w-full overflow-hidden bg-muted">
-                      <Image
+                      <img
                         src={related.imageUrl}
                         alt={related.title}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        sizes="300px"
+                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     </div>
                     <div className="p-4">

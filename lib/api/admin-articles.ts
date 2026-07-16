@@ -22,6 +22,7 @@ export interface AdminArticle {
   published_at?: string | null
   created_at?: string | null
   updated_at?: string | null
+  image?: string | null
   image_url?: string | null
   article_image?: string | null
   article_image_name?: string | null
@@ -133,7 +134,8 @@ export async function createAdminArticle(
   try {
     const response = await apiClient.post<{ message?: string; data: AdminArticle }>(
       "/admin/articles/create",
-      buildArticleFormData(payload)
+      buildArticleFormData(payload),
+      { headers: { "Content-Type": "multipart/form-data" } }
     )
     return response.data
   } catch (error) {
@@ -146,9 +148,15 @@ export async function updateAdminArticle(
   payload: ArticleFormPayload
 ): Promise<{ message?: string; data: AdminArticle }> {
   try {
-    const response = await apiClient.put<{ message?: string; data: AdminArticle }>(
+    // Laravel cannot parse multipart/form-data on native PUT.
+    // Same workaround as manufacturer products/profile: POST + _method=PUT.
+    const formData = buildArticleFormData(payload)
+    formData.append("_method", "PUT")
+
+    const response = await apiClient.post<{ message?: string; data: AdminArticle }>(
       `/admin/articles/${id}`,
-      buildArticleFormData(payload)
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
     )
     return response.data
   } catch (error) {
@@ -182,7 +190,9 @@ export function mapAdminArticleToInsight(article: AdminArticle) {
     views: Number(article.views) || 0,
     createdAt: String(article.created_at || ""),
     updatedAt: String(article.updated_at || ""),
-    featuredImage: article.image_url ? String(article.image_url) : null,
-    featuredImageName: article.image_url ? article.image_url.split("/").pop() : null,
+    featuredImage: (article.image ?? article.image_url) ? String(article.image ?? article.image_url) : null,
+    featuredImageName: (article.image ?? article.image_url)
+      ? String(article.image ?? article.image_url).split("/").pop()
+      : null,
   }
 }
