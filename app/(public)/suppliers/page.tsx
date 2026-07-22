@@ -73,6 +73,7 @@ function mapApiSupplierToMockSupplier(apiSupplier: ApiSupplier): Supplier {
     id: apiSupplier.id.toString(),
     name: apiSupplier.name,
     slug: apiSupplier.slug,
+    logo: apiSupplier.logo || undefined,
     description: apiSupplier.short_description || "",
     shortDescription: apiSupplier.short_description || "",
     industry: apiSupplier.industry || "Unknown",
@@ -429,8 +430,16 @@ function SuppliersPageContent() {
                           className="group block min-w-0 rounded-xl border border-border bg-card p-3 transition-all hover:border-secondary hover:shadow-md sm:rounded-2xl sm:p-5"
                         >
                           <div className="flex gap-3 sm:gap-6">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted sm:h-20 sm:w-20 sm:rounded-xl">
-                              <Factory className="h-5 w-5 text-muted-foreground sm:h-10 sm:w-10" />
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted sm:h-20 sm:w-20 sm:rounded-xl">
+                              {supplier.logo ? (
+                                <img
+                                  src={supplier.logo}
+                                  alt={supplier.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <Factory className="h-5 w-5 text-muted-foreground sm:h-10 sm:w-10" />
+                              )}
                             </div>
 
                             <div className="min-w-0 flex-1">

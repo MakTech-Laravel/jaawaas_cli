@@ -67,6 +67,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ slug:
     id: apiSupplier.id.toString(),
     name: apiSupplier.name,
     slug: apiSupplier.slug,
+    logo: apiSupplier.logo || undefined,
     description: apiSupplier.long_description || apiSupplier.short_description || "",
     shortDescription: apiSupplier.short_description || "",
     industry: apiSupplier.industry || "Unknown",
@@ -191,9 +192,16 @@ export default async function SupplierPage({ params }: { params: Promise<{ slug:
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-                {/* Logo Placeholder */}
-                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-muted">
-                  <Factory className="h-12 w-12 text-muted-foreground" />
+                <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-muted">
+                  {supplier.logo ? (
+                    <img
+                      src={supplier.logo}
+                      alt={supplier.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Factory className="h-12 w-12 text-muted-foreground" />
+                  )}
                 </div>
                 
                 <div>
