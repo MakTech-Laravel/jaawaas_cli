@@ -105,6 +105,7 @@ const localT = {
     missingFields: "Missing Fields",
     missingFieldsDesc: "Please provide both catalog name and PDF file",
     uploading: "Uploading...",
+    upload: "Upload",
     noCatalogs: "No catalogs uploaded yet.",
     uploadFirst: "Upload Your First Catalog",
     notFound: "No catalogs found",
@@ -163,6 +164,7 @@ const localT = {
     missingFields: "حقول مفقودة",
     missingFieldsDesc: "يرجى تقديم كل من اسم الكتالوج وملف PDF",
     uploading: "جاري التحميل...",
+    upload: "تحميل",
     noCatalogs: "لم يتم تحميل أي كتالوجات بعد.",
     uploadFirst: "قم بتحميل كتالوجك الأول",
     notFound: "لم يتم العثور على كتالوجات",
@@ -221,6 +223,7 @@ const localT = {
     missingFields: "שדות חסרים",
     missingFieldsDesc: "אנא ספק גם את שם הקטלוג וגם את קובץ ה-PDF",
     uploading: "מעלה...",
+    upload: "העלאה",
     noCatalogs: "טרם הועלו קטלוגים.",
     uploadFirst: "העלה את הקטלוג הראשון שלך",
     notFound: "לא נמצאו קטלוגים",
@@ -279,6 +282,7 @@ const localT = {
     missingFields: "必填项缺失",
     missingFieldsDesc: "请提供目录名称和 PDF 文件",
     uploading: "正在上传...",
+    upload: "上传",
     noCatalogs: "尚未上传任何目录。",
     uploadFirst: "上传您的第一个目录",
     notFound: "未找到目录",
@@ -660,7 +664,6 @@ export default function ManufacturerCatalogsPage() {
                               {catalog.status === "active" ? local.active : local.inactive}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground truncate">{catalog.file_path}</p>
                           <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-muted-foreground">
                             <span className="truncate">{catalog.file_size}</span>
                             <span className="flex items-center gap-1 truncate">
