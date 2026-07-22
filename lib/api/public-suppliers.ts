@@ -11,6 +11,7 @@ export interface Supplier {
   id: number
   name: string
   slug: string
+  logo: string | null
   short_description: string | null
   location: SupplierLocation
   industry: string | null
@@ -28,7 +29,6 @@ export interface Supplier {
   on_time_delivery: string | null
   // Details fields
   long_description?: string | null
-  logo?: string | null
   year_established?: string | null
   employee_count?: string | null
   revenue?: string | null
