@@ -2037,6 +2037,8 @@ const he = {
         autoRenewDisable: "כבה חידוש אוטומטי",
         autoRenewSavePaypal: "שמור PayPal לחידוש אוטומטי",
         autoRenewSavePaypalDesc: "אשר את PayPal פעם אחת (ללא חיוב כעת). נשתמש בזה רק לחידושי התוכנית הנוכחית.",
+        autoRenewUpdatePaymentMethod: "עדכן אמצעי תשלום",
+        autoRenewUpdatePaymentMethodDesc: "החלף את שיטת ה-PayPal השמורה. ללא חיוב כעת — ישמש לחידוש האוטומטי הבא.",
         autoRenewUpdated: "הגדרות החידוש האוטומטי עודכנו",
         autoRenewVaultHint: "PayPal יבקש לשמור את אמצעי התשלום לחידושים.",
         autoRenewManualHint: "תשלום חד-פעמי בלבד. אפשר להפעיל חידוש אוטומטי מאוחר יותר בעמוד זה.",

@@ -2041,6 +2041,8 @@ const zhPartial = {
         autoRenewDisable: "关闭自动续订",
         autoRenewSavePaypal: "保存 PayPal 用于自动续订",
         autoRenewSavePaypalDesc: "授权一次 PayPal（现在不扣款）。仅用于续订当前套餐。",
+        autoRenewUpdatePaymentMethod: "更新支付方式",
+        autoRenewUpdatePaymentMethodDesc: "更换已保存的 PayPal 方式。现在不扣款，将用于下次自动续订。",
         autoRenewUpdated: "自动续订设置已更新",
         autoRenewVaultHint: "PayPal 将请求保存付款方式以便续订。",
         autoRenewManualHint: "仅一次付款。稍后可在此页面启用自动续订。",
