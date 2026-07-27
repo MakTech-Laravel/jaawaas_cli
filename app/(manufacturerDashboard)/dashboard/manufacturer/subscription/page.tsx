@@ -9,7 +9,11 @@ import { useSubscription, PlanId, SubscriptionPlan } from "@/lib/subscription-co
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { PayPalButton } from "@/components/payment/paypal-button"
-import { PayPalVaultSetupButton } from "@/components/payment/paypal-vault-setup-button"
+import {
+  PayPalVaultSetupButton,
+  PAYPAL_PENDING_VAULT_MODE_KEY,
+  PAYPAL_PENDING_VAULT_TOKEN_KEY,
+} from "@/components/payment/paypal-vault-setup-button"
 import { Switch } from "@/components/ui/switch"
 import Swal from "sweetalert2"
 import { useTranslation } from "@/lib/i18n"
@@ -412,6 +416,7 @@ export default function SubscriptionPage() {
   const [confirmingPayment, setConfirmingPayment] = useState(false)
   const [togglingAutoRenew, setTogglingAutoRenew] = useState(false)
   const [showVaultSetup, setShowVaultSetup] = useState(false)
+  const [vaultSetupMode, setVaultSetupMode] = useState<"save" | "update">("save")
   const [upgradeAutoRenew, setUpgradeAutoRenew] = useState(true)
   const [expandedPlanFeatures, setExpandedPlanFeatures] = useState<Partial<Record<PlanId, boolean>>>({})
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
@@ -436,6 +441,7 @@ export default function SubscriptionPage() {
 
   // Track whether we've already processed URL params to prevent double-processing
   const processedRef = useRef(false)
+  const vaultReturnProcessedRef = useRef(false)
 
   useEffect(() => {
     if (typeof window === "undefined" || isLoading) return
@@ -681,6 +687,7 @@ export default function SubscriptionPage() {
     if (!subscription || togglingAutoRenew) return
 
     if (nextEnabled && !subscription.hasReusablePaymentMethod) {
+      setVaultSetupMode("save")
       setShowVaultSetup(true)
       return
     }
@@ -718,7 +725,7 @@ export default function SubscriptionPage() {
     }
   }
 
-  const handleVaultSetupSuccess = async (vaultSetupToken: string) => {
+  const handleVaultSetupSuccess = async (vaultSetupToken: string, mode: "save" | "update" = "save") => {
     setTogglingAutoRenew(true)
     try {
       const res = await setAutoRenew({
@@ -727,16 +734,61 @@ export default function SubscriptionPage() {
       })
       if (res.success) {
         setShowVaultSetup(false)
-        toast.success(res.message || t.mfg.subscription.autoRenewUpdated)
+        toast.success(
+          mode === "update"
+            ? (t.mfg.subscription.autoRenewUpdatePaymentMethod || "Payment method updated")
+            : (res.message || t.mfg.subscription.autoRenewUpdated)
+        )
       } else {
         toast.error(res.message)
       }
+      return res.success
     } catch {
       toast.error(local.unexpectedError)
+      return false
     } finally {
       setTogglingAutoRenew(false)
     }
   }
+
+  // Complete PayPal vault redirect (update/save payment method — no charge)
+  useEffect(() => {
+    if (typeof window === "undefined" || isLoading) return
+    if (vaultReturnProcessedRef.current) return
+
+    const searchParams = new URLSearchParams(window.location.search)
+    const vaultSetup = searchParams.get("vaultSetup")
+
+    if (!vaultSetup) return
+
+    vaultReturnProcessedRef.current = true
+
+    if (vaultSetup === "cancel") {
+      sessionStorage.removeItem(PAYPAL_PENDING_VAULT_TOKEN_KEY)
+      sessionStorage.removeItem(PAYPAL_PENDING_VAULT_MODE_KEY)
+      toast.error("PayPal setup was cancelled")
+      window.history.replaceState({}, "", "/dashboard/manufacturer/subscription")
+      return
+    }
+
+    if (vaultSetup !== "1") return
+
+    const token = sessionStorage.getItem(PAYPAL_PENDING_VAULT_TOKEN_KEY)
+    const mode = (sessionStorage.getItem(PAYPAL_PENDING_VAULT_MODE_KEY) as "save" | "update" | null) || "save"
+
+    sessionStorage.removeItem(PAYPAL_PENDING_VAULT_TOKEN_KEY)
+    sessionStorage.removeItem(PAYPAL_PENDING_VAULT_MODE_KEY)
+    window.history.replaceState({}, "", "/dashboard/manufacturer/subscription")
+
+    if (!token) {
+      toast.error("PayPal setup could not be completed. Please try again.")
+      return
+    }
+
+    void handleVaultSetupSuccess(token, mode)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading])
+
 
   // ── Cancel subscription with confirmation ───────────────────────
   const handleCancelSubscription = async () => {
@@ -916,21 +968,44 @@ export default function SubscriptionPage() {
               </div>
             </div>
           </CardHeader>
-          {!subscription.autoRenew && !subscription.hasReusablePaymentMethod && (
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {t.mfg.subscription.autoRenewSavePaypalDesc}
-              </p>
-              <Button
-                className="mt-3"
-                variant="outline"
-                onClick={() => setShowVaultSetup(true)}
-                disabled={togglingAutoRenew}
-              >
-                {t.mfg.subscription.autoRenewSavePaypal}
-              </Button>
+          <CardContent>
+              {subscription.hasReusablePaymentMethod ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {t.mfg.subscription.autoRenewUpdatePaymentMethodDesc ||
+                      "Replace your saved PayPal method. No charge now — it will be used for the next auto-renewal."}
+                  </p>
+                  <Button
+                    className="mt-3"
+                    variant="outline"
+                    onClick={() => {
+                      setVaultSetupMode("update")
+                      setShowVaultSetup(true)
+                    }}
+                    disabled={togglingAutoRenew}
+                  >
+                    {t.mfg.subscription.autoRenewUpdatePaymentMethod || "Update payment method"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {t.mfg.subscription.autoRenewSavePaypalDesc}
+                  </p>
+                  <Button
+                    className="mt-3"
+                    variant="outline"
+                    onClick={() => {
+                      setVaultSetupMode("save")
+                      setShowVaultSetup(true)
+                    }}
+                    disabled={togglingAutoRenew}
+                  >
+                    {t.mfg.subscription.autoRenewSavePaypal}
+                  </Button>
+                </>
+              )}
             </CardContent>
-          )}
         </Card>
       )}
 
@@ -1308,10 +1383,15 @@ export default function SubscriptionPage() {
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <h2 className="text-lg font-semibold text-gray-900">
-                    {t.mfg.subscription.autoRenewSavePaypal}
+                    {vaultSetupMode === "update"
+                      ? (t.mfg.subscription.autoRenewUpdatePaymentMethod || "Update payment method")
+                      : t.mfg.subscription.autoRenewSavePaypal}
                   </h2>
                   <p className="mt-1 text-xs sm:text-sm text-gray-600">
-                    {t.mfg.subscription.autoRenewSavePaypalDesc}
+                    {vaultSetupMode === "update"
+                      ? (t.mfg.subscription.autoRenewUpdatePaymentMethodDesc ||
+                        "Replace your saved PayPal method. No charge now — it will be used for the next auto-renewal.")
+                      : t.mfg.subscription.autoRenewSavePaypalDesc}
                   </p>
                 </div>
                 <button
@@ -1327,13 +1407,17 @@ export default function SubscriptionPage() {
               {togglingAutoRenew ? (
                 <div className="flex flex-col items-center justify-center py-8 gap-3">
                   <Loader2 className="h-8 w-8 animate-spin text-secondary" />
-                  <p className="text-sm text-muted-foreground">{t.mfg.subscription.autoRenewEnable}...</p>
+                  <p className="text-sm text-muted-foreground">
+                    {vaultSetupMode === "update"
+                      ? (t.mfg.subscription.autoRenewUpdatePaymentMethod || "Updating payment method")
+                      : t.mfg.subscription.autoRenewEnable}
+                    ...
+                  </p>
                 </div>
               ) : (
                 <PayPalVaultSetupButton
-                  onSuccess={(token) => {
-                    void handleVaultSetupSuccess(token)
-                  }}
+                  key={`vault-setup-${vaultSetupMode}`}
+                  mode={vaultSetupMode}
                   onError={(error) => toast.error(error)}
                 />
               )}

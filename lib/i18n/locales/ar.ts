@@ -2043,6 +2043,8 @@ const ar = {
         autoRenewDisable: "إيقاف التجديد التلقائي",
         autoRenewSavePaypal: "حفظ PayPal للتجديد التلقائي",
         autoRenewSavePaypalDesc: "فعّل PayPal مرة واحدة (بدون رسوم الآن). سنستخدمه فقط لتجديد خطتك الحالية.",
+        autoRenewUpdatePaymentMethod: "تحديث طريقة الدفع",
+        autoRenewUpdatePaymentMethodDesc: "استبدل طريقة PayPal المحفوظة. بدون رسوم الآن — ستُستخدم في التجديد التلقائي التالي.",
         autoRenewUpdated: "تم تحديث إعدادات التجديد التلقائي",
         autoRenewVaultHint: "سيطلب منك PayPal حفظ طريقة الدفع للتجديدات.",
         autoRenewManualHint: "دفع لمرة واحدة فقط. يمكنك تفعيل التجديد التلقائي لاحقًا من هذه الصفحة.",

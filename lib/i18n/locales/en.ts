@@ -2102,6 +2102,8 @@ const en = {
         autoRenewDisable: "Disable auto-renew",
         autoRenewSavePaypal: "Save PayPal for auto-renew",
         autoRenewSavePaypalDesc: "Authorize PayPal once (no charge now). We will use it only for renewals of your current plan.",
+        autoRenewUpdatePaymentMethod: "Update payment method",
+        autoRenewUpdatePaymentMethodDesc: "Replace your saved PayPal method. No charge now — it will be used for the next auto-renewal.",
         autoRenewUpdated: "Auto-renew settings updated",
         autoRenewVaultHint: "PayPal will ask to save your payment method for renewals.",
         autoRenewManualHint: "One-time payment only. You can enable auto-renew later from this page.",
