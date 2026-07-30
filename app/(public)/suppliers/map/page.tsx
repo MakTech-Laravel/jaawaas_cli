@@ -187,7 +187,9 @@ export default function GlobalSupplierMapPage() {
 
   const displayFeatured =
     topCountriesData.length > 0
-      ? topCountriesData.map((c) => ({
+      ? topCountriesData
+          .filter((c) => Boolean(c.country_code))
+          .map((c) => ({
           code: c.country_code,
           name: c.country,
           suppliers: c.manufacturers_count,
